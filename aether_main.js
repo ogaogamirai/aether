@@ -13,18 +13,31 @@ let debounceTimeout = null;
 
 // Apply parsed DSL to Canvas
 function applyDSL() {
-  const text = document.getElementById('dsl-input').value;
+  setupCanvasInteractions();
+  const input = document.getElementById('dsl-input');
+  const text = input ? input.value : '';
+  if (typeof parseAetherDSL !== 'function') {
+    console.error('[Aether] parseAetherDSL is missing');
+    showToast('DSLパーサが読み込まれていません', 'error');
+    return;
+  }
   const parsed = parseAetherDSL(text);
 
-  notes = parsed.notes;
-  connections = parsed.connections;
-  drawings = parsed.drawings;
+  notes = parsed.notes || [];
+  connections = parsed.connections || [];
+  drawings = parsed.drawings || [];
   relations = parsed.relations || [];
   activeTag = null;
   focusedNoteId = null;
   activeTime = null;
 
-  renderCanvas();
+  if (typeof renderCanvas === 'function') {
+    renderCanvas();
+  } else {
+    console.error('[Aether] renderCanvas is missing');
+    showToast('描画エンジンが読み込まれていません', 'error');
+    return;
+  }
 
   const allTags = new Set();
   notes.forEach(n => { if (n.tags) n.tags.forEach(t => allTags.add(t)); });
@@ -39,7 +52,9 @@ function applyDSL() {
   updateTimeSlider(Array.from(allTimes));
 
   showToast('Aether DSL を適用しました', 'success');
-  saveCanvasState();
+  if (typeof window.__AETHER_SNAPSHOT__ === 'undefined' || !window.__AETHER_SNAPSHOT__) {
+    saveCanvasState();
+  }
 }
 
 function updateTimeSlider(times) {
@@ -86,40 +101,61 @@ function handleTimeSlider(value) {
   renderCanvas();
 }
 
-const container = document.getElementById('canvas-container');
-const transformLayer = document.getElementById('canvas-transform');
-const notesContainer = document.getElementById('notes-container');
-const svgLayer = document.getElementById('svg-layer');
+let container = null;
+let transformLayer = null;
+let notesContainer = null;
+let svgLayer = null;
+let canvasInteractionsReady = false;
 
-container.addEventListener('mousedown', (e) => {
-  if (e.target === container || e.target === svgLayer) {
-    isDragging = true;
-    startX = e.clientX - panX;
-    startY = e.clientY - panY;
-  }
-});
+function refreshCanvasRefs() {
+  container = document.getElementById('canvas-container');
+  transformLayer = document.getElementById('canvas-transform');
+  notesContainer = document.getElementById('notes-container');
+  svgLayer = document.getElementById('svg-layer');
+  return !!(container && transformLayer && notesContainer && svgLayer);
+}
 
-window.addEventListener('mousemove', (e) => {
-  if (isDragging) {
-    panX = e.clientX - startX;
-    panY = e.clientY - startY;
+function setupCanvasInteractions() {
+  if (canvasInteractionsReady) return refreshCanvasRefs();
+  if (!refreshCanvasRefs()) return false;
+
+  container.addEventListener('mousedown', (e) => {
+    if (e.target === container || e.target === svgLayer) {
+      isDragging = true;
+      startX = e.clientX - panX;
+      startY = e.clientY - panY;
+    }
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (isDragging) {
+      panX = e.clientX - startX;
+      panY = e.clientY - startY;
+      updateTransform();
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+  });
+
+  container.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomFactor = 0.05;
+    if (e.deltaY < 0) scale = Math.min(scale + zoomFactor, 2.0);
+    else scale = Math.max(scale - zoomFactor, 0.15);
     updateTransform();
-  }
-});
+  });
 
-window.addEventListener('mouseup', () => {
-  isDragging = false;
-});
+  canvasInteractionsReady = true;
+  return true;
+}
 
-container.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  const zoomFactor = 0.05;
-  if (e.deltaY < 0) scale = Math.min(scale + zoomFactor, 2.0);
-  else scale = Math.max(scale - zoomFactor, 0.15);
-  updateTransform();
-});
+// モジュール読込直後にDOMがあれば接続（通常UI）。配布HTMLは onload 側でも再試行する。
+setupCanvasInteractions();
 
 function updateTransform() {
+  if (!transformLayer && !refreshCanvasRefs()) return;
   transformLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
   const indicator = document.getElementById('scale-indicator');
   if (indicator) indicator.textContent = `${Math.round(scale * 100)}%`;
@@ -603,6 +639,23 @@ function setupDragAndDrop() {
   });
 }
 
+function showToast(msg, type) {
+  console.log('[Aether Toast - ' + type + '] ' + msg);
+  let el = document.getElementById('aether-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'aether-toast';
+    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;padding:10px 16px;border-radius:10px;font-size:0.85rem;font-family:var(--font-display),sans-serif;box-shadow:0 8px 24px rgba(0,0,0,0.18);transition:opacity .25s;pointer-events:none;max-width:90vw;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = type === 'error' ? 'rgba(239,68,68,0.95)' : 'rgba(16,185,129,0.95)';
+  el.style.color = '#fff';
+  el.style.opacity = '1';
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => { el.style.opacity = '0'; }, 2800);
+}
+
 async function fetchTextAsset(assetPath) {
   try {
     const res = await fetch(assetPath);
@@ -643,6 +696,46 @@ async function inlineRemoteImagesInDsl(dslText) {
   return result;
 }
 
+// HTML インライン <script> 内で終端タグとして解釈されないようエスケープ
+function sanitizeForInlineScript(jsText) {
+  return String(jsText || '')
+    .replace(/<\/script/gi, '<\\/script')
+    .replace(/<!--/g, '<\\!--');
+}
+
+// 配布HTML向けに main から起動・巨大DEFAULT・エクスポート本体を除去
+function prepareMainJsForSnapshot(mainJs) {
+  let safeMain = String(mainJs || '');
+
+  // エクスポート専用コード（sanitize / prepare / exportPortableViewer）は配布HTMLに不要。
+  // マーカーは定義名そのもの（文字列リテラル内の同名参照と混同しないよう = や function 付きで切る）
+  const cutMarkers = [
+    'function sanitizeForInlineScript',
+    'async function exportPortableViewer',
+    'const DEFAULT_DSL =',
+    'window.onload = async'
+  ];
+  let cutAt = -1;
+  for (const marker of cutMarkers) {
+    const idx = safeMain.indexOf(marker);
+    if (idx >= 0 && (cutAt < 0 || idx < cutAt)) cutAt = idx;
+  }
+  if (cutAt >= 0) {
+    safeMain = safeMain.slice(0, cutAt);
+  }
+
+  // fetch 系の export ヘルパも不要（配布HTMLはネットワーク前提にしない）
+  const fetchHelperIdx = safeMain.indexOf('async function fetchTextAsset');
+  if (fetchHelperIdx >= 0) {
+    safeMain = safeMain.slice(0, fetchHelperIdx);
+  }
+
+  // IndexedDB 書き込みを無効化（file:// でも落ちにくく）
+  safeMain = safeMain.replace(/saveCanvasState\(\);/g, '/* saveCanvasState disabled in snapshot */');
+
+  return sanitizeForInlineScript(safeMain.trim() + '\n');
+}
+
 // Browser-only portable HTML export (no Python / no API server)
 async function exportPortableViewer() {
   let dsl = document.getElementById('dsl-input').value;
@@ -662,14 +755,44 @@ async function exportPortableViewer() {
       throw new Error('asset_fetch_failed');
     }
 
-    // Strip side-effectful boot paths for snapshot safety
-    let safeMain = mainJs.replace(/saveCanvasState\(\);/g, '/* save state disabled in snapshot */');
-    const onloadIdx = safeMain.indexOf('window.onload = async');
-    if (onloadIdx >= 0) {
-      safeMain = safeMain.slice(0, onloadIdx) + '/* original onload removed */\n';
-    }
+    const safeParser = sanitizeForInlineScript(parserJs);
+    const safeRenderer = sanitizeForInlineScript(rendererJs);
+    const safeMain = prepareMainJsForSnapshot(mainJs);
+    // JSON 文字列として埋め込み。HTML の </script> 破壊を防ぐため < をエスケープ
+    const embeddedDslJson = JSON.stringify(dsl).replace(/</g, '\\u003c');
 
-    const embeddedDslJson = JSON.stringify(dsl);
+    // DSL を別 script の JSON として埋め込み（巨大文字列の script 破壊を避ける）
+    const bootScript = [
+      'window.__AETHER_SNAPSHOT__ = true;',
+      'function __aetherBootSnapshot() {',
+      '  try {',
+      '    if (typeof setupCanvasInteractions === "function") setupCanvasInteractions();',
+      '    var payload = document.getElementById("aether-embedded-dsl");',
+      '    var raw = payload ? payload.textContent : "\\"\\"";',
+      '    var initialDSL = "";',
+      '    try { initialDSL = JSON.parse(raw); } catch (parseErr) { initialDSL = raw; }',
+      '    if (typeof initialDSL !== "string") initialDSL = String(initialDSL || "");',
+      '    var input = document.getElementById("dsl-input");',
+      '    if (input) input.value = initialDSL;',
+      '    if (typeof applyDSL === "function") applyDSL();',
+      '    else throw new Error("applyDSL missing");',
+      '    setTimeout(function () {',
+      '      if (typeof fitToView === "function") fitToView();',
+      '    }, 80);',
+      '    console.log("[Aether Viewer] Portable snapshot loaded. notes=", (notes && notes.length) || 0);',
+      '  } catch (err) {',
+      '    console.error("[Aether Viewer] boot failed:", err);',
+      '    var msg = (err && err.message) ? err.message : String(err);',
+      '    if (typeof showToast === "function") showToast("表示に失敗: " + msg, "error");',
+      '    else alert("Aether 表示に失敗: " + msg);',
+      '  }',
+      '}',
+      'if (document.readyState === "loading") {',
+      '  document.addEventListener("DOMContentLoaded", __aetherBootSnapshot);',
+      '} else {',
+      '  __aetherBootSnapshot();',
+      '}'
+    ].join('\n');
 
     const htmlText = [
       '<!DOCTYPE html>',
@@ -746,24 +869,24 @@ async function exportPortableViewer() {
       '    </div>',
       '  </div>',
       '',
+      '  <script type="application/json" id="aether-embedded-dsl">',
+      embeddedDslJson,
+      '  <\/script>',
       '  <script>',
       '    let scale = 1.0; let panX = 0; let panY = 0; let isDragging = false; let startX = 0; let startY = 0; let activeTag = null;',
       '    let notes = []; let connections = []; let drawings = []; let relations = [];',
       '  <\/script>',
       '  <script>',
-      parserJs,
+      safeParser,
       '  <\/script>',
       '  <script>',
-      rendererJs,
+      safeRenderer,
       '  <\/script>',
       '  <script>',
       safeMain,
-      '    window.onload = () => {',
-      '      const initialDSL = ' + embeddedDslJson + ';',
-      '      document.getElementById(\'dsl-input\').value = initialDSL;',
-      '      applyDSL();',
-      '      console.log(\'[Aether Viewer] Portable snapshot loaded.\');',
-      '    };',
+      '  <\/script>',
+      '  <script>',
+      sanitizeForInlineScript(bootScript),
       '  <\/script>',
       '</body>',
       '</html>'
@@ -791,23 +914,6 @@ async function exportPortableViewer() {
       'error'
     );
   }
-}
-
-function showToast(msg, type) {
-  console.log('[Aether Toast - ' + type + '] ' + msg);
-  let el = document.getElementById('aether-toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'aether-toast';
-    el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;padding:10px 16px;border-radius:10px;font-size:0.85rem;font-family:var(--font-display),sans-serif;box-shadow:0 8px 24px rgba(0,0,0,0.18);transition:opacity .25s;pointer-events:none;max-width:90vw;';
-    document.body.appendChild(el);
-  }
-  el.textContent = msg;
-  el.style.background = type === 'error' ? 'rgba(239,68,68,0.95)' : 'rgba(16,185,129,0.95)';
-  el.style.color = '#fff';
-  el.style.opacity = '1';
-  clearTimeout(el._hideTimer);
-  el._hideTimer = setTimeout(() => { el.style.opacity = '0'; }, 2800);
 }
 
 function triggerImportDSL() {
@@ -861,6 +967,7 @@ const DEFAULT_DSL = "# Aether DSL Auto-Saved v3.0\n\nsticky Origin_J \"日本人
 
 // Boot: IndexedDB restore → default DSL, drag&drop ready. No polling / no API.
 window.onload = async () => {
+  setupCanvasInteractions();
   setupDragAndDrop();
 
   try {

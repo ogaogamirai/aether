@@ -23,6 +23,12 @@ function isTimeVisible(timeProp) {
 
 // Render nodes & connections on screen
 function renderCanvas() {
+  if (typeof setupCanvasInteractions === 'function') setupCanvasInteractions();
+  if (typeof refreshCanvasRefs === 'function') refreshCanvasRefs();
+  if (!notesContainer) {
+    console.error('[Aether] notesContainer missing');
+    return;
+  }
   notesContainer.innerHTML = '';
   
   // Render Notes
@@ -103,7 +109,15 @@ function renderCanvas() {
 
 // Draw all elements on SVG layer
 function drawAllShapes() {
-  svgLayer.innerHTML = ''; // Clear SVG
+  if (typeof refreshCanvasRefs === 'function') refreshCanvasRefs();
+  if (!svgLayer) {
+    console.error('[Aether] svgLayer missing');
+    return;
+  }
+  // Preserve marker/filter defs while clearing drawn shapes
+  const defs = svgLayer.querySelector('defs');
+  svgLayer.innerHTML = '';
+  if (defs) svgLayer.appendChild(defs);
   
   // 1. Draw area backdrops
   drawings.forEach(dw => {
