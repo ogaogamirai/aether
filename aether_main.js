@@ -115,17 +115,18 @@ container.addEventListener('wheel', (e) => {
   e.preventDefault();
   const zoomFactor = 0.05;
   if (e.deltaY < 0) scale = Math.min(scale + zoomFactor, 2.0);
-  else scale = Math.max(scale - zoomFactor, 0.4);
+  else scale = Math.max(scale - zoomFactor, 0.15);
   updateTransform();
 });
 
 function updateTransform() {
   transformLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
-  document.getElementById('scale-indicator').textContent = `${Math.round(scale * 100)}%`;
+  const indicator = document.getElementById('scale-indicator');
+  if (indicator) indicator.textContent = `${Math.round(scale * 100)}%`;
 }
 
 function zoom(delta) {
-  scale = Math.max(0.4, Math.min(2.0, scale + delta));
+  scale = Math.max(0.15, Math.min(2.0, scale + delta));
   updateTransform();
 }
 
@@ -133,6 +134,111 @@ function resetTransform() {
   scale = 1.0;
   panX = 0;
   panY = 0;
+  updateTransform();
+}
+
+// 上部UI（タグバー・時系列スライダー）を避けた表示余白を測る
+function getFitChromePadding() {
+  const pad = { top: 40, right: 32, bottom: 36, left: 32 };
+  if (!container) return pad;
+
+  const cr = container.getBoundingClientRect();
+
+  const tags = document.getElementById('tags-filter-bar');
+  if (tags && tags.offsetParent !== null && tags.children.length > 0) {
+    const r = tags.getBoundingClientRect();
+    pad.top = Math.max(pad.top, Math.ceil(r.bottom - cr.top) + 16);
+  }
+
+  const slider = document.getElementById('time-slider-container');
+  if (slider && slider.offsetParent !== null && getComputedStyle(slider).display !== 'none') {
+    const r = slider.getBoundingClientRect();
+    pad.top = Math.max(pad.top, Math.ceil(r.bottom - cr.top) + 16);
+  }
+
+  return pad;
+}
+
+// グラフ全体を、オーバーレイUIに重ならない領域へ収めて表示（Fキー）
+function fitToView() {
+  if (!container || !transformLayer) {
+    resetTransform();
+    return;
+  }
+
+  const sourceNotes = (typeof notes !== 'undefined' && notes && notes.length)
+    ? notes
+    : [];
+  if (sourceNotes.length === 0) {
+    resetTransform();
+    return;
+  }
+
+  const visible = sourceNotes.filter(n => {
+    if (typeof isTimeVisible === 'function') return isTimeVisible(n.time);
+    return true;
+  });
+  const targets = visible.length ? visible : sourceNotes;
+
+  const NOTE_W = 180;
+  const NOTE_H = 160;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  targets.forEach(note => {
+    const el = document.getElementById('note-' + note.id);
+    const w = el && el.offsetWidth ? el.offsetWidth : NOTE_W;
+    const h = el && el.offsetHeight ? el.offsetHeight : NOTE_H;
+    minX = Math.min(minX, note.x);
+    minY = Math.min(minY, note.y);
+    maxX = Math.max(maxX, note.x + w);
+    maxY = Math.max(maxY, note.y + h);
+  });
+
+  // 描画オブジェクト（円領域・アイコン）も境界に含める
+  if (typeof drawings !== 'undefined' && drawings && drawings.length) {
+    drawings.forEach(d => {
+      if (typeof isTimeVisible === 'function' && d.time && !isTimeVisible(d.time)) return;
+      if (d.type === 'icon' && d.anchor) {
+        const anchor = sourceNotes.find(n => n.id === d.anchor);
+        if (!anchor) return;
+        const ox = (d.offset && d.offset[0]) || 0;
+        const oy = (d.offset && d.offset[1]) || 0;
+        const ix = anchor.x + ox;
+        const iy = anchor.y + oy;
+        minX = Math.min(minX, ix - 20);
+        minY = Math.min(minY, iy - 20);
+        maxX = Math.max(maxX, ix + 40);
+        maxY = Math.max(maxY, iy + 40);
+      }
+    });
+  }
+
+  if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+    resetTransform();
+    return;
+  }
+
+  // わずかな余白をコンテンツ側にも持たせる
+  const contentPad = 24;
+  minX -= contentPad;
+  minY -= contentPad;
+  maxX += contentPad;
+  maxY += contentPad;
+
+  const chrome = getFitChromePadding();
+  const viewW = Math.max(120, container.clientWidth - chrome.left - chrome.right);
+  const viewH = Math.max(120, container.clientHeight - chrome.top - chrome.bottom);
+  const contentW = Math.max(1, maxX - minX);
+  const contentH = Math.max(1, maxY - minY);
+
+  const fitScale = Math.min(viewW / contentW, viewH / contentH);
+  scale = Math.max(0.15, Math.min(2.0, fitScale * 0.98));
+
+  panX = chrome.left + (viewW - contentW * scale) / 2 - minX * scale;
+  panY = chrome.top + (viewH - contentH * scale) / 2 - minY * scale;
   updateTransform();
 }
 
@@ -364,6 +470,14 @@ function saveCanvasState() {
   }, AUTOSAVE_DEBOUNCE_MS);
 }
 
+function isTypingTarget(el) {
+  if (!el) return false;
+  const tag = (el.tagName || '').toUpperCase();
+  if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return true;
+  if (el.isContentEditable) return true;
+  return false;
+}
+
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (focusedNoteId) {
@@ -381,6 +495,14 @@ window.addEventListener('keydown', (e) => {
       }
       switchTab('dsl');
     }
+    return;
+  }
+
+  // F: グラフ全体表示（入力中は無効）
+  if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    if (isTypingTarget(e.target)) return;
+    e.preventDefault();
+    fitToView();
     return;
   }
 
@@ -596,10 +718,11 @@ async function exportPortableViewer() {
       '        <p>ポータブル・ビューワー</p>',
       '      </div>',
       '      <div class="panel-toolbar" style="display: flex; gap: 6px; align-items: center;">',
-      '        <button class="toolbar-btn" onclick="zoom(0.1)">＋</button>',
-      '        <button class="toolbar-btn" onclick="zoom(-0.1)">－</button>',
-      '        <button class="toolbar-btn" onclick="resetTransform()">⟲</button>',
-      '        <button class="toolbar-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>',
+      '        <button class="toolbar-btn" onclick="zoom(0.1)" title="拡大">＋</button>',
+      '        <button class="toolbar-btn" onclick="zoom(-0.1)" title="縮小">－</button>',
+      '        <button class="toolbar-btn" onclick="fitToView()" title="全体表示 (F)">⊡</button>',
+      '        <button class="toolbar-btn" onclick="resetTransform()" title="リセット">⟲</button>',
+      '        <button class="toolbar-btn" id="theme-btn" onclick="toggleTheme()" title="テーマ切り替え">🌙</button>',
       '        <span id="scale-indicator" style="font-size: 0.75rem; color: var(--text-secondary); min-width: 35px; text-align: center;">100%</span>',
       '      </div>',
       '    </div>',
