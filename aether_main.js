@@ -27,6 +27,13 @@ function applyDSL() {
   connections = parsed.connections || [];
   drawings = parsed.drawings || [];
   relations = parsed.relations || [];
+  // window へも同期（配布HTMLの共有状態を確実に保つ）
+  if (typeof window !== 'undefined') {
+    window.notes = notes;
+    window.connections = connections;
+    window.drawings = drawings;
+    window.relations = relations;
+  }
   activeTag = null;
   focusedNoteId = null;
   activeTime = null;
@@ -751,7 +758,50 @@ function prepareMainJsForSnapshot(mainJs) {
 
   // IndexedDB 書き込みを無効化
   safeMain = safeMain.replace(/saveCanvasState\(\);/g, '/* saveCanvasState disabled in snapshot */');
+
+  // モジュール読込時の即時 setup は、snapshot では boot 側で行う（DOM 準備後）
+  safeMain = safeMain.replace(
+    /\/\/ モジュール読込直後にDOMがあれば接続[\s\S]*?setupCanvasInteractions\(\);\s*/,
+    '/* deferred setupCanvasInteractions in snapshot boot */\n'
+  );
+
   return safeMain.trim() + '\n';
+}
+
+// parser + renderer + main を1本に結合（eval分割で共有変数が切れるのを防ぐ）
+function buildSnapshotBundle(parserJs, rendererJs, mainJs) {
+  const safeMain = prepareMainJsForSnapshot(mainJs);
+  // 共有状態を window に載せる前置き（HTML側の let と二重になっても上書きで揃う）
+  const prelude = [
+    'window.__AETHER_SNAPSHOT__ = true;',
+    'if (typeof window.scale !== "number") window.scale = 1.0;',
+    'if (typeof window.panX !== "number") window.panX = 0;',
+    'if (typeof window.panY !== "number") window.panY = 0;',
+    'if (typeof window.isDragging !== "boolean") window.isDragging = false;',
+    'if (typeof window.startX !== "number") window.startX = 0;',
+    'if (typeof window.startY !== "number") window.startY = 0;',
+    'if (typeof window.activeTag === "undefined") window.activeTag = null;',
+    'if (!Array.isArray(window.notes)) window.notes = [];',
+    'if (!Array.isArray(window.connections)) window.connections = [];',
+    'if (!Array.isArray(window.drawings)) window.drawings = [];',
+    'if (!Array.isArray(window.relations)) window.relations = [];',
+    // グローバル識別子としても参照できるよう var を同期（eval 1本化と併用）
+    'var scale = window.scale, panX = window.panX, panY = window.panY;',
+    'var isDragging = window.isDragging, startX = window.startX, startY = window.startY;',
+    'var activeTag = window.activeTag;',
+    'var notes = window.notes, connections = window.connections, drawings = window.drawings, relations = window.relations;',
+    ''
+  ].join('\n');
+
+  return [
+    prelude,
+    String(parserJs || ''),
+    '\n',
+    String(rendererJs || ''),
+    '\n',
+    safeMain,
+    '\n'
+  ].join('\n');
 }
 
 // Browser-only portable HTML export (no Python / no API server)
@@ -776,26 +826,23 @@ async function exportPortableViewer() {
       throw new Error('asset_fetch_failed');
     }
 
-    const safeMain = prepareMainJsForSnapshot(mainJs);
+    // parser+renderer+main を1本に結合して eval（分割evalのスコープ切断を根絶）
+    const bundleJs = buildSnapshotBundle(parserJs, rendererJs, mainJs);
 
-    // 構文チェック（壊れた main を配布しない）
+    // 構文チェック（壊れた bundle を配布しない）
     try {
       // eslint-disable-next-line no-new-func
-      new Function(parserJs);
-      new Function(rendererJs);
-      new Function(safeMain);
+      new Function(bundleJs);
     } catch (syntaxErr) {
       console.error('[Aether Export] snapshot script syntax error:', syntaxErr);
       throw new Error('snapshot_syntax_failed: ' + (syntaxErr && syntaxErr.message ? syntaxErr.message : syntaxErr));
     }
 
     const b64Css = utf8ToBase64(cssText);
-    const b64Parser = utf8ToBase64(parserJs);
-    const b64Renderer = utf8ToBase64(rendererJs);
-    const b64Main = utf8ToBase64(safeMain);
+    const b64Bundle = utf8ToBase64(bundleJs);
     const b64Dsl = utf8ToBase64(dsl);
 
-    // ランタイムは極小。巨大コードは Base64 payload から decode+eval
+    // ランタイムは極小。巨大コードは Base64 payload から decode+eval（1回のみ）
     const runtimeJs = [
       'window.__AETHER_SNAPSHOT__ = true;',
       'function __aetherB64ToUtf8(b64) {',
@@ -808,29 +855,25 @@ async function exportPortableViewer() {
       '  var el = document.getElementById(id);',
       '  return el ? String(el.textContent || "").replace(/\\s+/g, "") : "";',
       '}',
-      'function __aetherRunPayload(id, label) {',
-      '  var code = __aetherB64ToUtf8(__aetherReadPayload(id));',
-      '  try { (0, eval)(code); }',
-      '  catch (err) {',
-      '    console.error("[Aether Viewer] failed to run " + label, err);',
-      '    throw err;',
-      '  }',
-      '}',
       'function __aetherBootSnapshot() {',
       '  try {',
-      '    __aetherRunPayload("aether-src-parser", "parser");',
-      '    __aetherRunPayload("aether-src-renderer", "renderer");',
-      '    __aetherRunPayload("aether-src-main", "main");',
+      '    var code = __aetherB64ToUtf8(__aetherReadPayload("aether-src-bundle"));',
+      '    (0, eval)(code);',
       '    if (typeof setupCanvasInteractions === "function") setupCanvasInteractions();',
+      '    if (typeof refreshCanvasRefs === "function") refreshCanvasRefs();',
       '    var initialDSL = __aetherB64ToUtf8(__aetherReadPayload("aether-src-dsl"));',
       '    var input = document.getElementById("dsl-input");',
       '    if (input) input.value = initialDSL;',
-      '    if (typeof applyDSL !== "function") throw new Error("applyDSL missing");',
+      '    if (typeof applyDSL !== "function") throw new Error("applyDSL missing after bundle eval");',
       '    applyDSL();',
+      '    var ncount = (typeof notes !== "undefined" && notes && notes.length) || (window.notes && window.notes.length) || 0;',
+      '    var domCount = document.querySelectorAll(".sticky-note").length;',
       '    setTimeout(function () {',
       '      if (typeof fitToView === "function") fitToView();',
+      '      console.log("[Aether Viewer] fit done. sticky DOM=", document.querySelectorAll(".sticky-note").length);',
       '    }, 80);',
-      '    console.log("[Aether Viewer] Portable snapshot loaded. notes=", (typeof notes !== "undefined" && notes && notes.length) || 0);',
+      '    console.log("[Aether Viewer] Portable snapshot loaded. notes=", ncount, "dom=", domCount);',
+      '    if (ncount === 0) throw new Error("DSL parsed 0 notes");',
       '  } catch (err) {',
       '    console.error("[Aether Viewer] boot failed:", err);',
       '    var msg = (err && err.message) ? err.message : String(err);',
@@ -917,9 +960,7 @@ async function exportPortableViewer() {
       '',
       '  <!-- payloads: Base64 only (never parsed as JS/HTML source) -->',
       '  <script type="text/plain" id="aether-src-css">' + b64Css + '<\/script>',
-      '  <script type="text/plain" id="aether-src-parser">' + b64Parser + '<\/script>',
-      '  <script type="text/plain" id="aether-src-renderer">' + b64Renderer + '<\/script>',
-      '  <script type="text/plain" id="aether-src-main">' + b64Main + '<\/script>',
+      '  <script type="text/plain" id="aether-src-bundle">' + b64Bundle + '<\/script>',
       '  <script type="text/plain" id="aether-src-dsl">' + b64Dsl + '<\/script>',
       '',
       '  <script>',
@@ -932,8 +973,11 @@ async function exportPortableViewer() {
       '    })();',
       '  <\/script>',
       '  <script>',
-      '    let scale = 1.0; let panX = 0; let panY = 0; let isDragging = false; let startX = 0; let startY = 0; let activeTag = null;',
-      '    let notes = []; let connections = []; let drawings = []; let relations = [];',
+      '    // var で宣言し window と eval バンドルから確実に共有する',
+      '    var scale = 1.0; var panX = 0; var panY = 0; var isDragging = false; var startX = 0; var startY = 0; var activeTag = null;',
+      '    var notes = []; var connections = []; var drawings = []; var relations = [];',
+      '    window.scale = scale; window.panX = panX; window.panY = panY;',
+      '    window.notes = notes; window.connections = connections; window.drawings = drawings; window.relations = relations;',
       '  <\/script>',
       '  <script>',
       runtimeJs,
