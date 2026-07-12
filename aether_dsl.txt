@@ -1,0 +1,142 @@
+# Aether DSL Auto-Saved v3.0
+
+sticky Origin_J "日本人起源論" {
+  pos: 420 80
+  color: "blue"
+  tags: "全体概要"
+  desc: "日本列島の人間集団がどのような系譜や混血プロセスを経て形成されたかを探る学術・文化論。古くは単一起源説から始まり、混血説、二重構造、そして現代ゲノム科学による三重構造モデルへと進化を遂げている。"
+}
+
+sticky Y_D1a2a "Y染色体D1a2a系統" {
+  pos: 100 250
+  color: "purple"
+  tags: "科学・論文説"
+  desc: "東アジアの他地域ではほぼ見られない日本列島特有のY染色体系統（約35%）。世界的にはチベットに親縁系統が存在し、縄文男系系譜を引き継ぐ証拠とされる。\n\nアインシュタインの方程式：$ E = mc^2 $\n頻度の正規分布モデル：$$ f(x) = \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2} $$\n\n![ゲノムDNA解析イメージ](https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=400)"
+  time: "1_縄文期"
+  tone: "stable"
+}
+
+sticky Jomon_Single "単一縄文人起源説" {
+  pos: 420 250
+  color: "green"
+  tags: "考古学・従来説"
+  desc: "日本列島の住民は、外部からの大規模な混血を経ずに、縄文人が直接的に現代日本人へと進化したとする極めて初期の説。近代以降の骨格比較研究やゲノム解析により、現在はこの仮説は否定されている。"
+  time: "1_縄文期"
+  tone: "tension"
+}
+
+sticky Dual_Structure "二重構造モデル (埴原和郎)" {
+  pos: 740 250
+  color: "green"
+  tags: "考古学・従来説"
+  desc: "1991年に人類学者・埴原和郎が提唱した定説。日本人は「東南アジア系祖先から派生した縄文人」と、「北東アジア系祖先から派生し弥生時代に大挙渡来した渡来人」の二重の系統の混血によって形成されたとする。"
+  time: "2_弥生期"
+}
+
+sticky Triple_Structure "現代ゲノムの三重構造モデル" {
+  pos: 420 450
+  color: "purple"
+  tags: "科学・論文説"
+  desc: "2021年の古代DNA解析によって提唱された最新モデル。従来の「縄文・弥生」の二重構造に加え、古墳時代に大陸から大量の「第3の祖先集団（東アジア系）」が渡来し現代日本人の遺伝的ベースを決定づけたとする説。\n\n| 祖先集団 | 推定割合 | 主な流入時期 |\n|---|---|---|\n| 縄文系 | 約13% | 縄文時代以前 |\n| 弥生系 | 約30% | 弥生時代 |\n| 古墳系 | 約57% | 古墳時代 |"
+  time: "3_古墳期"
+}
+
+sticky SC_Paper_2021 "2021年ゲノム解析論文" {
+  pos: 100 450
+  color: "purple"
+  tags: "科学・論文説"
+  desc: "金沢大学や理化学研究所などの共同研究チームがサイエンス誌の姉妹紙に発表した画期的な論文。縄文人・弥生人・古墳人の古代ゲノムを解読し、現代日本人のルーツが古墳時代に完成した『三重構造』であることを初めて実証した。"
+  time: "3_古墳期"
+}
+
+sticky YT_Lost_Tribes "日ユ同祖論 (失われた10支族)" {
+  pos: 740 650
+  color: "yellow"
+  tags: "YouTube・オカルト説"
+  desc: "古代イスラエルの失われた10支族の一部が日本列島に渡来し、大和民族の祖先および皇室のルーツになったとする説。言語や神道儀礼の類似性が指摘されるが、学術的な歴史学やゲノム科学からはオカルト（疑似科学）と分類される。"
+  time: "4_現代ネット言説"
+}
+
+sticky YT_D_Special "D系統神秘論 (神の遺伝子)" {
+  pos: 420 650
+  color: "yellow"
+  tags: "YouTube・オカルト説"
+  desc: "Y染色体ハプログループD系統（D1a2a）を、「神に選ばれた特別な遺伝子」「超能力や高い霊性の源」などと神秘主義的に解釈するYouTube動画やSNS上の通説。科学的なY染色体の単なる突然変異データを飛躍させ、ナショナリズムに結びつけたものである。"
+  time: "4_現代ネット言説"
+  tone: "excited"
+}
+
+drawing SC_AREA "現代ゲノム科学検証領域" {
+  type: "circle-area"
+  style: "solid"
+  color: "purple"
+  offset: 0 0
+  pos: 100 100
+  targets: "Y_D1a2a SC_Paper_2021 Triple_Structure"
+  tags: "科学・論文説"
+  time: "3_古墳期"
+}
+
+drawing IC_DNA "DNAゲノムデータ" {
+  type: "icon"
+  style: "database"
+  color: "purple"
+  anchor: "SC_Paper_2021"
+  offset: -120 0
+  tags: "科学・論文説"
+  time: "3_古墳期"
+}
+
+drawing IC_YT "動画メディアの拡散" {
+  type: "icon"
+  style: "brain"
+  color: "yellow"
+  anchor: "YT_D_Special"
+  offset: 140 0
+  tags: "YouTube・オカルト説"
+  time: "4_現代ネット言説"
+}
+
+relation Y_D1a2a -> YT_D_Special {
+  type: "conflict"
+  label: "学術的突然変異 vs 神秘主義的解釈"
+  color: "red"
+  tags: "YouTube・オカルト説"
+  time: "4_現代ネット言説"
+}
+
+relation YT_Lost_Tribes -> YT_D_Special {
+  type: "influence"
+  label: "古代イスラエル結びつけの補強"
+  color: "yellow"
+  tags: "YouTube・オカルト説"
+  time: "4_現代ネット言説"
+}
+
+relation Dual_Structure -> Triple_Structure {
+  type: "influence"
+  label: "ゲノム解析による精緻化"
+  color: "green"
+  tags: "科学・論文説"
+  time: "3_古墳期"
+}
+
+relation SC_Paper_2021 -> Triple_Structure {
+  type: "similarity"
+  label: "古墳人DNAからの裏付け"
+  color: "purple"
+  tags: "科学・論文説"
+  time: "3_古墳期"
+}
+
+relation Jomon_Single -> Dual_Structure {
+  type: "conflict"
+  label: "混血度合いを巡る対立"
+  color: "yellow"
+  tags: "考古学・従来説"
+  time: "2_弥生期"
+}
+
+Origin_J -> Y_D1a2a
+Origin_J -> Jomon_Single
+Origin_J -> Dual_Structure

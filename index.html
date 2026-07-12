@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aether (エーテル) — 人とAIの共創ホワイトボード</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="light-theme">
+
+  <!-- Infinite Canvas -->
+  <div class="whiteboard-container" id="canvas-container">
+    <div class="tags-filter-bar" id="tags-filter-bar"></div>
+    <div class="canvas-transform" id="canvas-transform">
+      <svg class="connections-layer" id="svg-layer">
+        <!-- Define markers for arrows -->
+        <defs>
+          <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b82f6"/>
+          </marker>
+          <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b5cf6"/>
+          </marker>
+          <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981"/>
+          </marker>
+          <marker id="arrow-pink" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#ec4899"/>
+          </marker>
+          <marker id="arrow-yellow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#eab308"/>
+          </marker>
+          <marker id="arrow-default" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255,255,255,0.4)"/>
+          </marker>
+          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="12" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+        <!-- SVG lines & drawings dynamically added here -->
+      </svg>
+      <div id="notes-container">
+        <!-- Sticky notes dynamically added here -->
+      </div>
+    </div>
+
+    <!-- 時系列スライダーUI -->
+    <div class="time-slider-container" id="time-slider-container">
+      <input type="range" id="time-slider" min="0" max="0" value="0" oninput="handleTimeSlider(this.value)">
+      <div class="time-slider-labels" id="time-slider-labels"></div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar Panel -->
+  <div class="control-panel" id="control-panel">
+    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="サイドバー開閉">◀</button>
+    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h1>🌌 Aether</h1>
+        <p>人とAIの共創無限ホワイトボード</p>
+      </div>
+      <div class="panel-toolbar" style="display: flex; gap: 6px; align-items: center;">
+        <button class="toolbar-btn" onclick="zoom(0.1)" title="拡大">＋</button>
+        <button class="toolbar-btn" onclick="zoom(-0.1)" title="縮小">－</button>
+        <button class="toolbar-btn" onclick="resetTransform()" title="リセット">⟲</button>
+        <button class="toolbar-btn" id="theme-btn" onclick="toggleTheme()" title="テーマ切り替え">🌙</button>
+        <span id="scale-indicator" style="font-size: 0.75rem; color: var(--text-secondary); min-width: 35px; text-align: center; font-family: var(--font-display); font-weight: 600;">100%</span>
+      </div>
+    </div>
+
+    <div class="tabs-header">
+      <button class="tab-btn active" onclick="switchTab('dsl')">{ } Aether DSL</button>
+      <button class="tab-btn" onclick="switchTab('details')" id="tab-btn-details">📖 詳細</button>
+    </div>
+
+    <!-- DSL Tab -->
+    <div class="tab-content active" id="tab-dsl">
+      <div class="dsl-editor-container">
+        <textarea class="dsl-textarea" id="dsl-input" placeholder="Aether DSL を記述してください..."></textarea>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 6px;">
+            <button class="btn btn-primary" style="font-size: 0.78rem; padding: 8px 6px;" onclick="applyDSL()" title="DSLをキャンバスに適用">↓ キャンバス適用</button>
+            <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 8px 6px;" onclick="triggerImportDSL()" title="ローカルのDSLファイルを読み込み">📂 ファイル読込</button>
+            
+            <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 8px 6px;" onclick="generateDSLFromCanvas()" title="キャンバスからDSLを生成">↑ キャンバス出力</button>
+            <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 8px 6px;" onclick="exportDSLToFile()" title="現在のDSLをテキストファイルとして保存">💾 ファイル保存</button>
+          </div>
+          <button class="btn btn-secondary" style="background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: bold; width: 100%; font-size: 0.78rem; padding: 8px 6px; margin-top: 2px;" onclick="exportPortableViewer()" title="他者と共有できる自己完結型インタラクティブHTMLを出力">📤 配布用HTMLを出力 (Viewer)</button>
+        </div>
+        <input type="file" id="dsl-file-input" style="display: none;" accept=".txt,.json,.dsl" onchange="handleImportDSL(event)">
+      </div>
+    </div>
+
+    <!-- Details Tab -->
+    <div class="tab-content" id="tab-details">
+      <div id="details-view-container">
+        <div class="details-empty-state" style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+          <span style="font-size: 2.5rem; display: block; margin-bottom: 12px;">📖</span>
+          <p style="font-size: 0.85rem; line-height: 1.5;">キャンバス上の付箋をクリックすると、<br>ここに詳細情報が表示されます。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Modules (Loaded sequentially) -->
+  <script>
+    // Global shared variables
+    let scale = 1.0;
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let activeTag = null; // アクティブタグフィルター状態
+
+    let notes = [];
+    let connections = [];
+    let drawings = [];
+    let relations = [];
+  </script>
+  <script src="aether_parser.js"></script>
+  <script src="aether_renderer.js"></script>
+  <script src="aether_main.js"></script>
+</body>
+</html>
