@@ -696,21 +696,27 @@ async function inlineRemoteImagesInDsl(dslText) {
   return result;
 }
 
-// HTML インライン <script> 内で終端タグとして解釈されないようエスケープ
-function sanitizeForInlineScript(jsText) {
-  return String(jsText || '')
-    .replace(/<\/script/gi, '<\\/script')
-    .replace(/<!--/g, '<\\!--');
+// UTF-8 → Base64（配布HTML埋め込み用。インラインJS破壊を避ける）
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(String(str || ''));
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
 }
 
 // 配布HTML向けに main から起動・巨大DEFAULT・エクスポート本体を除去
 function prepareMainJsForSnapshot(mainJs) {
   let safeMain = String(mainJs || '');
 
-  // エクスポート専用コード（sanitize / prepare / exportPortableViewer）は配布HTMLに不要。
-  // マーカーは定義名そのもの（文字列リテラル内の同名参照と混同しないよう = や function 付きで切る）
+  // エクスポート専用以降は配布HTMLに不要
   const cutMarkers = [
+    'async function fetchTextAsset',
     'function sanitizeForInlineScript',
+    'function utf8ToBase64',
+    'function prepareMainJsForSnapshot',
     'async function exportPortableViewer',
     'const DEFAULT_DSL =',
     'window.onload = async'
@@ -720,23 +726,15 @@ function prepareMainJsForSnapshot(mainJs) {
     const idx = safeMain.indexOf(marker);
     if (idx >= 0 && (cutAt < 0 || idx < cutAt)) cutAt = idx;
   }
-  if (cutAt >= 0) {
-    safeMain = safeMain.slice(0, cutAt);
-  }
+  if (cutAt >= 0) safeMain = safeMain.slice(0, cutAt);
 
-  // fetch 系の export ヘルパも不要（配布HTMLはネットワーク前提にしない）
-  const fetchHelperIdx = safeMain.indexOf('async function fetchTextAsset');
-  if (fetchHelperIdx >= 0) {
-    safeMain = safeMain.slice(0, fetchHelperIdx);
-  }
-
-  // IndexedDB 書き込みを無効化（file:// でも落ちにくく）
+  // IndexedDB 書き込みを無効化
   safeMain = safeMain.replace(/saveCanvasState\(\);/g, '/* saveCanvasState disabled in snapshot */');
-
-  return sanitizeForInlineScript(safeMain.trim() + '\n');
+  return safeMain.trim() + '\n';
 }
 
 // Browser-only portable HTML export (no Python / no API server)
+// JS/DSL は Base64 で埋め込み、file:// でも SyntaxError を起こさない
 async function exportPortableViewer() {
   let dsl = document.getElementById('dsl-input').value;
   showToast('配布用HTMLを生成中...', 'success');
@@ -744,42 +742,74 @@ async function exportPortableViewer() {
   try {
     dsl = await inlineRemoteImagesInDsl(dsl);
 
+    // キャッシュで古い JS が混入しないよう bust
+    const bust = 't=' + Date.now();
     const [cssText, parserJs, rendererJs, mainJs] = await Promise.all([
-      fetchTextAsset('style.css'),
-      fetchTextAsset('aether_parser.js'),
-      fetchTextAsset('aether_renderer.js'),
-      fetchTextAsset('aether_main.js')
+      fetchTextAsset('style.css?' + bust),
+      fetchTextAsset('aether_parser.js?' + bust),
+      fetchTextAsset('aether_renderer.js?' + bust),
+      fetchTextAsset('aether_main.js?' + bust)
     ]);
 
     if (!cssText || !parserJs || !rendererJs || !mainJs) {
       throw new Error('asset_fetch_failed');
     }
 
-    const safeParser = sanitizeForInlineScript(parserJs);
-    const safeRenderer = sanitizeForInlineScript(rendererJs);
     const safeMain = prepareMainJsForSnapshot(mainJs);
-    // JSON 文字列として埋め込み。HTML の </script> 破壊を防ぐため < をエスケープ
-    const embeddedDslJson = JSON.stringify(dsl).replace(/</g, '\\u003c');
 
-    // DSL を別 script の JSON として埋め込み（巨大文字列の script 破壊を避ける）
-    const bootScript = [
+    // 構文チェック（壊れた main を配布しない）
+    try {
+      // eslint-disable-next-line no-new-func
+      new Function(parserJs);
+      new Function(rendererJs);
+      new Function(safeMain);
+    } catch (syntaxErr) {
+      console.error('[Aether Export] snapshot script syntax error:', syntaxErr);
+      throw new Error('snapshot_syntax_failed: ' + (syntaxErr && syntaxErr.message ? syntaxErr.message : syntaxErr));
+    }
+
+    const b64Css = utf8ToBase64(cssText);
+    const b64Parser = utf8ToBase64(parserJs);
+    const b64Renderer = utf8ToBase64(rendererJs);
+    const b64Main = utf8ToBase64(safeMain);
+    const b64Dsl = utf8ToBase64(dsl);
+
+    // ランタイムは極小。巨大コードは Base64 payload から decode+eval
+    const runtimeJs = [
       'window.__AETHER_SNAPSHOT__ = true;',
+      'function __aetherB64ToUtf8(b64) {',
+      '  var bin = atob(String(b64 || "").replace(/\\s+/g, ""));',
+      '  var bytes = new Uint8Array(bin.length);',
+      '  for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);',
+      '  return new TextDecoder("utf-8").decode(bytes);',
+      '}',
+      'function __aetherReadPayload(id) {',
+      '  var el = document.getElementById(id);',
+      '  return el ? String(el.textContent || "").replace(/\\s+/g, "") : "";',
+      '}',
+      'function __aetherRunPayload(id, label) {',
+      '  var code = __aetherB64ToUtf8(__aetherReadPayload(id));',
+      '  try { (0, eval)(code); }',
+      '  catch (err) {',
+      '    console.error("[Aether Viewer] failed to run " + label, err);',
+      '    throw err;',
+      '  }',
+      '}',
       'function __aetherBootSnapshot() {',
       '  try {',
+      '    __aetherRunPayload("aether-src-parser", "parser");',
+      '    __aetherRunPayload("aether-src-renderer", "renderer");',
+      '    __aetherRunPayload("aether-src-main", "main");',
       '    if (typeof setupCanvasInteractions === "function") setupCanvasInteractions();',
-      '    var payload = document.getElementById("aether-embedded-dsl");',
-      '    var raw = payload ? payload.textContent : "\\"\\"";',
-      '    var initialDSL = "";',
-      '    try { initialDSL = JSON.parse(raw); } catch (parseErr) { initialDSL = raw; }',
-      '    if (typeof initialDSL !== "string") initialDSL = String(initialDSL || "");',
+      '    var initialDSL = __aetherB64ToUtf8(__aetherReadPayload("aether-src-dsl"));',
       '    var input = document.getElementById("dsl-input");',
       '    if (input) input.value = initialDSL;',
-      '    if (typeof applyDSL === "function") applyDSL();',
-      '    else throw new Error("applyDSL missing");',
+      '    if (typeof applyDSL !== "function") throw new Error("applyDSL missing");',
+      '    applyDSL();',
       '    setTimeout(function () {',
       '      if (typeof fitToView === "function") fitToView();',
       '    }, 80);',
-      '    console.log("[Aether Viewer] Portable snapshot loaded. notes=", (notes && notes.length) || 0);',
+      '    console.log("[Aether Viewer] Portable snapshot loaded. notes=", (typeof notes !== "undefined" && notes && notes.length) || 0);',
       '  } catch (err) {',
       '    console.error("[Aether Viewer] boot failed:", err);',
       '    var msg = (err && err.message) ? err.message : String(err);',
@@ -787,11 +817,8 @@ async function exportPortableViewer() {
       '    else alert("Aether 表示に失敗: " + msg);',
       '  }',
       '}',
-      'if (document.readyState === "loading") {',
-      '  document.addEventListener("DOMContentLoaded", __aetherBootSnapshot);',
-      '} else {',
-      '  __aetherBootSnapshot();',
-      '}'
+      'if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", __aetherBootSnapshot);',
+      'else __aetherBootSnapshot();'
     ].join('\n');
 
     const htmlText = [
@@ -806,9 +833,7 @@ async function exportPortableViewer() {
       '  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">',
       '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">',
       '  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"><\/script>',
-      '  <style>',
-      cssText,
-      '  </style>',
+      '  <style id="aether-embedded-css"></style>',
       '</head>',
       '<body class="light-theme">',
       '  <div class="whiteboard-container" id="canvas-container">',
@@ -869,24 +894,28 @@ async function exportPortableViewer() {
       '    </div>',
       '  </div>',
       '',
-      '  <script type="application/json" id="aether-embedded-dsl">',
-      embeddedDslJson,
+      '  <!-- payloads: Base64 only (never parsed as JS/HTML source) -->',
+      '  <script type="text/plain" id="aether-src-css">' + b64Css + '<\/script>',
+      '  <script type="text/plain" id="aether-src-parser">' + b64Parser + '<\/script>',
+      '  <script type="text/plain" id="aether-src-renderer">' + b64Renderer + '<\/script>',
+      '  <script type="text/plain" id="aether-src-main">' + b64Main + '<\/script>',
+      '  <script type="text/plain" id="aether-src-dsl">' + b64Dsl + '<\/script>',
+      '',
+      '  <script>',
+      '    // inject CSS first',
+      '    (function(){',
+      '      function b64(s){var bin=atob(String(s||"").replace(/\\s+/g,""));var u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new TextDecoder("utf-8").decode(u);}',
+      '      var el=document.getElementById("aether-src-css");',
+      '      var st=document.getElementById("aether-embedded-css");',
+      '      if(el&&st) st.textContent=b64(el.textContent);',
+      '    })();',
       '  <\/script>',
       '  <script>',
       '    let scale = 1.0; let panX = 0; let panY = 0; let isDragging = false; let startX = 0; let startY = 0; let activeTag = null;',
       '    let notes = []; let connections = []; let drawings = []; let relations = [];',
       '  <\/script>',
       '  <script>',
-      safeParser,
-      '  <\/script>',
-      '  <script>',
-      safeRenderer,
-      '  <\/script>',
-      '  <script>',
-      safeMain,
-      '  <\/script>',
-      '  <script>',
-      sanitizeForInlineScript(bootScript),
+      runtimeJs,
       '  <\/script>',
       '</body>',
       '</html>'
@@ -903,14 +932,14 @@ async function exportPortableViewer() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast('配布用HTMLを出力しました！', 'success');
+    showToast('配布用HTMLを出力しました！（Base64版）', 'success');
   } catch (err) {
     console.error('[Aether Standalone Export] Failed:', err);
     const isFile = location.protocol === 'file:';
     showToast(
       isFile
         ? '配布用HTML出力にはHTTP起動が必要です（例: npx serve）。閲覧・編集・DnDは file:// でも動作します。'
-        : '配布用HTML出力に失敗しました。',
+        : '配布用HTML出力に失敗しました: ' + (err && err.message ? err.message : err),
       'error'
     );
   }
