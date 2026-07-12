@@ -701,32 +701,63 @@ async function inlineRemoteImagesInDsl(dslText) {
   const matches = [...dslText.matchAll(re)];
   let result = dslText;
 
+  const toSvgUtf8DataUrl = (svgText) => {
+    const cleanSvg = String(svgText || '').replace(/[\r\n]+/g, ' ').trim();
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(cleanSvg);
+  };
+
   for (const match of matches) {
     const full = match[0];
     const alt = match[1];
     let url = match[2].trim();
     if (url.startsWith('<') && url.endsWith('>')) url = url.slice(1, -1).trim();
-    if (!url || url.startsWith('data:')) continue;
+    if (!url) continue;
+
+    // 既存 data URI: SVG の base64 だけ utf8 に正規化（jpg/png の base64 はそのまま）
+    if (url.startsWith('data:')) {
+      if (/^data:image\/svg\+xml;base64,/i.test(url)) {
+        try {
+          const b64 = url.slice(url.indexOf(',') + 1);
+          const binary = atob(b64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          const text = new TextDecoder('utf-8').decode(bytes);
+          result = result.replace(full, '![' + alt + '](<' + toSvgUtf8DataUrl(text) + '>)');
+        } catch (err) {
+          console.warn('[Aether Export] base64 SVG normalize failed:', err);
+        }
+      }
+      continue;
+    }
+
     if (!(url.startsWith('http://') || url.startsWith('https://'))) continue;
     try {
       const res = await fetch(url);
       if (!res.ok) continue;
-      const isSvg = url.toLowerCase().split('?')[0].endsWith('.svg');
-      if (isSvg) {
+
+      // 拡張子 + Content-Type の両方で SVG 判定（クエリ付き URL / 拡張子なし CDN 対策）
+      const pathIsSvg = url.toLowerCase().split('?')[0].endsWith('.svg');
+      const typeIsSvg = (res.headers.get('content-type') || '').toLowerCase().includes('image/svg');
+      if (pathIsSvg || typeIsSvg) {
         const text = await res.text();
-        const cleanSvg = text.replace(/[\r\n]+/g, ' ').trim();
-        const dataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(cleanSvg);
-        result = result.replace(full, '![' + alt + '](<' + dataUrl + '>)');
-      } else {
-        const blob = await res.blob();
-        const dataUrl = await new Promise((resolve, reject) => {
-          const fr = new FileReader();
-          fr.onload = () => resolve(fr.result);
-          fr.onerror = reject;
-          fr.readAsDataURL(blob);
-        });
-        result = result.replace(full, '![' + alt + '](<' + dataUrl + '>)');
+        result = result.replace(full, '![' + alt + '](<' + toSvgUtf8DataUrl(text) + '>)');
+        continue;
       }
+
+      // SVG 以外（jpg, png 等）は従来通り Base64 化
+      const blob = await res.blob();
+      if ((blob.type || '').toLowerCase().includes('image/svg')) {
+        const text = await blob.text();
+        result = result.replace(full, '![' + alt + '](<' + toSvgUtf8DataUrl(text) + '>)');
+        continue;
+      }
+      const dataUrl = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = reject;
+        fr.readAsDataURL(blob);
+      });
+      result = result.replace(full, '![' + alt + '](<' + dataUrl + '>)');
     } catch (err) {
       console.warn('[Aether Export] image inline failed:', url, err);
     }
