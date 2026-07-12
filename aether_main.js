@@ -322,8 +322,9 @@ function switchTab(tabId) {
 
 function parseMarkdownImage(text) {
   if (!text) return '';
-  return text.replace(/!\[([^\]]*)\]\s*\(([^)]+)\)/g, (match, alt, url) => {
-    return '<img src="' + url.trim() + '" alt="' + alt + '" class="details-image">';
+  return text.replace(/!\[([^\]]*)\]\s*\((?:<([^>]+)>|([^)]+))\)/g, (match, alt, urlAngle, urlPlain) => {
+    const url = String(urlAngle || urlPlain || '').trim();
+    return '<img src="' + url + '" alt="' + alt + '" class="details-image">';
   });
 }
 
@@ -703,7 +704,8 @@ async function inlineRemoteImagesInDsl(dslText) {
   for (const match of matches) {
     const full = match[0];
     const alt = match[1];
-    const url = match[2].trim();
+    let url = match[2].trim();
+    if (url.startsWith('<') && url.endsWith('>')) url = url.slice(1, -1).trim();
     if (!url || url.startsWith('data:')) continue;
     if (!(url.startsWith('http://') || url.startsWith('https://'))) continue;
     try {

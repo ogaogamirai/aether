@@ -1,0 +1,73 @@
+# Aether DSL — テストデータ（SVG/RGB表示確認用）
+# 目的: ノヴァが実装するSVGインライン化と、各種色の表示確認用
+
+sticky TEST_GOAL "SVG・RGB 表示テスト" {
+  pos: 100 100
+  color: "blue"
+  tags: "テスト"
+  time: "1_前提"
+  desc: "このDSLは、Aetherで以下の機能が正しく動作するか検証するためのものです。\n\n・【SVGのインライン化】Base64にならずテキスト/SVG-URIとして埋め込めるか\n・【RGB発色】各種カラー付箋が正常にグラフィカルに表示されるか"
+}
+
+sticky TEST_SVG "SVG画像の表示（インライン直埋め込み）" {
+  pos: 400 100
+  color: "orange"
+  tags: "テスト 画像"
+  time: "1_前提"
+  desc: "外部通信を一切行わない、インライン埋め込み済みのSVGが正常に表示されるかテストします。\n\n![Inline W3C SVG](data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%20width%3D%2250%22%20height%3D%2250%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2240%22%20fill%3D%22%233b82f6%22%2F%3E%3Ctext%20x%3D%2250%22%20y%3D%2255%22%20fill%3D%22white%22%20font-size%3D%2220%22%20text-anchor%3D%22middle%22%20font-family%3D%22sans-serif%22%3ESVG%3C%2Ftext%3E%3C%2Fsvg%3E)\n\n（※通信を発生させないため、ブラウザのブロックを回避して必ず青い円と『SVG』の文字が表示されます）"
+}
+
+sticky COLOR_RED "赤色付箋" {
+  pos: 100 300
+  color: "red"
+  tags: "テスト カラー"
+  time: "2_三立場"
+  desc: "カラー：red"
+}
+
+sticky COLOR_BLUE "青色付箋" {
+  pos: 280 300
+  color: "blue"
+  tags: "テスト カラー"
+  time: "2_三立場"
+  desc: "カラー：blue"
+}
+
+sticky COLOR_GREEN "緑色付箋" {
+  pos: 460 300
+  color: "green"
+  tags: "テスト カラー"
+  time: "2_三立場"
+  desc: "カラー：green"
+}
+
+sticky COLOR_PURPLE "紫色付箋" {
+  pos: 100 450
+  color: "purple"
+  tags: "テスト カラー"
+  time: "2_三立場"
+  desc: "カラー：purple"
+}
+
+sticky COLOR_YELLOW "黄色付箋" {
+  pos: 280 450
+  color: "yellow"
+  tags: "テスト カラー"
+  time: "2_三立場"
+  desc: "カラー：yellow"
+}
+
+sticky COLOR_ORANGE "橙色付箋" {
+  pos: 460 450
+  color: "orange"
+  tags: "テスト カラー"
+  time: "2_三立場"
+  desc: "カラー：orange"
+}
+
+# リレーションの確認
+TEST_GOAL -> TEST_SVG {
+  type: "influence"
+  label: "画像テストへ"
+  color: "blue"
+}
