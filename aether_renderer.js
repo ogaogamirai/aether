@@ -21,10 +21,37 @@ function isTimeVisible(timeProp) {
   return targetIdx <= activeIdx;
 }
 
+// 配布HTML(eval分割)でも確実にDOMを取る
+function resolveNotesContainer() {
+  if (typeof refreshCanvasRefs === 'function') refreshCanvasRefs();
+  if (typeof getCanvasRefs === 'function') {
+    const refs = getCanvasRefs();
+    if (refs && refs.notesContainer) return refs.notesContainer;
+  }
+  return (typeof window !== 'undefined' && window.notesContainer)
+    || document.getElementById('notes-container');
+}
+
+function resolveSvgLayer() {
+  if (typeof refreshCanvasRefs === 'function') refreshCanvasRefs();
+  if (typeof getCanvasRefs === 'function') {
+    const refs = getCanvasRefs();
+    if (refs && refs.svgLayer) return refs.svgLayer;
+  }
+  return (typeof window !== 'undefined' && window.svgLayer)
+    || document.getElementById('svg-layer');
+}
+
+function appendToSvg(node) {
+  const layer = resolveSvgLayer();
+  if (!layer || !node) return;
+  layer.appendChild(node);
+}
+
 // Render nodes & connections on screen
 function renderCanvas() {
   if (typeof setupCanvasInteractions === 'function') setupCanvasInteractions();
-  if (typeof refreshCanvasRefs === 'function') refreshCanvasRefs();
+  const notesContainer = resolveNotesContainer();
   if (!notesContainer) {
     console.error('[Aether] notesContainer missing');
     return;
@@ -109,7 +136,7 @@ function renderCanvas() {
 
 // Draw all elements on SVG layer
 function drawAllShapes() {
-  if (typeof refreshCanvasRefs === 'function') refreshCanvasRefs();
+  const svgLayer = resolveSvgLayer();
   if (!svgLayer) {
     console.error('[Aether] svgLayer missing');
     return;
@@ -117,7 +144,7 @@ function drawAllShapes() {
   // Preserve marker/filter defs while clearing drawn shapes
   const defs = svgLayer.querySelector('defs');
   svgLayer.innerHTML = '';
-  if (defs) svgLayer.appendChild(defs);
+  if (defs) appendToSvg(defs);
   
   // 1. Draw area backdrops
   drawings.forEach(dw => {
@@ -194,7 +221,7 @@ function drawLineBetween(source, target, strokeColor, strokeWidth, dashArray = '
     }
   }
   
-  svgLayer.appendChild(line);
+  appendToSvg(line);
 }
 
 function drawCurveArrow(dw) {
@@ -262,8 +289,8 @@ function drawCurveArrow(dw) {
     }
   }
 
-  svgLayer.appendChild(path);
-  svgLayer.appendChild(text);
+  appendToSvg(path);
+  appendToSvg(text);
 }
 
 function drawCircleArea(dw) {
@@ -323,8 +350,8 @@ function drawCircleArea(dw) {
     }
   }
 
-  svgLayer.appendChild(rect);
-  svgLayer.appendChild(text);
+  appendToSvg(rect);
+  appendToSvg(text);
 }
 
 // Draw Preset Vector Icon (Approach A - anchor relative / absolute fallback)
@@ -393,7 +420,7 @@ function drawPresetIcon(dw) {
   group.appendChild(rect);
   group.appendChild(path);
   group.appendChild(text);
-  svgLayer.appendChild(group);
+  appendToSvg(group);
 }
 
 // Draw semantic relation edges v3.0 (conflict, influence, similarity, default)
@@ -446,7 +473,7 @@ function drawRelation(rel) {
     path.setAttribute('fill', 'none');
     path.setAttribute('stroke-width', '2');
     if (isDimmed) path.setAttribute('class', 'dimmed');
-    svgLayer.appendChild(path);
+    appendToSvg(path);
 
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     text.setAttribute('x', sx + dx/2);
@@ -455,7 +482,7 @@ function drawRelation(rel) {
     text.setAttribute('text-anchor', 'middle');
     text.textContent = '⚡';
     if (isDimmed) text.setAttribute('class', 'dimmed');
-    svgLayer.appendChild(text);
+    appendToSvg(text);
 
     if (rel.label) {
       const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -468,7 +495,7 @@ function drawRelation(rel) {
       label.setAttribute('text-anchor', 'middle');
       label.textContent = rel.label;
       if (isDimmed) label.setAttribute('class', 'dimmed');
-      svgLayer.appendChild(label);
+      appendToSvg(label);
     }
   } 
   else if (rel.type === 'influence') {
@@ -490,7 +517,7 @@ function drawRelation(rel) {
     
     const markerId = `arrow-${rel.color}` || 'arrow-default';
     path.setAttribute('marker-end', `url(#${markerId})`);
-    svgLayer.appendChild(path);
+    appendToSvg(path);
 
     if (rel.label) {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -502,7 +529,7 @@ function drawRelation(rel) {
       text.setAttribute('text-anchor', 'middle');
       text.textContent = rel.label;
       if (isDimmed) text.setAttribute('class', 'dimmed');
-      svgLayer.appendChild(text);
+      appendToSvg(text);
     }
   }
   else if (rel.type === 'similarity') {
@@ -517,7 +544,7 @@ function drawRelation(rel) {
     line1.setAttribute('stroke', colorHex);
     line1.setAttribute('stroke-width', '1.5');
     if (isDimmed) line1.setAttribute('class', 'dimmed');
-    svgLayer.appendChild(line1);
+    appendToSvg(line1);
 
     const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line2.setAttribute('x1', sx - nx * 4);
@@ -527,7 +554,7 @@ function drawRelation(rel) {
     line2.setAttribute('stroke', colorHex);
     line2.setAttribute('stroke-width', '1.5');
     if (isDimmed) line2.setAttribute('class', 'dimmed');
-    svgLayer.appendChild(line2);
+    appendToSvg(line2);
 
     if (rel.label) {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -539,7 +566,7 @@ function drawRelation(rel) {
       text.setAttribute('text-anchor', 'middle');
       text.textContent = rel.label;
       if (isDimmed) text.setAttribute('class', 'dimmed');
-      svgLayer.appendChild(text);
+      appendToSvg(text);
     }
   }
   else {
@@ -553,7 +580,7 @@ function drawRelation(rel) {
     if (isDimmed) path.setAttribute('class', 'dimmed');
     const markerId = `arrow-${rel.color}` || 'arrow-default';
     path.setAttribute('marker-end', `url(#${markerId})`);
-    svgLayer.appendChild(path);
+    appendToSvg(path);
 
     if (rel.label) {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -565,7 +592,7 @@ function drawRelation(rel) {
       text.setAttribute('text-anchor', 'middle');
       text.textContent = rel.label;
       if (isDimmed) text.setAttribute('class', 'dimmed');
-      svgLayer.appendChild(text);
+      appendToSvg(text);
     }
   }
 }

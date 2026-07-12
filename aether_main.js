@@ -101,26 +101,44 @@ function handleTimeSlider(value) {
   renderCanvas();
 }
 
-let container = null;
-let transformLayer = null;
-let notesContainer = null;
-let svgLayer = null;
-let canvasInteractionsReady = false;
-
+// キャンバスDOM参照は window 上に置く（配布HTMLの eval 分割でも共有される）
+// ※ let は eval 間で共有されないため使わない
 function refreshCanvasRefs() {
-  container = document.getElementById('canvas-container');
-  transformLayer = document.getElementById('canvas-transform');
-  notesContainer = document.getElementById('notes-container');
-  svgLayer = document.getElementById('svg-layer');
-  return !!(container && transformLayer && notesContainer && svgLayer);
+  window.aetherContainer = document.getElementById('canvas-container');
+  window.aetherTransformLayer = document.getElementById('canvas-transform');
+  window.aetherNotesContainer = document.getElementById('notes-container');
+  window.aetherSvgLayer = document.getElementById('svg-layer');
+  // 互換エイリアス（renderer / 既存コード）
+  window.container = window.aetherContainer;
+  window.transformLayer = window.aetherTransformLayer;
+  window.notesContainer = window.aetherNotesContainer;
+  window.svgLayer = window.aetherSvgLayer;
+  return !!(window.aetherContainer && window.aetherTransformLayer && window.aetherNotesContainer && window.aetherSvgLayer);
 }
+
+function getCanvasRefs() {
+  if (!window.aetherNotesContainer || !window.aetherSvgLayer) refreshCanvasRefs();
+  return {
+    container: window.aetherContainer || document.getElementById('canvas-container'),
+    transformLayer: window.aetherTransformLayer || document.getElementById('canvas-transform'),
+    notesContainer: window.aetherNotesContainer || document.getElementById('notes-container'),
+    svgLayer: window.aetherSvgLayer || document.getElementById('svg-layer')
+  };
+}
+
+let canvasInteractionsReady = false;
 
 function setupCanvasInteractions() {
   if (canvasInteractionsReady) return refreshCanvasRefs();
   if (!refreshCanvasRefs()) return false;
 
-  container.addEventListener('mousedown', (e) => {
-    if (e.target === container || e.target === svgLayer) {
+  const refs = getCanvasRefs();
+  const containerEl = refs.container;
+  const svgEl = refs.svgLayer;
+  if (!containerEl) return false;
+
+  containerEl.addEventListener('mousedown', (e) => {
+    if (e.target === containerEl || e.target === svgEl) {
       isDragging = true;
       startX = e.clientX - panX;
       startY = e.clientY - panY;
@@ -139,7 +157,7 @@ function setupCanvasInteractions() {
     isDragging = false;
   });
 
-  container.addEventListener('wheel', (e) => {
+  containerEl.addEventListener('wheel', (e) => {
     e.preventDefault();
     const zoomFactor = 0.05;
     if (e.deltaY < 0) scale = Math.min(scale + zoomFactor, 2.0);
@@ -155,8 +173,9 @@ function setupCanvasInteractions() {
 setupCanvasInteractions();
 
 function updateTransform() {
-  if (!transformLayer && !refreshCanvasRefs()) return;
-  transformLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+  const refs = getCanvasRefs();
+  if (!refs.transformLayer) return;
+  refs.transformLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
   const indicator = document.getElementById('scale-indicator');
   if (indicator) indicator.textContent = `${Math.round(scale * 100)}%`;
 }
@@ -176,9 +195,10 @@ function resetTransform() {
 // 上部UI（タグバー・時系列スライダー）を避けた表示余白を測る
 function getFitChromePadding() {
   const pad = { top: 40, right: 32, bottom: 36, left: 32 };
-  if (!container) return pad;
+  const refs = getCanvasRefs();
+  if (!refs.container) return pad;
 
-  const cr = container.getBoundingClientRect();
+  const cr = refs.container.getBoundingClientRect();
 
   const tags = document.getElementById('tags-filter-bar');
   if (tags && tags.offsetParent !== null && tags.children.length > 0) {
@@ -197,7 +217,8 @@ function getFitChromePadding() {
 
 // グラフ全体を、オーバーレイUIに重ならない領域へ収めて表示（Fキー）
 function fitToView() {
-  if (!container || !transformLayer) {
+  const refs = getCanvasRefs();
+  if (!refs.container || !refs.transformLayer) {
     resetTransform();
     return;
   }
@@ -265,8 +286,8 @@ function fitToView() {
   maxY += contentPad;
 
   const chrome = getFitChromePadding();
-  const viewW = Math.max(120, container.clientWidth - chrome.left - chrome.right);
-  const viewH = Math.max(120, container.clientHeight - chrome.top - chrome.bottom);
+  const viewW = Math.max(120, refs.container.clientWidth - chrome.left - chrome.right);
+  const viewH = Math.max(120, refs.container.clientHeight - chrome.top - chrome.bottom);
   const contentW = Math.max(1, maxX - minX);
   const contentH = Math.max(1, maxY - minY);
 
