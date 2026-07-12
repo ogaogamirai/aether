@@ -709,14 +709,22 @@ async function inlineRemoteImagesInDsl(dslText) {
     try {
       const res = await fetch(url);
       if (!res.ok) continue;
-      const blob = await res.blob();
-      const dataUrl = await new Promise((resolve, reject) => {
-        const fr = new FileReader();
-        fr.onload = () => resolve(fr.result);
-        fr.onerror = reject;
-        fr.readAsDataURL(blob);
-      });
-      result = result.replace(full, '![' + alt + '](' + dataUrl + ')');
+      const isSvg = url.toLowerCase().split('?')[0].endsWith('.svg');
+      if (isSvg) {
+        const text = await res.text();
+        const cleanSvg = text.replace(/[\r\n]+/g, ' ').trim();
+        const dataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(cleanSvg);
+        result = result.replace(full, '![' + alt + '](<' + dataUrl + '>)');
+      } else {
+        const blob = await res.blob();
+        const dataUrl = await new Promise((resolve, reject) => {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = reject;
+          fr.readAsDataURL(blob);
+        });
+        result = result.replace(full, '![' + alt + '](<' + dataUrl + '>)');
+      }
     } catch (err) {
       console.warn('[Aether Export] image inline failed:', url, err);
     }
@@ -1059,11 +1067,8 @@ function exportDSLToFile() {
 
 const DEFAULT_DSL = "# Aether DSL Auto-Saved v3.0\n\nsticky Origin_J \"日本人起源論\" {\n  pos: 420 80\n  color: \"blue\"\n  tags: \"全体概要\"\n  desc: \"日本列島の人間集団がどのような系譜や混血プロセスを経て形成されたかを探る学術・文化論。古くは単一起源説から始まり、混血説、二重構造、そして現代ゲノム科学による三重構造モデルへと進化を遂げている。\"\n}\n\nsticky Y_D1a2a \"Y染色体D1a2a系統\" {\n  pos: 100 250\n  color: \"purple\"\n  tags: \"科学・論文説\"\n  desc: \"東アジアの他地域ではほぼ見られない日本列島特有のY染色体系統（約35%）。世界的にはチベットに親縁系統が存在し、縄文男系系譜を引き継ぐ証拠とされる。\\n\\nアインシュタインの方程式：$ E = mc^2 $\\n頻度の正規分布モデル：$$ f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{1}{2}\\left(\\frac{x-\\mu}{\\sigma}\\right)^2} $$\\n\\n![ゲノムDNA解析イメージ](https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=400)\"\n  time: \"1_縄文期\"\n  tone: \"stable\"\n}\n\nsticky Jomon_Single \"単一縄文人起源説\" {\n  pos: 420 250\n  color: \"green\"\n  tags: \"考古学・従来説\"\n  desc: \"日本列島の住民は、外部からの大規模な混血を経ずに、縄文人が直接的に現代日本人へと進化したとする極めて初期の説。近代以降の骨格比較研究やゲノム解析により、現在はこの仮説は否定されている。\"\n  time: \"1_縄文期\"\n  tone: \"tension\"\n}\n\nsticky Dual_Structure \"二重構造モデル (埴原和郎)\" {\n  pos: 740 250\n  color: \"green\"\n  tags: \"考古学・従来説\"\n  desc: \"1991年に人類学者・埴原和郎が提唱した定説。日本人は「東南アジア系祖先から派生した縄文人」と、「北東アジア系祖先から派生し弥生時代に大挙渡来した渡来人」の二重の系統の混血によって形成されたとする。\"\n  time: \"2_弥生期\"\n}\n\nsticky Triple_Structure \"現代ゲノムの三重構造モデル\" {\n  pos: 420 450\n  color: \"purple\"\n  tags: \"科学・論文説\"\n  desc: \"2021年の古代DNA解析によって提唱された最新モデル。従来の「縄文・弥生」の二重構造に加え、古墳時代に大陸から大量の「第3の祖先集団（東アジア系）」が渡来し現代日本人の遺伝的ベースを決定づけたとする説。\\n\\n| 祖先集団 | 推定割合 | 主な流入時期 |\\n|---|---|---|\\n| 縄文系 | 約13% | 縄文時代以前 |\\n| 弥生系 | 約30% | 弥生時代 |\\n| 古墳系 | 約57% | 古墳時代 |\"\n  time: \"3_古墳期\"\n}\n\nsticky SC_Paper_2021 \"2021年ゲノム解析論文\" {\n  pos: 100 450\n  color: \"purple\"\n  tags: \"科学・論文説\"\n  desc: \"金沢大学や理化学研究所などの共同研究チームがサイエンス誌の姉妹紙に発表した画期的な論文。縄文人・弥生人・古墳人の古代ゲノムを解読し、現代日本人のルーツが古墳時代に完成した『三重構造』であることを初めて実証した。\"\n  time: \"3_古墳期\"\n}\n\nsticky YT_Lost_Tribes \"日ユ同祖論 (失われた10支族)\" {\n  pos: 740 650\n  color: \"yellow\"\n  tags: \"YouTube・オカルト説\"\n  desc: \"古代イスラエルの失われた10支族の一部が日本列島に渡来し、大和民族の祖先および皇室のルーツになったとする説。言語や神道儀礼の類似性が指摘されるが、学術的な歴史学やゲノム科学からはオカルト（疑似科学）と分類される。\"\n  time: \"4_現代ネット言説\"\n}\n\nsticky YT_D_Special \"D系統神秘論 (神の遺伝子)\" {\n  pos: 420 650\n  color: \"yellow\"\n  tags: \"YouTube・オカルト説\"\n  desc: \"Y染色体ハプログループD系統（D1a2a）を、「神に選ばれた特別な遺伝子」「超能力や高い霊性の源」などと神秘主義的に解釈するYouTube動画やSNS上の通説。科学的なY染色体の単なる突然変異データを飛躍させ、ナショナリズムに結びつけたものである。\"\n  time: \"4_現代ネット言説\"\n  tone: \"excited\"\n}\n\ndrawing SC_AREA \"現代ゲノム科学検証領域\" {\n  type: \"circle-area\"\n  style: \"solid\"\n  color: \"purple\"\n  offset: 0 0\n  pos: 100 100\n  targets: \"Y_D1a2a SC_Paper_2021 Triple_Structure\"\n  tags: \"科学・論文説\"\n  time: \"3_古墳期\"\n}\n\ndrawing IC_DNA \"DNAゲノムデータ\" {\n  type: \"icon\"\n  style: \"database\"\n  color: \"purple\"\n  anchor: \"SC_Paper_2021\"\n  offset: -120 0\n  tags: \"科学・論文説\"\n  time: \"3_古墳期\"\n}\n\ndrawing IC_YT \"動画メディアの拡散\" {\n  type: \"icon\"\n  style: \"brain\"\n  color: \"yellow\"\n  anchor: \"YT_D_Special\"\n  offset: 140 0\n  tags: \"YouTube・オカルト説\"\n  time: \"4_現代ネット言説\"\n}\n\nrelation Y_D1a2a -> YT_D_Special {\n  type: \"conflict\"\n  label: \"学術的突然変異 vs 神秘主義的解釈\"\n  color: \"red\"\n  tags: \"YouTube・オカルト説\"\n  time: \"4_現代ネット言説\"\n}\n\nrelation YT_Lost_Tribes -> YT_D_Special {\n  type: \"influence\"\n  label: \"古代イスラエル結びつけの補強\"\n  color: \"yellow\"\n  tags: \"YouTube・オカルト説\"\n  time: \"4_現代ネット言説\"\n}\n\nrelation Dual_Structure -> Triple_Structure {\n  type: \"influence\"\n  label: \"ゲノム解析による精緻化\"\n  color: \"green\"\n  tags: \"科学・論文説\"\n  time: \"3_古墳期\"\n}\n\nrelation SC_Paper_2021 -> Triple_Structure {\n  type: \"similarity\"\n  label: \"古墳人DNAからの裏付け\"\n  color: \"purple\"\n  tags: \"科学・論文説\"\n  time: \"3_古墳期\"\n}\n\nrelation Jomon_Single -> Dual_Structure {\n  type: \"conflict\"\n  label: \"混血度合いを巡る対立\"\n  color: \"yellow\"\n  tags: \"考古学・従来説\"\n  time: \"2_弥生期\"\n}\n\nOrigin_J -> Y_D1a2a\nOrigin_J -> Jomon_Single\nOrigin_J -> Dual_Structure\n";
 
-// Boot: IndexedDB restore → default DSL, drag&drop ready. No polling / no API.
-window.onload = async () => {
-  setupCanvasInteractions();
-  setupDragAndDrop();
-
+// Boot helpers: IndexedDB restore → DEFAULT_DSL
+async function applyDefaultOrCachedDsl() {
   try {
     const savedDSL = await loadFromDB();
     if (savedDSL && String(savedDSL).trim()) {
@@ -1079,4 +1084,31 @@ window.onload = async () => {
   document.getElementById('dsl-input').value = DEFAULT_DSL;
   applyDSL();
   console.log('[Aether UI] Serverless whiteboard ready.');
+}
+
+// Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
+window.onload = async () => {
+  setupCanvasInteractions();
+  setupDragAndDrop();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const dslUrl = urlParams.get('dsl');
+  if (dslUrl) {
+    try {
+      showToast('外部DSLを読み込み中...', 'success');
+      const res = await fetch(dslUrl);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+
+      document.getElementById('dsl-input').value = text;
+      applyDSL();
+      showToast('外部DSLの読み込みに成功しました', 'success');
+    } catch (err) {
+      console.warn('[Aether Init] Failed to load remote DSL via query param:', err);
+      showToast('外部DSLの読み込みに失敗しました。デフォルトを適用します。', 'error');
+      await applyDefaultOrCachedDsl();
+    }
+  } else {
+    await applyDefaultOrCachedDsl();
+  }
 };
