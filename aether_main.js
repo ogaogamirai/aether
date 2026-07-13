@@ -108,6 +108,12 @@ function handleTimeSlider(value) {
 
   renderCanvas();
   updatePresentationStepName();
+
+  if (isPresentationMode) {
+    setTimeout(() => {
+      focusPresentationStepView();
+    }, 50);
+  }
 }
 
 function togglePresentationMode(forceState) {
@@ -127,9 +133,6 @@ function togglePresentationMode(forceState) {
       slider.value = defaultIdx;
     }
     handleTimeSlider(defaultIdx);
-    setTimeout(() => {
-      fitToView();
-    }, 100);
     showToast('プレゼンテーションモードを開始しました (Ctrl+← / Ctrl+→ で移動)', 'success');
   } else {
     if (controller) controller.style.display = 'none';
@@ -148,6 +151,121 @@ function updatePresentationStepName() {
   }
 }
 
+// 現在ステップで「新たに表示される」付箋（先頭1枚）
+function getFirstNoteForCurrentStep() {
+  const sourceNotes = (typeof notes !== 'undefined' && notes) ? notes : [];
+  if (!sourceNotes.length) return null;
+
+  if (activeTime) {
+    const newcomers = sourceNotes.filter(n => n.time === activeTime);
+    if (newcomers.length) return newcomers[0];
+  }
+
+  const visible = sourceNotes.filter(n => {
+    if (typeof isTimeVisible === 'function') return isTimeVisible(n.time);
+    return true;
+  });
+  return visible[0] || sourceNotes[0] || null;
+}
+
+// プレゼン step 用ビュー:
+// - 新規表示の先頭1枚を選択・詳細表示
+// - 倍率は表示中グラフの横幅が最大で収まる値
+// - 上下は選択付箋が画面縦中央になるようパン
+function focusPresentationStepView() {
+  const refs = getCanvasRefs();
+  if (!refs.container || !refs.transformLayer) return;
+
+  const panel = document.getElementById('control-panel');
+  if (panel && panel.classList.contains('collapsed')) {
+    panel.classList.remove('collapsed');
+    const btn = document.getElementById('sidebar-toggle-btn');
+    if (btn) {
+      btn.textContent = '◀';
+      btn.title = 'サイドバーを閉じる';
+    }
+  }
+
+  const focusNote = getFirstNoteForCurrentStep();
+  if (focusNote && typeof showNodeDetails === 'function') {
+    showNodeDetails(focusNote);
+  }
+
+  const sourceNotes = (typeof notes !== 'undefined' && notes) ? notes : [];
+  const visible = sourceNotes.filter(n => {
+    if (typeof isTimeVisible === 'function') return isTimeVisible(n.time);
+    return true;
+  });
+  const targets = visible.length ? visible : sourceNotes;
+  if (!targets.length) return;
+
+  const NOTE_W = 180;
+  const NOTE_H = 160;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  targets.forEach(note => {
+    const el = document.getElementById('note-' + note.id);
+    const w = el && el.offsetWidth ? el.offsetWidth : NOTE_W;
+    const h = el && el.offsetHeight ? el.offsetHeight : NOTE_H;
+    minX = Math.min(minX, note.x);
+    minY = Math.min(minY, note.y);
+    maxX = Math.max(maxX, note.x + w);
+    maxY = Math.max(maxY, note.y + h);
+  });
+
+  if (typeof drawings !== 'undefined' && drawings && drawings.length) {
+    drawings.forEach(d => {
+      if (typeof isTimeVisible === 'function' && d.time && !isTimeVisible(d.time)) return;
+      if (d.type === 'icon' && d.anchor) {
+        const anchor = sourceNotes.find(n => n.id === d.anchor);
+        if (!anchor) return;
+        const ox = (d.offset && d.offset[0]) || 0;
+        const oy = (d.offset && d.offset[1]) || 0;
+        const ix = anchor.x + ox;
+        const iy = anchor.y + oy;
+        minX = Math.min(minX, ix - 20);
+        minY = Math.min(minY, iy - 20);
+        maxX = Math.max(maxX, ix + 40);
+        maxY = Math.max(maxY, iy + 40);
+      }
+    });
+  }
+
+  if (!isFinite(minX) || !isFinite(maxX)) return;
+
+  const contentPad = 24;
+  minX -= contentPad;
+  maxX += contentPad;
+
+  const chrome = getFitChromePadding();
+  const viewW = Math.max(120, refs.container.clientWidth - chrome.left - chrome.right);
+  const viewH = Math.max(120, refs.container.clientHeight - chrome.top - chrome.bottom);
+  const contentW = Math.max(1, maxX - minX);
+
+  // 横幅優先フィット（縦ははみ出しても可）
+  const fitScale = viewW / contentW;
+  scale = Math.max(0.15, Math.min(2.0, fitScale * 0.98));
+
+  // 横: 表示グラフを中央寄せ
+  panX = chrome.left + (viewW - contentW * scale) / 2 - minX * scale;
+
+  // 縦: 選択付箋の中心を表示領域の縦中央へ
+  if (focusNote) {
+    const el = document.getElementById('note-' + focusNote.id);
+    const h = el && el.offsetHeight ? el.offsetHeight : NOTE_H;
+    const focusCenterY = focusNote.y + h / 2;
+    panY = chrome.top + viewH / 2 - focusCenterY * scale;
+  } else {
+    const contentH = Math.max(1, (maxY + contentPad) - (minY - contentPad));
+    panY = chrome.top + (viewH - contentH * scale) / 2 - (minY - contentPad) * scale;
+  }
+
+  updateTransform();
+}
+
 function nextPresentationStep() {
   if (!timeSteps.length) return;
   const slider = document.getElementById('time-slider');
@@ -159,9 +277,6 @@ function nextPresentationStep() {
   }
   slider.value = nextIdx;
   handleTimeSlider(nextIdx);
-  setTimeout(() => {
-    fitToView();
-  }, 50);
 }
 
 function prevPresentationStep() {
@@ -175,9 +290,6 @@ function prevPresentationStep() {
   }
   slider.value = prevIdx;
   handleTimeSlider(prevIdx);
-  setTimeout(() => {
-    fitToView();
-  }, 50);
 }
 
 
