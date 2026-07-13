@@ -170,8 +170,8 @@ function getFirstNoteForCurrentStep() {
 
 // プレゼン step 用ビュー:
 // - 新規表示の先頭1枚を選択・詳細表示
-// - 倍率は表示中グラフの横幅が最大で収まる値
-// - 上下は選択付箋が画面縦中央になるようパン
+// - 倍率は「ホワイトボード領域（詳細パネルを含まない）」の横幅に最大フィット
+// - 上下は選択付箋がグラフエリア縦中央（上下見切れ可）
 function focusPresentationStepView() {
   const refs = getCanvasRefs();
   if (!refs.container || !refs.transformLayer) return;
@@ -191,79 +191,75 @@ function focusPresentationStepView() {
     showNodeDetails(focusNote);
   }
 
-  const sourceNotes = (typeof notes !== 'undefined' && notes) ? notes : [];
-  const visible = sourceNotes.filter(n => {
-    if (typeof isTimeVisible === 'function') return isTimeVisible(n.time);
-    return true;
-  });
-  const targets = visible.length ? visible : sourceNotes;
-  if (!targets.length) return;
+  // サイドバー開閉直後に幅が確定してからフィット
+  requestAnimationFrame(() => {
+    const container = getCanvasRefs().container;
+    if (!container) return;
 
-  const NOTE_W = 180;
-  const NOTE_H = 160;
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-
-  targets.forEach(note => {
-    const el = document.getElementById('note-' + note.id);
-    const w = el && el.offsetWidth ? el.offsetWidth : NOTE_W;
-    const h = el && el.offsetHeight ? el.offsetHeight : NOTE_H;
-    minX = Math.min(minX, note.x);
-    minY = Math.min(minY, note.y);
-    maxX = Math.max(maxX, note.x + w);
-    maxY = Math.max(maxY, note.y + h);
-  });
-
-  if (typeof drawings !== 'undefined' && drawings && drawings.length) {
-    drawings.forEach(d => {
-      if (typeof isTimeVisible === 'function' && d.time && !isTimeVisible(d.time)) return;
-      if (d.type === 'icon' && d.anchor) {
-        const anchor = sourceNotes.find(n => n.id === d.anchor);
-        if (!anchor) return;
-        const ox = (d.offset && d.offset[0]) || 0;
-        const oy = (d.offset && d.offset[1]) || 0;
-        const ix = anchor.x + ox;
-        const iy = anchor.y + oy;
-        minX = Math.min(minX, ix - 20);
-        minY = Math.min(minY, iy - 20);
-        maxX = Math.max(maxX, ix + 40);
-        maxY = Math.max(maxY, iy + 40);
-      }
+    const sourceNotes = (typeof notes !== 'undefined' && notes) ? notes : [];
+    const visible = sourceNotes.filter(n => {
+      if (typeof isTimeVisible === 'function') return isTimeVisible(n.time);
+      return true;
     });
-  }
+    const targets = visible.length ? visible : sourceNotes;
+    if (!targets.length) return;
 
-  if (!isFinite(minX) || !isFinite(maxX)) return;
+    const NOTE_W = 180;
+    const NOTE_H = 160;
+    let minX = Infinity;
+    let maxX = -Infinity;
 
-  const contentPad = 24;
-  minX -= contentPad;
-  maxX += contentPad;
+    targets.forEach(note => {
+      const el = document.getElementById('note-' + note.id);
+      const w = el && el.offsetWidth ? el.offsetWidth : NOTE_W;
+      minX = Math.min(minX, note.x);
+      maxX = Math.max(maxX, note.x + w);
+    });
 
-  const chrome = getFitChromePadding();
-  const viewW = Math.max(120, refs.container.clientWidth - chrome.left - chrome.right);
-  const viewH = Math.max(120, refs.container.clientHeight - chrome.top - chrome.bottom);
-  const contentW = Math.max(1, maxX - minX);
+    if (typeof drawings !== 'undefined' && drawings && drawings.length) {
+      drawings.forEach(d => {
+        if (typeof isTimeVisible === 'function' && d.time && !isTimeVisible(d.time)) return;
+        if (d.type === 'icon' && d.anchor) {
+          const anchor = sourceNotes.find(n => n.id === d.anchor);
+          if (!anchor) return;
+          const ox = (d.offset && d.offset[0]) || 0;
+          const ix = anchor.x + ox;
+          minX = Math.min(minX, ix - 20);
+          maxX = Math.max(maxX, ix + 40);
+        }
+      });
+    }
 
-  // 横幅優先フィット（縦ははみ出しても可）
-  const fitScale = viewW / contentW;
-  scale = Math.max(0.15, Math.min(2.0, fitScale * 0.98));
+    if (!isFinite(minX) || !isFinite(maxX)) return;
 
-  // 横: 表示グラフを中央寄せ
-  panX = chrome.left + (viewW - contentW * scale) / 2 - minX * scale;
+    const contentPad = 16;
+    minX -= contentPad;
+    maxX += contentPad;
+    const contentW = Math.max(1, maxX - minX);
 
-  // 縦: 選択付箋の中心を表示領域の縦中央へ
-  if (focusNote) {
-    const el = document.getElementById('note-' + focusNote.id);
-    const h = el && el.offsetHeight ? el.offsetHeight : NOTE_H;
-    const focusCenterY = focusNote.y + h / 2;
-    panY = chrome.top + viewH / 2 - focusCenterY * scale;
-  } else {
-    const contentH = Math.max(1, (maxY + contentPad) - (minY - contentPad));
-    panY = chrome.top + (viewH - contentH * scale) / 2 - (minY - contentPad) * scale;
-  }
+    // グラフエリア（whiteboard）の実幅のみを使う。詳細パネル幅は含めない。
+    const sidePad = 16;
+    const viewW = Math.max(120, container.clientWidth - sidePad * 2);
+    const viewH = Math.max(120, container.clientHeight);
 
-  updateTransform();
+    // 横幅最大フィット（縦制約なし・上下見切れ可）
+    scale = Math.max(0.15, Math.min(3.0, (viewW / contentW) * 0.99));
+
+    // 横: グラフエリア内で中央
+    panX = sidePad + (viewW - contentW * scale) / 2 - minX * scale;
+
+    // 縦: 選択付箋中心をグラフエリアの縦中央へ
+    if (focusNote) {
+      const el = document.getElementById('note-' + focusNote.id);
+      const h = el && el.offsetHeight ? el.offsetHeight : NOTE_H;
+      const focusCenterY = focusNote.y + h / 2;
+      panY = viewH / 2 - focusCenterY * scale;
+    } else {
+      panY = 0;
+    }
+
+    updateTransform();
+  });
 }
 
 function nextPresentationStep() {
@@ -384,9 +380,10 @@ function resetTransform() {
   updateTransform();
 }
 
-// 上部UI（タグバー・時系列スライダー）を避けた表示余白を測る
+// キャンバス上のオーバーレイUI（タグバー・時系列スライダー等）を避けた表示余白を測る
+// ※ control-panel は body flex で whiteboard と横並びのため、clientWidth に既に含まれない。右余白に加算しない。
 function getFitChromePadding() {
-  const pad = { top: 40, right: 32, bottom: 36, left: 32 };
+  const pad = { top: 40, right: 24, bottom: 36, left: 24 };
   const refs = getCanvasRefs();
   if (!refs.container) return pad;
 
@@ -402,12 +399,6 @@ function getFitChromePadding() {
   if (slider && slider.offsetParent !== null && getComputedStyle(slider).display !== 'none') {
     const r = slider.getBoundingClientRect();
     pad.top = Math.max(pad.top, Math.ceil(r.bottom - cr.top) + 16);
-  }
-
-  // 詳細パネルが閉じられていない（collapsedクラスがない）場合、右側余白にパネルの幅を加算する
-  const panel = document.getElementById('control-panel');
-  if (panel && !panel.classList.contains('collapsed')) {
-    pad.right += panel.offsetWidth || 420;
   }
 
   // プレゼンコントローラーが表示されている場合、下側余白を確保して重なりを避ける
