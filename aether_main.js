@@ -240,7 +240,6 @@ function focusPresentationStepView() {
     // グラフエリア（whiteboard）の実幅のみを使う。詳細パネル幅は含めない。
     const sidePad = 16;
     const viewW = Math.max(120, container.clientWidth - sidePad * 2);
-    const viewH = Math.max(120, container.clientHeight);
 
     // 横幅最大フィット（縦制約なし・上下見切れ可）
     scale = Math.max(0.15, Math.min(3.0, (viewW / contentW) * 0.99));
@@ -248,12 +247,31 @@ function focusPresentationStepView() {
     // 横: グラフエリア内で中央
     panX = sidePad + (viewW - contentW * scale) / 2 - minX * scale;
 
-    // 縦: 選択付箋中心をグラフエリアの縦中央へ
+    // 縦のみ: 選択付箋の中心を「実際に見えるグラフ領域」の上下中央へ
+    // （倍率・横位置は変更しない。上部タグ/スライダーと下部コントローラを除く）
     if (focusNote) {
+      const cr = container.getBoundingClientRect();
+      let visibleTop = 0;
+      let visibleBottom = container.clientHeight;
+
+      const tags = document.getElementById('tags-filter-bar');
+      if (tags && tags.offsetParent !== null && tags.children.length > 0) {
+        visibleTop = Math.max(visibleTop, tags.getBoundingClientRect().bottom - cr.top + 8);
+      }
+      const slider = document.getElementById('time-slider-container');
+      if (slider && slider.offsetParent !== null && getComputedStyle(slider).display !== 'none') {
+        visibleTop = Math.max(visibleTop, slider.getBoundingClientRect().bottom - cr.top + 8);
+      }
+      const presController = document.getElementById('presentation-controller');
+      if (presController && getComputedStyle(presController).display !== 'none') {
+        visibleBottom = Math.min(visibleBottom, presController.getBoundingClientRect().top - cr.top - 8);
+      }
+
+      const visibleMidY = (visibleTop + Math.max(visibleTop + 1, visibleBottom)) / 2;
       const el = document.getElementById('note-' + focusNote.id);
       const h = el && el.offsetHeight ? el.offsetHeight : NOTE_H;
       const focusCenterY = focusNote.y + h / 2;
-      panY = viewH / 2 - focusCenterY * scale;
+      panY = visibleMidY - focusCenterY * scale;
     } else {
       panY = 0;
     }
