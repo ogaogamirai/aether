@@ -55,6 +55,17 @@
       <input type="range" id="time-slider" min="0" max="0" value="0" oninput="handleTimeSlider(this.value)">
       <div class="time-slider-labels" id="time-slider-labels"></div>
     </div>
+
+    <!-- プレゼンテーションモードフローティングコントローラー -->
+    <div id="presentation-controller">
+      <button class="pres-btn" onclick="prevPresentationStep()" title="前のステップへ (Ctrl + ←)">◀ 前へ</button>
+      <div class="pres-step-info">
+        <span style="font-size: 0.7rem; opacity: 0.7; font-weight: normal; display: block;">PRESENTATION STEP</span>
+        <span class="pres-step-name" id="pres-step-name">すべて</span>
+      </div>
+      <button class="pres-btn" onclick="nextPresentationStep()" title="次のステップへ (Ctrl + →)">次へ ▶</button>
+      <button class="pres-btn pres-close-btn" onclick="togglePresentationMode(false)" title="プレゼンモードを終了 (Esc)">✖ 終了</button>
+    </div>
   </div>
 
   <!-- Right Sidebar Panel -->
@@ -66,6 +77,7 @@
         <p>人とAIの共創無限ホワイトボード</p>
       </div>
       <div class="panel-toolbar" style="display: flex; gap: 6px; align-items: center;">
+        <button class="toolbar-btn text-btn" id="pres-mode-btn" onclick="togglePresentationMode()" title="プレゼンモード (P)">🎬 プレゼン (P)</button>
         <button class="toolbar-btn" onclick="zoom(0.1)" title="拡大">＋</button>
         <button class="toolbar-btn" onclick="zoom(-0.1)" title="縮小">－</button>
         <button class="toolbar-btn" onclick="fitToView()" title="全体表示 (F)">⊡</button>

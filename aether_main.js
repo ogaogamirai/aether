@@ -4,6 +4,7 @@
 let focusedNoteId = null;
 let activeTime = null;
 let timeSteps = [];
+let isPresentationMode = false;
 
 const DB_NAME = 'aether_db';
 const STORE_NAME = 'board_state';
@@ -106,7 +107,79 @@ function handleTimeSlider(value) {
   });
 
   renderCanvas();
+  updatePresentationStepName();
 }
+
+function togglePresentationMode(forceState) {
+  isPresentationMode = (typeof forceState === 'boolean') ? forceState : !isPresentationMode;
+  
+  const controller = document.getElementById('presentation-controller');
+  const btn = document.getElementById('pres-mode-btn');
+  
+  if (isPresentationMode) {
+    if (controller) controller.style.display = 'flex';
+    if (btn) btn.classList.add('active');
+    
+    // Default to the first actual time step (index 1) if available, otherwise 0
+    const defaultIdx = timeSteps.length > 1 ? 1 : 0;
+    const slider = document.getElementById('time-slider');
+    if (slider) {
+      slider.value = defaultIdx;
+    }
+    handleTimeSlider(defaultIdx);
+    setTimeout(() => {
+      fitToView();
+    }, 100);
+    showToast('プレゼンテーションモードを開始しました (Ctrl+← / Ctrl+→ で移動)', 'success');
+  } else {
+    if (controller) controller.style.display = 'none';
+    if (btn) btn.classList.remove('active');
+    showToast('プレゼンテーションモードを終了しました', 'success');
+    setTimeout(() => {
+      fitToView();
+    }, 100);
+  }
+}
+
+function updatePresentationStepName() {
+  const nameEl = document.getElementById('pres-step-name');
+  if (nameEl) {
+    nameEl.textContent = activeTime || 'すべて';
+  }
+}
+
+function nextPresentationStep() {
+  if (!timeSteps.length) return;
+  const slider = document.getElementById('time-slider');
+  if (!slider) return;
+  let currentIdx = parseInt(slider.value, 10);
+  let nextIdx = currentIdx + 1;
+  if (nextIdx >= timeSteps.length) {
+    nextIdx = 0;
+  }
+  slider.value = nextIdx;
+  handleTimeSlider(nextIdx);
+  setTimeout(() => {
+    fitToView();
+  }, 50);
+}
+
+function prevPresentationStep() {
+  if (!timeSteps.length) return;
+  const slider = document.getElementById('time-slider');
+  if (!slider) return;
+  let currentIdx = parseInt(slider.value, 10);
+  let prevIdx = currentIdx - 1;
+  if (prevIdx < 0) {
+    prevIdx = timeSteps.length - 1;
+  }
+  slider.value = prevIdx;
+  handleTimeSlider(prevIdx);
+  setTimeout(() => {
+    fitToView();
+  }, 50);
+}
+
 
 // キャンバスDOM参照は window 上に置く（配布HTMLの eval 分割でも共有される）
 // ※ let は eval 間で共有されないため使わない
@@ -219,8 +292,21 @@ function getFitChromePadding() {
     pad.top = Math.max(pad.top, Math.ceil(r.bottom - cr.top) + 16);
   }
 
+  // 詳細パネルが閉じられていない（collapsedクラスがない）場合、右側余白にパネルの幅を加算する
+  const panel = document.getElementById('control-panel');
+  if (panel && !panel.classList.contains('collapsed')) {
+    pad.right += panel.offsetWidth || 420;
+  }
+
+  // プレゼンコントローラーが表示されている場合、下側余白を確保して重なりを避ける
+  const presController = document.getElementById('presentation-controller');
+  if (presController && getComputedStyle(presController).display !== 'none') {
+    pad.bottom = Math.max(pad.bottom, 100);
+  }
+
   return pad;
 }
+
 
 // グラフ全体を、オーバーレイUIに重ならない領域へ収めて表示（Fキー）
 function fitToView() {
@@ -545,6 +631,9 @@ function isTypingTarget(el) {
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    if (isPresentationMode) {
+      togglePresentationMode(false);
+    }
     if (focusedNoteId) {
       const el = document.getElementById('note-' + focusedNoteId);
       if (el) el.classList.remove('focused');
@@ -571,7 +660,32 @@ window.addEventListener('keydown', (e) => {
     return;
   }
 
+  // P: プレゼンモード切り替え（入力中は無効）
+  if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    if (isTypingTarget(e.target)) return;
+    e.preventDefault();
+    togglePresentationMode();
+    return;
+  }
+
+  // Ctrl + ArrowRight: 次のプレゼンステップ
+  if (e.ctrlKey && e.key === 'ArrowRight') {
+    if (isTypingTarget(e.target)) return;
+    e.preventDefault();
+    nextPresentationStep();
+    return;
+  }
+
+  // Ctrl + ArrowLeft: 前のプレゼンステップ
+  if (e.ctrlKey && e.key === 'ArrowLeft') {
+    if (isTypingTarget(e.target)) return;
+    e.preventDefault();
+    prevPresentationStep();
+    return;
+  }
+
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return; // Ctrl 等の修飾キーがあればスキップ
     if (!focusedNoteId) return;
     e.preventDefault();
 
@@ -961,6 +1075,15 @@ async function exportPortableViewer() {
       '      <input type="range" id="time-slider" min="0" max="0" value="0" oninput="handleTimeSlider(this.value)">',
       '      <div class="time-slider-labels" id="time-slider-labels"></div>',
       '    </div>',
+      '    <div id="presentation-controller">',
+      '      <button class="pres-btn" onclick="prevPresentationStep()" title="前のステップへ (Ctrl + ←)">◀ 前へ</button>',
+      '      <div class="pres-step-info">',
+      '        <span style="font-size: 0.7rem; opacity: 0.7; font-weight: normal; display: block;">PRESENTATION STEP</span>',
+      '        <span class="pres-step-name" id="pres-step-name">すべて</span>',
+      '      </div>',
+      '      <button class="pres-btn" onclick="nextPresentationStep()" title="次のステップへ (Ctrl + →)">次へ ▶</button>',
+      '      <button class="pres-btn pres-close-btn" onclick="togglePresentationMode(false)" title="プレゼンモードを終了 (Esc)">✖ 終了</button>',
+      '    </div>',
       '  </div>',
       '',
       '  <div class="control-panel" id="control-panel">',
@@ -971,6 +1094,7 @@ async function exportPortableViewer() {
       '        <p>ポータブル・ビューワー</p>',
       '      </div>',
       '      <div class="panel-toolbar" style="display: flex; gap: 6px; align-items: center;">',
+      '        <button class="toolbar-btn text-btn" id="pres-mode-btn" onclick="togglePresentationMode()" title="プレゼンモード (P)">🎬 プレゼン (P)</button>',
       '        <button class="toolbar-btn" onclick="zoom(0.1)" title="拡大">＋</button>',
       '        <button class="toolbar-btn" onclick="zoom(-0.1)" title="縮小">－</button>',
       '        <button class="toolbar-btn" onclick="fitToView()" title="全体表示 (F)">⊡</button>',
