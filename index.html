@@ -71,13 +71,13 @@
   <!-- Right Sidebar Panel -->
   <div class="control-panel" id="control-panel">
     <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" title="サイドバー開閉">◀</button>
-    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
-      <div>
+    <div class="panel-header">
+      <div class="panel-title-block">
         <h1>🌌 Aether</h1>
         <p>人とAIの共創無限ホワイトボード</p>
       </div>
-      <div class="panel-toolbar" style="display: flex; gap: 6px; align-items: center;">
-        <button class="toolbar-btn text-btn" id="pres-mode-btn" onclick="togglePresentationMode()" title="プレゼンモード (P)">🎬 プレゼン (P)</button>
+      <div class="panel-toolbar">
+        <button class="toolbar-btn" id="pres-mode-btn" onclick="togglePresentationMode()" title="プレゼンモード (P)">🎬</button>
         <button class="toolbar-btn" onclick="zoom(0.1)" title="拡大">＋</button>
         <button class="toolbar-btn" onclick="zoom(-0.1)" title="縮小">－</button>
         <button class="toolbar-btn" onclick="fitToView()" title="全体表示 (F)">⊡</button>
