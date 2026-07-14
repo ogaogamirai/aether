@@ -168,43 +168,75 @@ function getFirstNoteForCurrentStep() {
   return visible[0] || sourceNotes[0] || null;
 }
 
-// 上部UI・下部コントローラを除いた「見えるグラフ領域」の縦中央（container 座標）
-function getVisibleCanvasMidY(container) {
-  if (!container) return 0;
+// 上部UI・下部コントローラを除いた「見えるグラフ領域」の縦中央（ビューポート座標）
+function getVisibleCanvasMidViewportY(container) {
+  if (!container) return window.innerHeight / 2;
   const cr = container.getBoundingClientRect();
-  let visibleTop = 0;
-  let visibleBottom = container.clientHeight;
+
+  let topObstacle = cr.top;
+  let bottomObstacle = cr.bottom;
 
   const tags = document.getElementById('tags-filter-bar');
   if (tags && tags.offsetParent !== null && tags.children.length > 0) {
-    visibleTop = Math.max(visibleTop, tags.getBoundingClientRect().bottom - cr.top + 8);
+    topObstacle = Math.max(topObstacle, tags.getBoundingClientRect().bottom + 8);
   }
   const slider = document.getElementById('time-slider-container');
   if (slider && slider.offsetParent !== null && getComputedStyle(slider).display !== 'none') {
-    visibleTop = Math.max(visibleTop, slider.getBoundingClientRect().bottom - cr.top + 8);
+    topObstacle = Math.max(topObstacle, slider.getBoundingClientRect().bottom + 8);
   }
   const presController = document.getElementById('presentation-controller');
   if (presController && getComputedStyle(presController).display !== 'none') {
-    const top = presController.getBoundingClientRect().top - cr.top - 8;
-    if (isFinite(top)) visibleBottom = Math.min(visibleBottom, top);
+    const top = presController.getBoundingClientRect().top - 8;
+    if (isFinite(top)) bottomObstacle = Math.min(bottomObstacle, top);
   }
 
-  return (visibleTop + Math.max(visibleTop + 1, visibleBottom)) / 2;
+  if (bottomObstacle <= topObstacle + 1) {
+    return (cr.top + cr.bottom) / 2;
+  }
+  return (topObstacle + bottomObstacle) / 2;
 }
 
-// 倍率・横位置は変えず、選択付箋だけ上下中央へ（キーボード切替用）
+// 実測ベース: 倍率・横位置は維持し、選択付箋の中心を見える領域の上下中央へ
+// panY のみ更新（screenY = worldY * scale + panY のため、差分は panY にそのまま加算）
 function centerNoteVertically(note) {
-  if (!note) return;
+  if (!note) return false;
   const refs = getCanvasRefs();
-  if (!refs.container || !refs.transformLayer) return;
+  if (!refs.container || !refs.transformLayer) return false;
 
-  const NOTE_H = 160;
   const el = document.getElementById('note-' + note.id);
-  const h = el && el.offsetHeight ? el.offsetHeight : NOTE_H;
-  const focusCenterY = note.y + h / 2;
-  const midY = getVisibleCanvasMidY(refs.container);
-  panY = midY - focusCenterY * scale;
+  if (!el) return false;
+
+  // 現在の transform を確定させてから実測
   updateTransform();
+
+  const noteRect = el.getBoundingClientRect();
+  if (!noteRect.height) return false;
+
+  const noteCenterViewportY = noteRect.top + noteRect.height / 2;
+  const desiredMidViewportY = getVisibleCanvasMidViewportY(refs.container);
+  const deltaY = desiredMidViewportY - noteCenterViewportY;
+
+  if (!isFinite(deltaY) || Math.abs(deltaY) < 0.5) return true;
+
+  panY += deltaY;
+  updateTransform();
+  return true;
+}
+
+// レイアウト確定後に縦中央合わせ（連打時は最後の1回だけ）
+function scheduleCenterNoteVertically(note) {
+  if (!note || !isPresentationMode) return;
+  if (window.__aetherCenterRaf) {
+    cancelAnimationFrame(window.__aetherCenterRaf);
+    window.__aetherCenterRaf = null;
+  }
+  // 2フレーム待って詳細パネル切替・DOM 確定後に実測
+  window.__aetherCenterRaf = requestAnimationFrame(() => {
+    window.__aetherCenterRaf = requestAnimationFrame(() => {
+      window.__aetherCenterRaf = null;
+      centerNoteVertically(note);
+    });
+  });
 }
 
 // プレゼン step 用ビュー:
@@ -281,12 +313,11 @@ function focusPresentationStepView() {
     // step 切替時のみ: 横幅フィット + 横中央
     scale = Math.max(0.15, Math.min(3.0, (viewW / contentW) * 0.99));
     panX = sidePad + (viewW - contentW * scale) / 2 - minX * scale;
+    updateTransform();
 
-    // 選択付箋を縦中央へ（scale 確定後）
+    // 選択付箋を縦中央へ（scale/panX 適用後に実測で panY のみ調整）
     if (focusNote) {
-      centerNoteVertically(focusNote);
-    } else {
-      updateTransform();
+      scheduleCenterNoteVertically(focusNote);
     }
   });
 }
@@ -643,6 +674,11 @@ function showNodeDetails(note) {
     '</div>';
 
   switchTab('details');
+
+  // プレゼン中は選択変更のたびに縦中央へ（クリック/キーボード共通）
+  if (isPresentationMode) {
+    scheduleCenterNoteVertically(note);
+  }
 }
 
 // --- IndexedDB ---
@@ -850,11 +886,8 @@ window.addEventListener('keydown', (e) => {
     });
 
     if (bestTarget) {
+      // showNodeDetails 内でプレゼン時の縦中央合わせを行う
       showNodeDetails(bestTarget);
-      // プレゼンモード: 倍率・横位置は維持し、選択パネルだけ上下中央へ
-      if (isPresentationMode) {
-        requestAnimationFrame(() => centerNoteVertically(bestTarget));
-      }
     }
   }
 });
