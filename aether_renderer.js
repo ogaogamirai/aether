@@ -123,7 +123,12 @@ function renderCanvas() {
         if (dist < 4) {
           showNodeDetails(note);
         } else {
-          saveCanvasState(); // オートセーブ同期
+          // フェーズ1: ドラッグした付箋の座標のみ差分保存（全体DSL再構築しない）
+          if (typeof updateNotePositionInDB === 'function') {
+            updateNotePositionInDB(note.id, note.x, note.y);
+          } else if (typeof saveCanvasState === 'function') {
+            saveCanvasState();
+          }
         }
       }
     });
