@@ -91,7 +91,32 @@ function utf8ToBase64(str) {
   return btoa(binary);
 }
 
-// 配布HTML向けに combined main から起動・巨大DEFAULTを除去
+// 配布用: 表示を壊さない範囲で空白・コメントを削る（文字列リテラルは保護）
+function minifySnapshotJs(src) {
+  let s = String(src || '');
+  const held = [];
+  s = s.replace(/(["'`])(?:\\.|(?!\1)[\s\S])*\1/g, (m) => {
+    held.push(m);
+    return '\u0000' + (held.length - 1) + '\u0000';
+  });
+  s = s.replace(/\/\*[\s\S]*?\*\//g, '');
+  s = s.replace(/(^|[^:])\/\/.*$/gm, '$1');
+  s = s.replace(/\s+/g, ' ');
+  s = s.replace(/\s*([{}();,=+\-*/<>!&|?:\[\]])\s*/g, '$1');
+  s = s.replace(/\u0000(\d+)\u0000/g, (_, i) => held[Number(i)]);
+  return s.trim();
+}
+
+function minifySnapshotCss(src) {
+  let s = String(src || '');
+  s = s.replace(/\/\*[\s\S]*?\*\//g, '');
+  s = s.replace(/\s+/g, ' ');
+  s = s.replace(/\s*([{}:;,>])\s*/g, '$1');
+  s = s.replace(/;}/g, '}');
+  return s.trim();
+}
+
+// 配布HTML向けに main から起動・巨大DEFAULTを除去（storage は同梱しない）
 function prepareMainJsForSnapshot(mainJs) {
   let safeMain = String(mainJs || '');
 
@@ -107,10 +132,8 @@ function prepareMainJsForSnapshot(mainJs) {
   }
   if (cutAt >= 0) safeMain = safeMain.slice(0, cutAt);
 
-  // IndexedDB 書き込みを無効化
-  safeMain = safeMain.replace(/saveCanvasState\(\);/g, '/* saveCanvasState disabled in snapshot */');
-
   // モジュール読込時の即時 setup は、snapshot では boot 側で行う（DOM 準備後）
+  // IDB は prelude のスタブ + applyDSL の __AETHER_SNAPSHOT__ ガードで無効化
   safeMain = safeMain.replace(
     /\/\/ モジュール読込直後にDOMがあれば接続[\s\S]*?setupCanvasInteractions\(\);\s*/,
     '/* deferred setupCanvasInteractions in snapshot boot */\n'
@@ -119,10 +142,10 @@ function prepareMainJsForSnapshot(mainJs) {
   return safeMain.trim() + '\n';
 }
 
-// parser + renderer + combinedMain を1本に結合（eval分割で共有変数が切れるのを防ぐ）
+// parser + renderer + main のみ（storage 除外で ~16KB+Base64 削減）
 function buildSnapshotBundle(parserJs, rendererJs, mainJs) {
   const safeMain = prepareMainJsForSnapshot(mainJs);
-  // 共有状態を window に載せる前置き（HTML側の let と二重になっても上書きで揃う）
+  // 共有状態 + IDB スタブ（表示・UI は維持、永続化のみ無効）
   const prelude = [
     'window.__AETHER_SNAPSHOT__ = true;',
     'if (typeof window.scale !== "number") window.scale = 1.0;',
@@ -136,15 +159,21 @@ function buildSnapshotBundle(parserJs, rendererJs, mainJs) {
     'if (!Array.isArray(window.connections)) window.connections = [];',
     'if (!Array.isArray(window.drawings)) window.drawings = [];',
     'if (!Array.isArray(window.relations)) window.relations = [];',
-    // グローバル識別子としても参照できるよう var を同期（eval 1本化と併用）
     'var scale = window.scale, panX = window.panX, panY = window.panY;',
     'var isDragging = window.isDragging, startX = window.startX, startY = window.startY;',
     'var activeTag = window.activeTag;',
     'var notes = window.notes, connections = window.connections, drawings = window.drawings, relations = window.relations;',
+    'function syncBoardStateToDB(){return Promise.resolve();}',
+    'function saveCanvasState(){}',
+    'function updateNotePositionInDB(){return Promise.resolve();}',
+    'function loadFromDB(){return Promise.resolve(null);}',
+    'function loadStructuredStateFromDB(){return Promise.resolve(null);}',
+    'function buildDSLFromState(){var el=document.getElementById("dsl-input");return el?el.value:"";}',
+    'function initDB(){return Promise.reject(new Error("idb-disabled-in-snapshot"));}',
     ''
   ].join('\n');
 
-  return [
+  const raw = [
     prelude,
     String(parserJs || ''),
     '\n',
@@ -153,6 +182,8 @@ function buildSnapshotBundle(parserJs, rendererJs, mainJs) {
     safeMain,
     '\n'
   ].join('\n');
+
+  return minifySnapshotJs(raw);
 }
 
 // Browser-only portable HTML export (no Python / no API server)
@@ -165,22 +196,21 @@ async function exportPortableViewer() {
     dsl = await inlineRemoteImagesInDsl(dsl);
 
     // キャッシュで古い JS が混入しないよう bust
+    // 配布ビューアは表示・UI のみ。IndexedDB(storage) は同梱しない（サイズ削減）
     const bust = 't=' + Date.now();
-    const [cssText, parserJs, rendererJs, storageJs, mainJs] = await Promise.all([
+    const [cssText, parserJs, rendererJs, mainJs] = await Promise.all([
       fetchTextAsset('style.css?' + bust),
       fetchTextAsset('aether_parser.js?' + bust),
       fetchTextAsset('aether_renderer.js?' + bust),
-      fetchTextAsset('aether_storage.js?' + bust),
       fetchTextAsset('aether_main.js?' + bust)
     ]);
 
-    if (!cssText || !parserJs || !rendererJs || !storageJs || !mainJs) {
+    if (!cssText || !parserJs || !rendererJs || !mainJs) {
       throw new Error('asset_fetch_failed');
     }
 
-    // storage + main を結合してから snapshot bundle 化（分割evalのスコープ切断を根絶）
-    const combinedMain = String(storageJs || '') + '\n' + String(mainJs || '');
-    const bundleJs = buildSnapshotBundle(parserJs, rendererJs, combinedMain);
+    const bundleJs = buildSnapshotBundle(parserJs, rendererJs, mainJs);
+    const cssMin = minifySnapshotCss(cssText);
 
     // 構文チェック（壊れた bundle を配布しない）
     try {
@@ -191,7 +221,7 @@ async function exportPortableViewer() {
       throw new Error('snapshot_syntax_failed: ' + (syntaxErr && syntaxErr.message ? syntaxErr.message : syntaxErr));
     }
 
-    const b64Css = utf8ToBase64(cssText);
+    const b64Css = utf8ToBase64(cssMin);
     const b64Bundle = utf8ToBase64(bundleJs);
     const b64Dsl = utf8ToBase64(dsl);
 

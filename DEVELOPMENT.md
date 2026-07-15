@@ -72,6 +72,24 @@ const bundleJs = buildSnapshotBundle(parserJs, rendererJs, combinedMain);
 - DSL の color 名（blue/purple 等）は変更なし
 - `toggleTheme` は既存の `drawAllShapes()` 再描画で線色が更新される
 
-## Phase D（未着手）
+## Phase D — 配布HTML サイズ圧縮（2026-07-15）
+
+表示・UI を維持したまま `exportPortableViewer` の埋め込みペイロードを削減。
+
+| ID | 内容 | 効果 |
+|----|------|------|
+| D1 | snapshot から `aether_storage.js` を除外。IDB は prelude スタブ | JS ~16KB 削減（raw） |
+| D2 | `minifySnapshotJs` / `minifySnapshotCss`（文字列保護） | 空白・コメント除去 |
+| D3 | 巨大 `DEFAULT_DSL` / `window.onload` は従来どおり cut | 変更なし |
+
+推定（DSL・画像を除く engine ペイロード Base64）:
+- 旧: ~137 KB → 新: ~87 KB（**約 37% 減**、`scratch/size_estimate.js`）
+- DSL やインライン画像が大きい場合はそちらが支配的（別途画像最適化）
+
+維持: 付箋・接続・プレゼン・テーマ・DSL 編集/適用・詳細表示  
+無効（ビューア仕様）: IndexedDB 永続化（配布 HTML では不要）
+
+## Phase E（未着手）
 
 - icon 背景 `rgba(22,26,33,0.8)` のテーマ連動（任意）
+- 配布 HTML の DSL 画像圧縮オプション（任意）
