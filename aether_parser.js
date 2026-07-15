@@ -187,10 +187,10 @@ function parseAetherDSL(text) {
   };
 }
 
-// Generate DSL representation from current canvas state
-function generateDSLFromCanvas() {
+// Generate DSL representation from current canvas state (pure, DOM-free)
+function serializeCanvasToDSL() {
   let dsl = '# Aether DSL Export v3.0\n\n';
-  
+
   notes.forEach(note => {
     dsl += `sticky ${note.id} "${note.content}" {\n`;
     dsl += `  pos: ${Math.round(note.x)} ${Math.round(note.y)}\n`;
@@ -252,6 +252,13 @@ function generateDSLFromCanvas() {
     });
   }
 
-  document.getElementById('dsl-input').value = dsl;
-  switchTab('dsl');
+  return dsl;
+}
+
+// Compatibility wrapper with DOM side effects (button onclick)
+function generateDSLFromCanvas() {
+  const dsl = serializeCanvasToDSL();
+  const input = document.getElementById('dsl-input');
+  if (input) input.value = dsl;
+  if (typeof switchTab === 'function') switchTab('dsl');
 }
