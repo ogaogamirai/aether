@@ -235,6 +235,7 @@ async function getAllFromStore(db, storeName) {
 // フェーズ1: ドラッグ終了時の座標のみ差分更新
 async function updateNotePositionInDB(noteId, newX, newY) {
   if (typeof window !== 'undefined' && window.__AETHER_SNAPSHOT__) return;
+  if (typeof isAetherLiveMode === 'function' && isAetherLiveMode()) return;
   try {
     const db = await initDB();
     if (!db.objectStoreNames.contains(STORE_NOTES)) return;
@@ -350,11 +351,15 @@ async function syncBoardStateToDB(parsedState) {
     connectionsDiff.toDelete.forEach(id => s.delete(id));
   }
   // legacy 互換: 構造化から再構成した DSL 全文も保持
+  // LIVE中は監視ファイルが正本のため、input を buildDSL で上書きしない
   if (storeNames.includes(STORE_NAME)) {
-    const dsl = buildDSLFromState();
-    tx.objectStore(STORE_NAME).put(dsl, 'current_dsl');
+    const live = typeof isAetherLiveMode === 'function' && isAetherLiveMode();
     const input = document.getElementById('dsl-input');
-    if (input) input.value = dsl;
+    const dsl = live && input && input.value
+      ? input.value
+      : buildDSLFromState();
+    tx.objectStore(STORE_NAME).put(dsl, 'current_dsl');
+    if (!live && input) input.value = dsl;
   }
   await idbTxDone(tx);
 
@@ -521,6 +526,7 @@ function buildDSLFromState() {
 
 // フル同期（debounced）。ドラッグ以外の一括保存フォールバック
 function saveCanvasState() {
+  if (typeof isAetherLiveMode === 'function' && isAetherLiveMode()) return;
   const dsl = buildDSLFromState();
   const input = document.getElementById('dsl-input');
   if (input) input.value = dsl;

@@ -111,6 +111,14 @@ function renderCanvas() {
 
     el.addEventListener('mousedown', (e) => {
       e.stopPropagation();
+      // LIVE中は閲覧のみ: ドラッグ開始せず、mouseup で詳細表示
+      if (typeof isAetherLiveMode === 'function' && isAetherLiveMode()) {
+        isDraggingNote = false;
+        clickStartX = e.clientX;
+        clickStartY = e.clientY;
+        el.style.cursor = 'pointer';
+        return;
+      }
       isDraggingNote = true;
       el.classList.add('dragging');
       noteStartX = e.clientX - note.x * window.scale;
@@ -122,6 +130,12 @@ function renderCanvas() {
 
     window.addEventListener('mousemove', (e) => {
       if (isDraggingNote) {
+        if (typeof isAetherLiveMode === 'function' && isAetherLiveMode()) {
+          isDraggingNote = false;
+          el.classList.remove('dragging');
+          el.style.cursor = 'pointer';
+          return;
+        }
         note.x = (e.clientX - noteStartX) / window.scale;
         note.y = (e.clientY - noteStartY) / window.scale;
         el.style.left = `${note.x}px`;
@@ -131,6 +145,19 @@ function renderCanvas() {
     });
 
     window.addEventListener('mouseup', (e) => {
+      if (typeof isAetherLiveMode === 'function' && isAetherLiveMode()) {
+        if (isDraggingNote) {
+          isDraggingNote = false;
+          el.classList.remove('dragging');
+        }
+        const dx = e.clientX - clickStartX;
+        const dy = e.clientY - clickStartY;
+        if (Math.sqrt(dx * dx + dy * dy) < 8) {
+          showNodeDetails(note);
+        }
+        el.style.cursor = 'pointer';
+        return;
+      }
       if (isDraggingNote) {
         isDraggingNote = false;
         el.classList.remove('dragging');

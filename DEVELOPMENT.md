@@ -162,3 +162,15 @@ E3 で JS minify を全面無効化した結果、engine が太っていた。
 
 原因: 構造化 IDB の `keyPath: 'id'` が同名 sticky/drawing を上書きし、再起動で欠落していた。  
 検証: 皇位継承 DSL で notes 33→33 / drawings 12→12 / relations 77→77（旧: 30/7/49）。`node --check` PASS。
+
+## Phase J — LIVE フォルダ監視（片方向ホワイトボード）（2026-07-16）
+
+| ID | 内容 | ファイル |
+|----|------|----------|
+| J1 | `showDirectoryPicker` でフォルダ選択、監視ファイル名（既定 `aether_dsl.txt`）を取得／無ければ作成 | `aether_main.js` |
+| J2 | 1秒ポーリング（lastModified + 本文比較）→ `applyDSL({ fromLive })` | `aether_main.js` |
+| J3 | LIVE中は閲覧のみ: ドラッグ移動・手動 apply・import・DnD・キャンバス出力・IDB save をロック | main / renderer / storage |
+| J4 | UI: 👁️ フォルダ監視 / ● LIVE / 監視ファイル名 / `?v=4.0.4` | `index.html` / `style.css` |
+
+仕様: 監視ファイルが唯一の正本。キャンバス・IDB は表示キャッシュ。双方向書き戻しなし。  
+前提: Chrome/Edge の `https` または `localhost`（`file://` 非対応）。

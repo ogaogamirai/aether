@@ -30,7 +30,13 @@ function syncCanvasGlobals() {
 }
 
 // Apply parsed DSL to Canvas
-function applyDSL() {
+// options: { fromLive?: boolean, silent?: boolean, skipIdb?: boolean }
+function applyDSL(options) {
+  const opts = options || {};
+  if (isAetherLiveMode() && !opts.fromLive) {
+    showToast('LIVE中はファイルが正本です。キャンバス適用はできません。', 'error');
+    return;
+  }
   setupCanvasInteractions();
   const input = document.getElementById('dsl-input');
   const text = input ? input.value : '';
@@ -65,8 +71,11 @@ function applyDSL() {
   }
 
   // 重複リネーム後はエディタDSLも一意ID版へ揃える（IDB legacy と一致）
+  // LIVE中は正本ファイル本文を書き換えない（表示用メモのみリネーム結果を載せる）
   if (renames.length && typeof buildDSLFromState === 'function' && input) {
-    input.value = buildDSLFromState();
+    if (!isAetherLiveMode()) {
+      input.value = buildDSLFromState();
+    }
   }
 
   const allTags = new Set();
@@ -81,24 +90,28 @@ function applyDSL() {
   relations.forEach(r => { if (r.time) allTimes.add(r.time); });
   updateTimeSlider(Array.from(allTimes));
 
-  if (renames.length) {
-    const stickyN = renames.filter(r => r.kind === 'sticky').length;
-    const drawingN = renames.filter(r => r.kind === 'drawing').length;
-    const edgeN = renames.length - stickyN - drawingN;
-    showToast(
-      'Aether DSL を適用（重複IDを' + renames.length + '件リネーム: sticky ' + stickyN +
-      ' / drawing ' + drawingN + ' / edge ' + edgeN + '）',
-      'success'
-    );
-    console.warn('[Aether] Duplicate IDs renamed before IndexedDB sync:', renames);
-  } else {
-    showToast('Aether DSL を適用しました', 'success');
+  if (!opts.silent) {
+    if (renames.length) {
+      const stickyN = renames.filter(r => r.kind === 'sticky').length;
+      const drawingN = renames.filter(r => r.kind === 'drawing').length;
+      const edgeN = renames.length - stickyN - drawingN;
+      showToast(
+        'Aether DSL を適用（重複IDを' + renames.length + '件リネーム: sticky ' + stickyN +
+        ' / drawing ' + drawingN + ' / edge ' + edgeN + '）',
+        'success'
+      );
+      console.warn('[Aether] Duplicate IDs renamed before IndexedDB sync:', renames);
+    } else {
+      showToast(opts.fromLive ? 'LIVE: 監視ファイルを反映しました' : 'Aether DSL を適用しました', 'success');
+    }
+  } else if (renames.length) {
+    console.warn('[Aether] Duplicate IDs renamed (silent):', renames);
   }
-  if (typeof window.__AETHER_SNAPSHOT__ === 'undefined' || !window.__AETHER_SNAPSHOT__) {
-    // フェーズ2: エディタ適用時は差分同期（insert/update/delete）
+  // LIVE中はファイルが正本。IDB は表示キャッシュとしてミラー可だが、手動適用経路は禁止済み
+  if (!opts.skipIdb && (typeof window.__AETHER_SNAPSHOT__ === 'undefined' || !window.__AETHER_SNAPSHOT__)) {
     syncBoardStateToDB().catch(err => {
       console.warn('[Aether IndexedDB] Diff sync failed, fallback full save:', err);
-      saveCanvasState();
+      if (!isAetherLiveMode()) saveCanvasState();
     });
   }
 }
@@ -877,6 +890,7 @@ function setupDragAndDrop() {
     dropTarget.addEventListener(evt, (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (isAetherLiveMode()) return;
       setDropActive(true);
     });
   });
@@ -891,6 +905,10 @@ function setupDragAndDrop() {
     e.preventDefault();
     e.stopPropagation();
     setDropActive(false);
+    if (isAetherLiveMode()) {
+      showToast('LIVE中はドロップ適用できません（監視ファイルが正本）', 'error');
+      return;
+    }
     const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
     if (!file) return;
 
@@ -931,10 +949,18 @@ function showToast(msg, type) {
 // Portable export: aether_export.js
 
 function triggerImportDSL() {
+  if (isAetherLiveMode()) {
+    showToast('LIVE中はファイル読込できません（監視を停止してください）', 'error');
+    return;
+  }
   document.getElementById('dsl-file-input').click();
 }
 
 function handleImportDSL(event) {
+  if (isAetherLiveMode()) {
+    event.target.value = '';
+    return;
+  }
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -945,6 +971,206 @@ function handleImportDSL(event) {
   };
   reader.readAsText(file);
   event.target.value = '';
+}
+
+// ---------------------------------------------------------------------------
+// LIVE フォルダ監視（片方向: 監視ファイル = 正本、キャンバス = 閲覧のみ）
+// File System Access API — https / localhost のみ。file:// は非対応。
+// ---------------------------------------------------------------------------
+const LIVE_POLL_MS = 1000;
+let liveWatchState = {
+  active: false,
+  dirHandle: null,
+  fileHandle: null,
+  fileName: 'aether_dsl.txt',
+  lastModified: 0,
+  lastText: '',
+  pollTimer: null,
+  applying: false
+};
+
+function isAetherLiveMode() {
+  return !!(liveWatchState && liveWatchState.active);
+}
+
+function getLiveWatchFileName() {
+  const el = document.getElementById('live-watch-filename');
+  const raw = el && el.value ? String(el.value).trim() : '';
+  return raw || 'aether_dsl.txt';
+}
+
+function updateLiveWatchUi() {
+  const on = isAetherLiveMode();
+  document.body.classList.toggle('aether-live', on);
+  const ind = document.getElementById('live-indicator');
+  if (ind) {
+    ind.textContent = on ? '● LIVE' : '○ IDLE';
+    ind.classList.toggle('on', on);
+  }
+  const btn = document.getElementById('live-watch-btn');
+  if (btn) {
+    btn.textContent = on ? '■ 監視停止' : '👁️ フォルダ監視';
+    btn.title = on
+      ? 'フォルダ監視を停止して通常モードに戻る'
+      : 'フォルダ内のDSLを監視（LIVE中は閲覧のみ・ファイルが正本）';
+  }
+  const nameInput = document.getElementById('live-watch-filename');
+  if (nameInput) nameInput.disabled = on;
+  const dslInput = document.getElementById('dsl-input');
+  if (dslInput) {
+    dslInput.readOnly = on;
+    dslInput.title = on ? 'LIVE中は監視ファイルが正本（編集不可）' : '';
+  }
+  ['btn-apply-dsl', 'btn-import-dsl', 'btn-generate-dsl'].forEach((id) => {
+    const b = document.getElementById(id);
+    if (b) b.disabled = on;
+  });
+}
+
+function stopLiveFolderWatch(opts) {
+  const silent = opts && opts.silent;
+  if (liveWatchState.pollTimer) {
+    clearInterval(liveWatchState.pollTimer);
+    liveWatchState.pollTimer = null;
+  }
+  liveWatchState.active = false;
+  liveWatchState.dirHandle = null;
+  liveWatchState.fileHandle = null;
+  liveWatchState.lastModified = 0;
+  liveWatchState.lastText = '';
+  liveWatchState.applying = false;
+  updateLiveWatchUi();
+  if (!silent) showToast('フォルダ監視を停止しました', 'success');
+  console.log('[Aether LIVE] stopped');
+}
+
+async function ensureLiveFileHandle(dirHandle, fileName) {
+  try {
+    return await dirHandle.getFileHandle(fileName);
+  } catch (err) {
+    if (err && (err.name === 'NotFoundError' || err.code === err.NOT_FOUND_ERR)) {
+      const fh = await dirHandle.getFileHandle(fileName, { create: true });
+      const seed =
+        (document.getElementById('dsl-input') && document.getElementById('dsl-input').value.trim())
+          ? document.getElementById('dsl-input').value
+          : (typeof DEFAULT_DSL === 'string' ? DEFAULT_DSL : '# Aether DSL\n');
+      const writable = await fh.createWritable();
+      await writable.write(seed);
+      await writable.close();
+      console.log('[Aether LIVE] created watch file:', fileName);
+      return fh;
+    }
+    throw err;
+  }
+}
+
+async function readLiveFileSnapshot(fileHandle) {
+  const file = await fileHandle.getFile();
+  const text = await file.text();
+  return { text: text, lastModified: file.lastModified, name: file.name };
+}
+
+async function applyLiveFileText(text, meta) {
+  if (liveWatchState.applying) return;
+  if (text === liveWatchState.lastText) {
+    if (meta && meta.lastModified) liveWatchState.lastModified = meta.lastModified;
+    return;
+  }
+  liveWatchState.applying = true;
+  try {
+    const input = document.getElementById('dsl-input');
+    if (input) input.value = text;
+    liveWatchState.lastText = text;
+    if (meta && meta.lastModified) liveWatchState.lastModified = meta.lastModified;
+    applyDSL({ fromLive: true, silent: false });
+  } finally {
+    liveWatchState.applying = false;
+  }
+}
+
+async function pollLiveWatchFile() {
+  if (!isAetherLiveMode() || !liveWatchState.fileHandle || liveWatchState.applying) return;
+  try {
+    const snap = await readLiveFileSnapshot(liveWatchState.fileHandle);
+    if (snap.lastModified === liveWatchState.lastModified && snap.text === liveWatchState.lastText) {
+      return;
+    }
+    if (snap.text === liveWatchState.lastText) {
+      liveWatchState.lastModified = snap.lastModified;
+      return;
+    }
+    console.log('[Aether LIVE] file changed, applying', snap.name, snap.lastModified);
+    await applyLiveFileText(snap.text, snap);
+  } catch (err) {
+    console.warn('[Aether LIVE] poll failed:', err);
+    showToast('LIVE監視の読取に失敗しました。監視を停止します。', 'error');
+    stopLiveFolderWatch({ silent: true });
+  }
+}
+
+async function startLiveFolderWatch() {
+  if (typeof window.showDirectoryPicker !== 'function') {
+    showToast('このブラウザはフォルダ監視に非対応です（Chrome/Edge の https または localhost で開いてください）', 'error');
+    return;
+  }
+  if (location.protocol === 'file:') {
+    showToast('file:// ではフォルダ監視できません。localhost で起動してください（例: npx serve .）', 'error');
+    return;
+  }
+
+  const fileName = getLiveWatchFileName();
+  try {
+    const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    const fileHandle = await ensureLiveFileHandle(dirHandle, fileName);
+    const snap = await readLiveFileSnapshot(fileHandle);
+
+    liveWatchState.dirHandle = dirHandle;
+    liveWatchState.fileHandle = fileHandle;
+    liveWatchState.fileName = fileName;
+    liveWatchState.active = true;
+    liveWatchState.lastModified = 0;
+    liveWatchState.lastText = '';
+    updateLiveWatchUi();
+
+    await applyLiveFileText(snap.text, snap);
+    if (liveWatchState.pollTimer) clearInterval(liveWatchState.pollTimer);
+    liveWatchState.pollTimer = setInterval(pollLiveWatchFile, LIVE_POLL_MS);
+
+    showToast('LIVE監視開始: ' + fileName + '（閲覧のみ・ファイルが正本）', 'success');
+    console.log('[Aether LIVE] started on', fileName);
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      showToast('フォルダ選択をキャンセルしました', 'error');
+      return;
+    }
+    console.error('[Aether LIVE] start failed:', err);
+    stopLiveFolderWatch({ silent: true });
+    showToast('フォルダ監視を開始できませんでした: ' + (err && err.message ? err.message : err), 'error');
+  }
+}
+
+function toggleLiveFolderWatch() {
+  if (isAetherLiveMode()) stopLiveFolderWatch();
+  else startLiveFolderWatch();
+}
+
+// LIVE中: キャンバス→DSL生成はデータ変更扱いで禁止
+const _generateDSLFromCanvasOrig =
+  typeof generateDSLFromCanvas === 'function' ? generateDSLFromCanvas : null;
+function generateDSLFromCanvasLiveGuard() {
+  if (isAetherLiveMode()) {
+    showToast('LIVE中はキャンバス出力できません（ファイルが正本）', 'error');
+    return;
+  }
+  if (typeof window.__aetherGenerateDSLFromCanvasImpl === 'function') {
+    return window.__aetherGenerateDSLFromCanvasImpl();
+  }
+  if (_generateDSLFromCanvasOrig) return _generateDSLFromCanvasOrig();
+}
+// parser の generateDSLFromCanvas をラップ（読込順: parser → main）
+if (typeof generateDSLFromCanvas === 'function') {
+  window.__aetherGenerateDSLFromCanvasImpl = generateDSLFromCanvas;
+  generateDSLFromCanvas = generateDSLFromCanvasLiveGuard;
 }
 
 function exportDSLToFile() {
@@ -1023,9 +1249,10 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.3 phase-I (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.4 LIVE+phase-I (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
+  updateLiveWatchUi();
 
   const urlParams = new URLSearchParams(window.location.search);
   const dslUrl = urlParams.get('dsl');

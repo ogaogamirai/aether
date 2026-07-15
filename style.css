@@ -458,6 +458,70 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.1);
 }
 
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.live-watch-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.live-indicator {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-display), sans-serif;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  min-width: 4.5rem;
+  text-align: center;
+}
+
+.live-indicator.on {
+  color: #10b981;
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.45);
+}
+
+.live-filename-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  font-family: var(--font-display), sans-serif;
+}
+
+.live-filename-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: monospace;
+  font-size: 0.75rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text-primary);
+}
+
+body.light-theme .live-filename-input {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+body.aether-live .dsl-textarea {
+  opacity: 0.92;
+  cursor: default;
+}
+
+body.aether-live .sticky-note {
+  cursor: pointer !important;
+}
+
 /* DSL Editor */
 .dsl-editor-container {
   display: flex;

@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.3">
+  <link rel="stylesheet" href="style.css?v=4.0.4">
 </head>
 <body class="light-theme">
 
@@ -101,13 +101,20 @@
         <textarea class="dsl-textarea" id="dsl-input" placeholder="Aether DSL を記述してください..."></textarea>
         <div style="display: flex; flex-direction: column; gap: 6px;">
           <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 6px;">
-            <button class="btn btn-primary" style="font-size: 0.78rem; padding: 8px 6px;" onclick="applyDSL()" title="DSLをキャンバスに適用">↓ キャンバス適用</button>
-            <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 8px 6px;" onclick="triggerImportDSL()" title="ローカルのDSLファイルを読み込み">📂 ファイル読込</button>
+            <button id="btn-apply-dsl" class="btn btn-primary" style="font-size: 0.78rem; padding: 8px 6px;" onclick="applyDSL()" title="DSLをキャンバスに適用">↓ キャンバス適用</button>
+            <button id="btn-import-dsl" class="btn btn-secondary" style="font-size: 0.78rem; padding: 8px 6px;" onclick="triggerImportDSL()" title="ローカルのDSLファイルを読み込み">📂 ファイル読込</button>
             
-            <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 8px 6px;" onclick="generateDSLFromCanvas()" title="キャンバスからDSLを生成">↑ キャンバス出力</button>
-            <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 8px 6px;" onclick="exportDSLToFile()" title="現在のDSLをテキストファイルとして保存">💾 ファイル保存</button>
+            <button id="btn-generate-dsl" class="btn btn-secondary" style="font-size: 0.78rem; padding: 8px 6px;" onclick="generateDSLFromCanvas()" title="キャンバスからDSLを生成">↑ キャンバス出力</button>
+            <button id="btn-export-dsl" class="btn btn-secondary" style="font-size: 0.78rem; padding: 8px 6px;" onclick="exportDSLToFile()" title="現在のDSLをテキストファイルとして保存">💾 ファイル保存</button>
           </div>
-          <button class="btn btn-secondary" style="background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: bold; width: 100%; font-size: 0.78rem; padding: 8px 6px; margin-top: 2px;" onclick="exportPortableViewer()" title="他者と共有できる自己完結型インタラクティブHTMLを出力">📤 配布用HTMLを出力 (Viewer)</button>
+          <div class="live-watch-row">
+            <button id="live-watch-btn" class="btn btn-secondary" style="font-size: 0.78rem; padding: 8px 6px; flex: 1;" onclick="toggleLiveFolderWatch()" title="フォルダ内のDSLを監視（LIVE中は閲覧のみ・ファイルが正本）">👁️ フォルダ監視</button>
+            <span id="live-indicator" class="live-indicator" title="LIVE: 監視ファイルが正本。キャンバスは閲覧のみ">○ IDLE</span>
+          </div>
+          <label class="live-filename-label" for="live-watch-filename">監視ファイル
+            <input id="live-watch-filename" class="live-filename-input" type="text" value="aether_dsl.txt" spellcheck="false" title="フォルダ直下の監視対象ファイル名">
+          </label>
+          <button id="btn-export-viewer" class="btn btn-secondary" style="background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.2); color: #10b981; font-weight: bold; width: 100%; font-size: 0.78rem; padding: 8px 6px; margin-top: 2px;" onclick="exportPortableViewer()" title="他者と共有できる自己完結型インタラクティブHTMLを出力">📤 配布用HTMLを出力 (Viewer)</button>
         </div>
         <input type="file" id="dsl-file-input" style="display: none;" accept=".txt,.json,.dsl" onchange="handleImportDSL(event)">
       </div>
@@ -148,10 +155,10 @@
     window.drawings = drawings;
     window.relations = relations;
   </script>
-  <script src="aether_parser.js?v=4.0.3"></script>
-  <script src="aether_renderer.js?v=4.0.3"></script>
-  <script src="aether_storage.js?v=4.0.3"></script>
-  <script src="aether_main.js?v=4.0.3"></script>
-  <script src="aether_export.js?v=4.0.3"></script>
+  <script src="aether_parser.js?v=4.0.4"></script>
+  <script src="aether_renderer.js?v=4.0.4"></script>
+  <script src="aether_storage.js?v=4.0.4"></script>
+  <script src="aether_main.js?v=4.0.4"></script>
+  <script src="aether_export.js?v=4.0.4"></script>
 </body>
 </html>
