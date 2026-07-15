@@ -57,6 +57,21 @@ const bundleJs = buildSnapshotBundle(parserJs, rendererJs, combinedMain);
 - 修正: export の `asset_fetch_failed` 判定に `storageJs` を追加
 - 索引: 構造変更後 `.ariadne.db` 削除 → 再 scan（files: 12）
 
-## Phase C（未着手）
+## Phase C — 接続線色のテーマ変数化（2026-07-15）
 
-- 接続線色のテーマ変数化
+ライトテーマで fallback 接続線・ラベルが白固定で見えにくい問題を修正。
+
+| ID | 内容 | ファイル |
+|----|------|----------|
+| C1 | CSS 変数 `--connection-line` / `--connection-label` / `--connection-label-muted` / `--arrow-default`（dark/light） | `style.css` |
+| C2 | `themeColor()` で SVG 属性に解決 | `aether_renderer.js` |
+| C3 | fallback 接続線・arc ラベル・icon ラベル・relation ラベルを変数参照 | `aether_renderer.js` |
+| C4 | `#arrow-default` をテーマ連動（CSS fill + currentColor） | `style.css` / `index.html` / `aether_export.js` |
+
+- ダーク既定値は従来の白半透明を維持（フォールバック引数も同値）
+- DSL の color 名（blue/purple 等）は変更なし
+- `toggleTheme` は既存の `drawAllShapes()` 再描画で線色が更新される
+
+## Phase D（未着手）
+
+- icon 背景 `rgba(22,26,33,0.8)` のテーマ連動（任意）

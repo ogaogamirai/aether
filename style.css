@@ -11,6 +11,11 @@
   --text-secondary: #9ca3af;
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
+  /* SVG 接続線・ラベル（ダーク既定） */
+  --connection-line: rgba(255, 255, 255, 0.15);
+  --connection-label: rgba(255, 255, 255, 0.7);
+  --connection-label-muted: rgba(255, 255, 255, 0.6);
+  --arrow-default: rgba(255, 255, 255, 0.4);
 }
 
 /* ライトテーマ用変数（明るく透き通るようなパステル＆グラスモフィズム調） */
@@ -20,6 +25,16 @@ body.light-theme {
   --border-color: rgba(15, 23, 42, 0.08);
   --text-primary: #0f172a;
   --text-secondary: #475569;
+  --connection-line: rgba(15, 23, 42, 0.18);
+  --connection-label: rgba(15, 23, 42, 0.75);
+  --connection-label-muted: rgba(15, 23, 42, 0.65);
+  --arrow-default: rgba(15, 23, 42, 0.45);
+}
+
+/* 既定矢印マーカー（テーマ連動・SVG fill 属性を上書き） */
+#svg-layer #arrow-default path,
+#arrow-default path {
+  fill: var(--arrow-default) !important;
 }
 
 * {

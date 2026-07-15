@@ -15,6 +15,18 @@ const NOTE_HALF_H = 70;
 const NOTE_W = NOTE_HALF_W * 2; // 180
 const NOTE_H = NOTE_HALF_H * 2; // 140
 
+// style.css のテーマ変数を SVG 属性用に解決（setAttribute では var() が効かない環境向け）
+function themeColor(cssVar, fallback) {
+  try {
+    const el = document.body || document.documentElement;
+    if (!el) return fallback;
+    const v = getComputedStyle(el).getPropertyValue(cssVar).trim();
+    return v || fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
 // 指定された時間(time)が現在アクティブな時間軸(activeTime)において表示可能か判定
 // 累積的な表示：指定された時間軸のインデックス以下であれば表示する
 function isTimeVisible(timeProp) {
@@ -175,7 +187,7 @@ function drawAllShapes() {
     if (sourceNote && targetNote) {
       // 接続ノードのいずれかが未来のフェーズにある場合は接続線を描画しない
       if (!isTimeVisible(sourceNote.time) || !isTimeVisible(targetNote.time)) return;
-      drawLineBetween(sourceNote, targetNote, 'rgba(255,255,255,0.15)', '2', '4 4');
+      drawLineBetween(sourceNote, targetNote, themeColor('--connection-line', 'rgba(255,255,255,0.15)'), '2', '4 4');
     }
   });
 
@@ -285,7 +297,7 @@ function drawCurveArrow(dw) {
   const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   text.setAttribute('x', mx + nx * (curvature * 0.6));
   text.setAttribute('y', my + ny * (curvature * 0.6) - 5);
-  text.setAttribute('fill', 'rgba(255,255,255,0.7)');
+  text.setAttribute('fill', themeColor('--connection-label', 'rgba(255,255,255,0.7)'));
   text.setAttribute('font-size', '10px');
   text.setAttribute('font-family', 'var(--font-display)');
   text.setAttribute('text-anchor', 'middle');
@@ -413,7 +425,7 @@ function drawPresetIcon(dw) {
   const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   text.setAttribute('x', '24');
   text.setAttribute('y', '62');
-  text.setAttribute('fill', 'rgba(255, 255, 255, 0.7)');
+  text.setAttribute('fill', themeColor('--connection-label', 'rgba(255,255,255,0.7)'));
   text.setAttribute('font-size', '10px');
   text.setAttribute('font-weight', '600');
   text.setAttribute('font-family', 'var(--font-display)');
@@ -573,7 +585,7 @@ function drawRelation(rel) {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.setAttribute('x', sx + dx/2 - nx * 10);
       text.setAttribute('y', sy + dy/2 - ny * 10 + 3);
-      text.setAttribute('fill', 'rgba(255,255,255,0.6)');
+      text.setAttribute('fill', themeColor('--connection-label-muted', 'rgba(255,255,255,0.6)'));
       text.setAttribute('font-size', '9px');
       text.setAttribute('font-family', 'var(--font-display)');
       text.setAttribute('text-anchor', 'middle');
@@ -599,7 +611,7 @@ function drawRelation(rel) {
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       text.setAttribute('x', sx + dx/2);
       text.setAttribute('y', sy + dy/2 - 6);
-      text.setAttribute('fill', 'rgba(255,255,255,0.6)');
+      text.setAttribute('fill', themeColor('--connection-label-muted', 'rgba(255,255,255,0.6)'));
       text.setAttribute('font-size', '10px');
       text.setAttribute('font-family', 'var(--font-display)');
       text.setAttribute('text-anchor', 'middle');
