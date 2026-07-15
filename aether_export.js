@@ -564,3 +564,6 @@ async function exportPortableViewer() {
     );
   }
 }
+
+// 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
+window.__AETHER_EXPORT_BUILD__ = 'H3-gzip-v4.0.1';
