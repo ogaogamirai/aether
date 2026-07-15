@@ -1,10 +1,23 @@
 // Aether Control & Coordination Engine v4.0 (Serverless Super Whiteboard)
 // Zero server dependency: IndexedDB autosave + file drag&drop + browser-only export
 
-let focusedNoteId = null;
-let activeTime = null;
-let timeSteps = [];
-let isPresentationMode = false;
+// Snapshot (0,eval) では free var がスクリプト境界で切れる。
+// view / presentation 状態は window を単一の正とする。
+function ensureViewGlobals() {
+  if (typeof window === 'undefined') return;
+  if (typeof window.scale !== 'number') window.scale = 1.0;
+  if (typeof window.panX !== 'number') window.panX = 0;
+  if (typeof window.panY !== 'number') window.panY = 0;
+  if (typeof window.isDragging !== 'boolean') window.isDragging = false;
+  if (typeof window.startX !== 'number') window.startX = 0;
+  if (typeof window.startY !== 'number') window.startY = 0;
+  if (typeof window.activeTag === 'undefined') window.activeTag = null;
+  if (typeof window.focusedNoteId === 'undefined') window.focusedNoteId = null;
+  if (typeof window.activeTime === 'undefined') window.activeTime = null;
+  if (!Array.isArray(window.timeSteps)) window.timeSteps = [];
+  if (typeof window.isPresentationMode !== 'boolean') window.isPresentationMode = false;
+}
+ensureViewGlobals();
 
 // IndexedDB constants moved to aether_storage.js
 
@@ -34,9 +47,9 @@ function applyDSL() {
   relations = parsed.relations || [];
   // window へも同期（配布HTMLの共有状態を確実に保つ）
   syncCanvasGlobals();
-  activeTag = null;
-  focusedNoteId = null;
-  activeTime = null;
+  window.activeTag = null;
+  window.focusedNoteId = null;
+  window.activeTime = null;
 
   if (typeof renderCanvas === 'function') {
     renderCanvas();
@@ -75,18 +88,18 @@ function updateTimeSlider(times) {
 
   if (times.length === 0) {
     containerEl.style.display = 'none';
-    timeSteps = [];
+    window.timeSteps = [];
     return;
   }
 
   containerEl.style.display = 'flex';
-  timeSteps = ['すべて', ...times];
+  window.timeSteps = ['すべて', ...times];
   slider.min = 0;
-  slider.max = timeSteps.length - 1;
+  slider.max = window.timeSteps.length - 1;
   slider.value = 0;
 
   labelsContainer.innerHTML = '';
-  timeSteps.forEach((step, idx) => {
+  window.timeSteps.forEach((step, idx) => {
     const label = document.createElement('div');
     label.className = 'time-slider-label' + (idx === 0 ? ' active' : '');
     label.textContent = step;
@@ -100,8 +113,8 @@ function updateTimeSlider(times) {
 
 function handleTimeSlider(value) {
   const index = parseInt(value, 10);
-  const targetStep = timeSteps[index];
-  activeTime = targetStep === 'すべて' ? null : targetStep;
+  const targetStep = window.timeSteps[index];
+  window.activeTime = targetStep === 'すべて' ? null : targetStep;
 
   const labels = document.querySelectorAll('.time-slider-label');
   labels.forEach((label, idx) => {
@@ -112,7 +125,7 @@ function handleTimeSlider(value) {
   renderCanvas();
   updatePresentationStepName();
 
-  if (isPresentationMode) {
+  if (window.isPresentationMode) {
     setTimeout(() => {
       focusPresentationStepView();
     }, 50);
@@ -120,17 +133,17 @@ function handleTimeSlider(value) {
 }
 
 function togglePresentationMode(forceState) {
-  isPresentationMode = (typeof forceState === 'boolean') ? forceState : !isPresentationMode;
+  window.isPresentationMode = (typeof forceState === 'boolean') ? forceState : !window.isPresentationMode;
   
   const controller = document.getElementById('presentation-controller');
   const btn = document.getElementById('pres-mode-btn');
   
-  if (isPresentationMode) {
+  if (window.isPresentationMode) {
     if (controller) controller.style.display = 'flex';
     if (btn) btn.classList.add('active');
     
     // Default to the first actual time step (index 1) if available, otherwise 0
-    const defaultIdx = timeSteps.length > 1 ? 1 : 0;
+    const defaultIdx = window.timeSteps.length > 1 ? 1 : 0;
     const slider = document.getElementById('time-slider');
     if (slider) {
       slider.value = defaultIdx;
@@ -150,7 +163,7 @@ function togglePresentationMode(forceState) {
 function updatePresentationStepName() {
   const nameEl = document.getElementById('pres-step-name');
   if (nameEl) {
-    nameEl.textContent = activeTime || 'すべて';
+    nameEl.textContent = window.activeTime || 'すべて';
   }
 }
 
@@ -159,8 +172,8 @@ function getFirstNoteForCurrentStep() {
   const sourceNotes = (typeof notes !== 'undefined' && notes) ? notes : [];
   if (!sourceNotes.length) return null;
 
-  if (activeTime) {
-    const newcomers = sourceNotes.filter(n => n.time === activeTime);
+  if (window.activeTime) {
+    const newcomers = sourceNotes.filter(n => n.time === window.activeTime);
     if (newcomers.length) return newcomers[0];
   }
 
@@ -221,14 +234,14 @@ function centerNoteVertically(note) {
 
   if (!isFinite(deltaY) || Math.abs(deltaY) < 0.5) return true;
 
-  panY += deltaY;
+  window.panY += deltaY;
   updateTransform();
   return true;
 }
 
 // レイアウト確定後に縦中央合わせ（連打時は最後の1回だけ）
 function scheduleCenterNoteVertically(note) {
-  if (!note || !isPresentationMode) return;
+  if (!note || !window.isPresentationMode) return;
   if (window.__aetherCenterRaf) {
     cancelAnimationFrame(window.__aetherCenterRaf);
     window.__aetherCenterRaf = null;
@@ -325,8 +338,8 @@ function focusPresentationStepView() {
     const viewW = Math.max(120, container.clientWidth - sidePad * 2);
 
     // 横幅のみ最大フィット（縦は centerNoteVertically が担当）
-    scale = Math.max(0.15, Math.min(3.0, (viewW / contentW) * 0.99));
-    panX = sidePad + (viewW - contentW * scale) / 2 - minX * scale;
+    window.scale = Math.max(0.15, Math.min(3.0, (viewW / contentW) * 0.99));
+    window.panX = sidePad + (viewW - contentW * window.scale) / 2 - minX * window.scale;
     updateTransform();
 
     if (focusNote) {
@@ -341,12 +354,12 @@ function focusPresentationStepView() {
 }
 
 function nextPresentationStep() {
-  if (!timeSteps.length) return;
+  if (!window.timeSteps.length) return;
   const slider = document.getElementById('time-slider');
   if (!slider) return;
   let currentIdx = parseInt(slider.value, 10);
   let nextIdx = currentIdx + 1;
-  if (nextIdx >= timeSteps.length) {
+  if (nextIdx >= window.timeSteps.length) {
     nextIdx = 0;
   }
   slider.value = nextIdx;
@@ -354,13 +367,13 @@ function nextPresentationStep() {
 }
 
 function prevPresentationStep() {
-  if (!timeSteps.length) return;
+  if (!window.timeSteps.length) return;
   const slider = document.getElementById('time-slider');
   if (!slider) return;
   let currentIdx = parseInt(slider.value, 10);
   let prevIdx = currentIdx - 1;
   if (prevIdx < 0) {
-    prevIdx = timeSteps.length - 1;
+    prevIdx = window.timeSteps.length - 1;
   }
   slider.value = prevIdx;
   handleTimeSlider(prevIdx);
@@ -405,29 +418,29 @@ function setupCanvasInteractions() {
 
   containerEl.addEventListener('mousedown', (e) => {
     if (e.target === containerEl || e.target === svgEl) {
-      isDragging = true;
-      startX = e.clientX - panX;
-      startY = e.clientY - panY;
+      window.isDragging = true;
+      window.startX = e.clientX - window.panX;
+      window.startY = e.clientY - window.panY;
     }
   });
 
   window.addEventListener('mousemove', (e) => {
-    if (isDragging) {
-      panX = e.clientX - startX;
-      panY = e.clientY - startY;
+    if (window.isDragging) {
+      window.panX = e.clientX - window.startX;
+      window.panY = e.clientY - window.startY;
       updateTransform();
     }
   });
 
   window.addEventListener('mouseup', () => {
-    isDragging = false;
+    window.isDragging = false;
   });
 
   containerEl.addEventListener('wheel', (e) => {
     e.preventDefault();
     const zoomFactor = 0.05;
-    if (e.deltaY < 0) scale = Math.min(scale + zoomFactor, 2.0);
-    else scale = Math.max(scale - zoomFactor, 0.15);
+    if (e.deltaY < 0) window.scale = Math.min(window.scale + zoomFactor, 2.0);
+    else window.scale = Math.max(window.scale - zoomFactor, 0.15);
     updateTransform();
   });
 
@@ -441,20 +454,20 @@ setupCanvasInteractions();
 function updateTransform() {
   const refs = getCanvasRefs();
   if (!refs.transformLayer) return;
-  refs.transformLayer.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+  refs.transformLayer.style.transform = `translate(${window.panX}px, ${window.panY}px) scale(${window.scale})`;
   const indicator = document.getElementById('scale-indicator');
-  if (indicator) indicator.textContent = `${Math.round(scale * 100)}%`;
+  if (indicator) indicator.textContent = `${Math.round(window.scale * 100)}%`;
 }
 
 function zoom(delta) {
-  scale = Math.max(0.15, Math.min(2.0, scale + delta));
+  window.scale = Math.max(0.15, Math.min(2.0, window.scale + delta));
   updateTransform();
 }
 
 function resetTransform() {
-  scale = 1.0;
-  panX = 0;
-  panY = 0;
+  window.scale = 1.0;
+  window.panX = 0;
+  window.panY = 0;
   updateTransform();
 }
 
@@ -568,10 +581,10 @@ function fitToView() {
   const contentH = Math.max(1, maxY - minY);
 
   const fitScale = Math.min(viewW / contentW, viewH / contentH);
-  scale = Math.max(0.15, Math.min(2.0, fitScale * 0.98));
+  window.scale = Math.max(0.15, Math.min(2.0, fitScale * 0.98));
 
-  panX = chrome.left + (viewW - contentW * scale) / 2 - minX * scale;
-  panY = chrome.top + (viewH - contentH * scale) / 2 - minY * scale;
+  window.panX = chrome.left + (viewW - contentW * window.scale) / 2 - minX * window.scale;
+  window.panY = chrome.top + (viewH - contentH * window.scale) / 2 - minY * window.scale;
   updateTransform();
 }
 
@@ -664,11 +677,11 @@ function showNodeDetails(note) {
   const detailsContainer = document.getElementById('details-view-container');
   if (!detailsContainer) return;
 
-  if (focusedNoteId) {
-    const prevEl = document.getElementById('note-' + focusedNoteId);
+  if (window.focusedNoteId) {
+    const prevEl = document.getElementById('note-' + window.focusedNoteId);
     if (prevEl) prevEl.classList.remove('focused');
   }
-  focusedNoteId = note.id;
+  window.focusedNoteId = note.id;
   const currentEl = document.getElementById('note-' + note.id);
   if (currentEl) currentEl.classList.add('focused');
 
@@ -696,7 +709,7 @@ function showNodeDetails(note) {
   switchTab('details');
 
   // プレゼン中は選択変更のたびに縦中央へ（クリック/キーボード共通）
-  if (isPresentationMode) {
+  if (window.isPresentationMode) {
     scheduleCenterNoteVertically(note);
   }
 }
@@ -713,13 +726,13 @@ function isTypingTarget(el) {
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if (isPresentationMode) {
+    if (window.isPresentationMode) {
       togglePresentationMode(false);
     }
-    if (focusedNoteId) {
-      const el = document.getElementById('note-' + focusedNoteId);
+    if (window.focusedNoteId) {
+      const el = document.getElementById('note-' + window.focusedNoteId);
       if (el) el.classList.remove('focused');
-      focusedNoteId = null;
+      window.focusedNoteId = null;
 
       const detailsContainer = document.getElementById('details-view-container');
       if (detailsContainer) {
@@ -739,7 +752,7 @@ window.addEventListener('keydown', (e) => {
   if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) {
     if (isTypingTarget(e.target)) return;
     e.preventDefault();
-    if (isPresentationMode) {
+    if (window.isPresentationMode) {
       focusPresentationStepView();
     } else {
       fitToView();
@@ -774,19 +787,19 @@ window.addEventListener('keydown', (e) => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
     if (e.ctrlKey || e.metaKey || e.shiftKey) return; // Ctrl 等の修飾キーがあればスキップ
     if (isTypingTarget(e.target)) return;
-    if (!focusedNoteId) return;
+    if (!window.focusedNoteId) return;
     e.preventDefault();
 
-    const currentNote = notes.find(n => n.id === focusedNoteId);
+    const currentNote = notes.find(n => n.id === window.focusedNoteId);
     if (!currentNote) return;
 
     let bestTarget = null;
     let minDistance = Infinity;
 
     notes.forEach(note => {
-      if (note.id === focusedNoteId) return;
+      if (note.id === window.focusedNoteId) return;
       // プレゼン中は現在ステップで見えている付箋だけを対象にする
-      if (isPresentationMode && typeof isTimeVisible === 'function' && !isTimeVisible(note.time)) return;
+      if (window.isPresentationMode && typeof isTimeVisible === 'function' && !isTimeVisible(note.time)) return;
 
       const dx = note.x - currentNote.x;
       const dy = note.y - currentNote.y;

@@ -80,6 +80,13 @@ async function inlineRemoteImagesInDsl(dslText) {
   return result;
 }
 
+// DSL テキストの export 時正規化（末尾空白・過剰空行のみ除去）
+function normalizeDslForExport(dslText) {
+  return String(dslText || '')
+    .replace(/[ \t]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n');
+}
+
 // UTF-8 → Base64（配布HTML埋め込み用。インラインJS破壊を避ける）
 function utf8ToBase64(str) {
   const bytes = new TextEncoder().encode(String(str || ''));
@@ -91,18 +98,163 @@ function utf8ToBase64(str) {
   return btoa(binary);
 }
 
-// 配布用 JS: 正規表現を壊す minify は禁止。空白はそのまま（storage 除外が主効果）
-function minifySnapshotJs(src) {
-  return String(src || '').trim() + '\n';
+// JS bundle を gzip 圧縮して base64 化（非対応環境は plain フォールバック）
+async function gzipUtf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(String(str || ''));
+  if (typeof CompressionStream === 'undefined') {
+    // fallback: uncompressed base64 via existing utf8ToBase64
+    return { b64: utf8ToBase64(str), encoding: 'plain' };
+  }
+  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+  const ab = await new Response(stream).arrayBuffer();
+  const u8 = new Uint8Array(ab);
+  // base64 encode binary gzip
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < u8.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, u8.subarray(i, i + chunk));
+  }
+  return { b64: btoa(binary), encoding: 'gzip' };
 }
 
-// CSS のみ軽量圧縮（url/文字列は触らない）
+// 配布HTML内の script / style タグを早期終了させないためのエスケープ
+function escapeAsScriptPlain(text) {
+  return String(text || '').replace(/<\/script/gi, '<\\/script');
+}
+function escapeAsStyle(text) {
+  return String(text || '').replace(/<\/style/gi, '<\\/style');
+}
+
+// 配布用 JS: 文字列を保護し、コメント除去 + 冗長空白のみ圧縮（演算子/正規表現は触らない）
+function minifySnapshotJs(src) {
+  const held = [];
+  const hold = (m) => {
+    held.push(m);
+    return '\u0000' + (held.length - 1) + '\u0000';
+  };
+  let s = String(src || '');
+
+  // 文字列を退避してからコメント除去（正規表現リテラルの / は触らない）
+  s = s.replace(/(["'`])(?:\\.|(?!\1)[\s\S])*\1/g, hold);
+  s = s.replace(/\/\*[\s\S]*?\*\//g, '');
+  // // コメント: 行頭または空白の後のみ（URL の http:// は文字列内で既に退避済み）
+  s = s.replace(/(^|[\s;{}(),=])\/\/[^\n]*/gm, '$1');
+  s = s.replace(/[ \t]+$/gm, '');
+  s = s.replace(/\n{3,}/g, '\n\n');
+  s = s.replace(/[ \t]{2,}/g, ' ');
+  s = s.replace(/\u0000(\d+)\u0000/g, (_, i) => held[Number(i)]);
+  return s.trim() + '\n';
+}
+
+// CSS 軽量圧縮（url() 内の空白は触らない程度に安全側）
 function minifySnapshotCss(src) {
   let s = String(src || '');
   s = s.replace(/\/\*[\s\S]*?\*\//g, '');
-  s = s.replace(/\n\s*\n+/g, '\n');
-  s = s.replace(/[ \t]+/g, ' ');
+  s = s.replace(/\s+/g, ' ');
+  s = s.replace(/\s*([{}:;,>])\s*/g, '$1');
+  s = s.replace(/;}/g, '}');
   return s.trim();
+}
+
+// 直前トークンから「ここは正規表現リテラル開始の / か」を推定
+function isRegexLiteralStart(src, slashIndex) {
+  let p = slashIndex - 1;
+  while (p >= 0 && /[ \t\r\n]/.test(src[p])) p--;
+  if (p < 0) return true;
+  const c = src[p];
+  // 識別子・数値・) ] の直後の / は除算とみなす
+  if (/[)\]\w$]/.test(c)) return false;
+  return true;
+}
+
+// function <name> { ... } ブロックを文字列から完全削除（入れ子ブレース対応）
+// 文字列・コメント・正規表現リテラル内の {} はカウントしない
+function stripFunctionByName(src, name) {
+  const safeName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('function\\s+' + safeName + '\\s*\\(');
+  let out = String(src || '');
+  let match;
+  while ((match = re.exec(out)) !== null) {
+    let i = match.index;
+    let j = i + match[0].length;
+    let parenDepth = 1;
+    while (j < out.length && parenDepth > 0) {
+      const c = out[j];
+      if (c === '(') parenDepth++;
+      else if (c === ')') parenDepth--;
+      j++;
+    }
+    while (j < out.length && /\s/.test(out[j])) j++;
+    if (out[j] !== '{') break;
+    let braceDepth = 1;
+    let k = j + 1;
+    while (k < out.length && braceDepth > 0) {
+      const c = out[k];
+      // コメントをスキップ
+      if (c === '/' && (out[k + 1] === '/' || out[k + 1] === '*')) {
+        if (out[k + 1] === '/') {
+          const nl = out.indexOf('\n', k);
+          k = nl === -1 ? out.length : nl + 1;
+        } else {
+          const end = out.indexOf('*/', k + 2);
+          k = end === -1 ? out.length : end + 2;
+        }
+        continue;
+      }
+      // 正規表現リテラル（/pattern/flags）— 文字列内の " 誤認を防ぐ
+      if (c === '/' && isRegexLiteralStart(out, k)) {
+        k++;
+        let inClass = false;
+        while (k < out.length) {
+          const rc = out[k];
+          if (rc === '\\') { k += 2; continue; }
+          if (rc === '[') { inClass = true; k++; continue; }
+          if (rc === ']' && inClass) { inClass = false; k++; continue; }
+          if (rc === '/' && !inClass) {
+            k++;
+            while (k < out.length && /[a-z]/i.test(out[k])) k++;
+            break;
+          }
+          if (rc === '\n') break;
+          k++;
+        }
+        continue;
+      }
+      // 文字列・テンプレートをスキップ
+      if (c === '"' || c === "'" || c === '`') {
+        const quote = c;
+        k++;
+        while (k < out.length) {
+          const qc = out[k];
+          if (qc === '\\') { k += 2; continue; }
+          if (quote === '`' && qc === '$' && out[k + 1] === '{') {
+            // テンプレート ${ ... } は簡易スキップ（ネスト最小）
+            k += 2;
+            let td = 1;
+            while (k < out.length && td > 0) {
+              if (out[k] === '{') td++;
+              else if (out[k] === '}') td--;
+              k++;
+            }
+            continue;
+          }
+          if (qc === quote) { k++; break; }
+          k++;
+        }
+        continue;
+      }
+      if (c === '{') braceDepth++;
+      else if (c === '}') braceDepth--;
+      k++;
+    }
+    let end = k;
+    while (end < out.length && /\s/.test(out[end]) && out[end] !== '\n') end++;
+    if (out[end] === '\n') end++;
+    out = out.slice(0, i) + out.slice(end);
+    // 削除後は re.lastIndex をリセット（global なしだが位置ずれ対策で先頭から再検索）
+    re.lastIndex = 0;
+  }
+  return out;
 }
 
 // 配布HTML向けに main から起動・巨大DEFAULTを除去（storage は同梱しない）
@@ -128,12 +280,27 @@ function prepareMainJsForSnapshot(mainJs) {
     '/* deferred setupCanvasInteractions in snapshot boot */\n'
   );
 
+  // 配布HTMLでは不要なエディタ専用関数を削除
+  for (const fn of ['setupDragAndDrop', 'triggerImportDSL', 'handleImportDSL', 'exportDSLToFile', 'ensureViewGlobals']) {
+    safeMain = stripFunctionByName(safeMain, fn);
+  }
+
+  // 除去後に残った呼び出し行があれば消す
+  safeMain = safeMain.replace(/ensureViewGlobals\s*\(\s*\)\s*;?/g, '');
+
   return safeMain.trim() + '\n';
 }
 
 // parser + renderer + main のみ（storage 除外で ~16KB+Base64 削減）
 function buildSnapshotBundle(parserJs, rendererJs, mainJs) {
   const safeMain = prepareMainJsForSnapshot(mainJs);
+
+  // parser 内のエクスポート専用関数は snapshot では不要
+  let safeParser = String(parserJs || '');
+  for (const fn of ['serializeCanvasToDSL', 'generateDSLFromCanvas']) {
+    safeParser = stripFunctionByName(safeParser, fn);
+  }
+
   // 共有状態 + IDB スタブ（表示・UI は維持、永続化のみ無効）
   const prelude = [
     'window.__AETHER_SNAPSHOT__ = true;',
@@ -144,13 +311,15 @@ function buildSnapshotBundle(parserJs, rendererJs, mainJs) {
     'if (typeof window.startX !== "number") window.startX = 0;',
     'if (typeof window.startY !== "number") window.startY = 0;',
     'if (typeof window.activeTag === "undefined") window.activeTag = null;',
+    'if (typeof window.focusedNoteId === "undefined") window.focusedNoteId = null;',
+    'if (typeof window.activeTime === "undefined") window.activeTime = null;',
+    'if (!Array.isArray(window.timeSteps)) window.timeSteps = [];',
+    'if (typeof window.isPresentationMode !== "boolean") window.isPresentationMode = false;',
     'if (!Array.isArray(window.notes)) window.notes = [];',
     'if (!Array.isArray(window.connections)) window.connections = [];',
     'if (!Array.isArray(window.drawings)) window.drawings = [];',
     'if (!Array.isArray(window.relations)) window.relations = [];',
-    'var scale = window.scale, panX = window.panX, panY = window.panY;',
-    'var isDragging = window.isDragging, startX = window.startX, startY = window.startY;',
-    'var activeTag = window.activeTag;',
+    // notes 等は再代入されるため free var エイリアスを維持。view 状態は window のみ。
     'var notes = window.notes, connections = window.connections, drawings = window.drawings, relations = window.relations;',
     'function syncBoardStateToDB(){return Promise.resolve();}',
     'function saveCanvasState(){}',
@@ -164,7 +333,7 @@ function buildSnapshotBundle(parserJs, rendererJs, mainJs) {
 
   const raw = [
     prelude,
-    String(parserJs || ''),
+    safeParser,
     '\n',
     String(rendererJs || ''),
     '\n',
@@ -183,6 +352,7 @@ async function exportPortableViewer() {
 
   try {
     dsl = await inlineRemoteImagesInDsl(dsl);
+    dsl = normalizeDslForExport(dsl);
 
     // キャッシュで古い JS が混入しないよう bust
     // 配布ビューアは表示・UI のみ。IndexedDB(storage) は同梱しない（サイズ削減）
@@ -210,11 +380,12 @@ async function exportPortableViewer() {
       throw new Error('snapshot_syntax_failed: ' + (syntaxErr && syntaxErr.message ? syntaxErr.message : syntaxErr));
     }
 
-    const b64Css = utf8ToBase64(cssMin);
-    const b64Bundle = utf8ToBase64(bundleJs);
-    const b64Dsl = utf8ToBase64(dsl);
+    const packed = await gzipUtf8ToBase64(bundleJs);
+    const escapedDsl = escapeAsScriptPlain(dsl);
+    const styleContent = escapeAsStyle(cssMin);
 
-    // ランタイムは極小。巨大コードは Base64 payload から decode+eval（1回のみ）
+    // ランタイムは極小。JS bundle を Base64 デコード（gzip なら展開）して eval（1回のみ）
+    // DSL・CSS は HTML 内にそのまま埋め込み（Base64 税を回避）
     const runtimeJs = [
       'window.__AETHER_SNAPSHOT__ = true;',
       'function __aetherB64ToUtf8(b64) {',
@@ -227,13 +398,24 @@ async function exportPortableViewer() {
       '  var el = document.getElementById(id);',
       '  return el ? String(el.textContent || "").replace(/\\s+/g, "") : "";',
       '}',
-      'function __aetherBootSnapshot() {',
+      'async function __aetherBootSnapshot() {',
       '  try {',
-      '    var code = __aetherB64ToUtf8(__aetherReadPayload("aether-src-bundle"));',
+      '    var b64 = __aetherReadPayload("aether-src-bundle");',
+      '    var encoding = document.getElementById("aether-src-bundle").getAttribute("data-encoding") || "plain";',
+      '    var code;',
+      '    if (encoding === "gzip") {',
+      '      if (typeof DecompressionStream === "undefined") throw new Error("gzip payload requires DecompressionStream");',
+      '      var bytes = Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); });',
+      '      var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));',
+      '      code = await new Response(stream).text();',
+      '    } else {',
+      '      code = __aetherB64ToUtf8(b64);',
+      '    }',
       '    (0, eval)(code);',
       '    if (typeof setupCanvasInteractions === "function") setupCanvasInteractions();',
       '    if (typeof refreshCanvasRefs === "function") refreshCanvasRefs();',
-      '    var initialDSL = __aetherB64ToUtf8(__aetherReadPayload("aether-src-dsl"));',
+      '    var dslEl = document.getElementById("aether-src-dsl");',
+      '    var initialDSL = dslEl ? String(dslEl.textContent || "") : "";',
       '    var input = document.getElementById("dsl-input");',
       '    if (input) input.value = initialDSL;',
       '    if (typeof applyDSL !== "function") throw new Error("applyDSL missing after bundle eval");',
@@ -269,7 +451,7 @@ async function exportPortableViewer() {
       '  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">',
       '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">',
       '  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"><\/script>',
-      '  <style id="aether-embedded-css"></style>',
+      '  <style id="aether-embedded-css">' + styleContent + '</style>',
       '</head>',
       '<body class="light-theme">',
       '  <div class="whiteboard-container" id="canvas-container">',
@@ -340,25 +522,16 @@ async function exportPortableViewer() {
       '    </div>',
       '  </div>',
       '',
-      '  <!-- payloads: Base64 only (never parsed as JS/HTML source) -->',
-      '  <script type="text/plain" id="aether-src-css">' + b64Css + '<\/script>',
-      '  <script type="text/plain" id="aether-src-bundle">' + b64Bundle + '<\/script>',
-      '  <script type="text/plain" id="aether-src-dsl">' + b64Dsl + '<\/script>',
+      '  <!-- payloads: JS bundle as Base64/gzip; DSL as plain text; CSS embedded directly -->',
+      '  <script type="text/plain" id="aether-src-bundle" data-encoding="' + packed.encoding + '">' + packed.b64 + '<\/script>',
+      '  <script type="text/plain" id="aether-src-dsl">' + escapedDsl + '<\/script>',
       '',
       '  <script>',
-      '    // inject CSS first',
-      '    (function(){',
-      '      function b64(s){var bin=atob(String(s||"").replace(/\\s+/g,""));var u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new TextDecoder("utf-8").decode(u);}',
-      '      var el=document.getElementById("aether-src-css");',
-      '      var st=document.getElementById("aether-embedded-css");',
-      '      if(el&&st) st.textContent=b64(el.textContent);',
-      '    })();',
-      '  <\/script>',
-      '  <script>',
-      '    // var で宣言し window と eval バンドルから確実に共有する',
-      '    var scale = 1.0; var panX = 0; var panY = 0; var isDragging = false; var startX = 0; var startY = 0; var activeTag = null;',
+      '    // notes 等は再代入共有。view/presentation は window のみ（free var 禁止）',
+      '    window.scale = 1.0; window.panX = 0; window.panY = 0;',
+      '    window.isDragging = false; window.startX = 0; window.startY = 0; window.activeTag = null;',
+      '    window.focusedNoteId = null; window.activeTime = null; window.timeSteps = []; window.isPresentationMode = false;',
       '    var notes = []; var connections = []; var drawings = []; var relations = [];',
-      '    window.scale = scale; window.panX = panX; window.panY = panY;',
       '    window.notes = notes; window.connections = connections; window.drawings = drawings; window.relations = relations;',
       '  <\/script>',
       '  <script>',
@@ -379,7 +552,7 @@ async function exportPortableViewer() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast('配布用HTMLを出力しました！（Base64版）', 'success');
+    showToast('配布用HTMLを出力しました！（軽量版・JS ' + (packed.encoding === 'gzip' ? 'gzip圧縮' : 'Base64') + '）', 'success');
   } catch (err) {
     console.error('[Aether Standalone Export] Failed:', err);
     const isFile = location.protocol === 'file:';

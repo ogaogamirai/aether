@@ -123,19 +123,27 @@
 
   <!-- JavaScript Modules (Loaded sequentially) -->
   <script>
-    // Global shared variables
-    let scale = 1.0;
-    let panX = 0;
-    let panY = 0;
-    let isDragging = false;
-    let startX = 0;
-    let startY = 0;
-    let activeTag = null; // アクティブタグフィルター状態
+    // Global shared variables (view state on window for snapshot/export parity)
+    window.scale = 1.0;
+    window.panX = 0;
+    window.panY = 0;
+    window.isDragging = false;
+    window.startX = 0;
+    window.startY = 0;
+    window.activeTag = null;
+    window.focusedNoteId = null;
+    window.activeTime = null;
+    window.timeSteps = [];
+    window.isPresentationMode = false;
 
-    let notes = [];
-    let connections = [];
-    let drawings = [];
-    let relations = [];
+    var notes = [];
+    var connections = [];
+    var drawings = [];
+    var relations = [];
+    window.notes = notes;
+    window.connections = connections;
+    window.drawings = drawings;
+    window.relations = relations;
   </script>
   <script src="aether_parser.js"></script>
   <script src="aether_renderer.js"></script>

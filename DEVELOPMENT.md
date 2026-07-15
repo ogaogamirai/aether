@@ -97,7 +97,56 @@ const bundleJs = buildSnapshotBundle(parserJs, rendererJs, combinedMain);
 | E2 | プレゼン中 F キーは `fitToView`（縦縮め）ではなく `focusPresentationStepView` |
 | E3 | 配布 JS minify を無効化（regex 破壊を回避）。CSS のみ軽圧縮。storage 除外は維持 |
 
-## Phase F（未着手）
+## Phase F — 配布HTML プレゼン縦中央（2026-07-15）
+
+| ID | 内容 |
+|----|------|
+| F1 | 原因: snapshot `(0,eval)` 境界で free var（`panY` / `isPresentationMode` 等）が共有されず、キーボード選択時に `centerNoteVertically` が効かない |
+| F2 | view/presentation 状態を `window.*` 単一正に統一（main / renderer / index / export prelude） |
+| F3 | export から free var エイリアス（`var panY = window.panY` 等）を除去。notes 配列のみ free var 維持 |
+
+検証: headless Chrome CDP — プレゼン ON で上下付箋を選択すると `topVsMid=0` / `botVsMid=0`、`panY` が追従。
+
+## Phase F2 — 配布サイズ再圧縮（2026-07-15）
+
+E3 で JS minify を全面無効化した結果、engine が太っていた。  
+**文字列保護 + コメント/冗長空白のみ**の安全 minify を再有効化（正規表現リテラルは触らない）。
+
+| 指標 (Base64, 皇位継承 DSL 基準) | 旧 snapshot | F 直後 (minify off) | **F2 後** |
+|----|----|----|----|
+| JS bundle | ~89.0 KB | ~94.6 KB | **~80.0 KB** |
+| CSS | ~27.6 KB | ~25.6 KB | **~22.2 KB** |
+| engine 合計 (JS+CSS) | ~116.5 KB | ~120.2 KB | **~102.2 KB** |
+
+→ 旧 snapshot 比で engine **約 12% 減**。DSL/画像が総容量の主因である点は不変。
+
+## Phase G（未着手）
 
 - icon 背景 `rgba(22,26,33,0.8)` のテーマ連動（任意）
-- 配布 HTML の DSL 画像圧縮オプション（任意）
+- 配布 HTML の DSL 画像圧縮オプション（任意・情報量低下の可能性あり）
+
+## Phase H — 配布HTML さらなる圧縮（UI/情報量維持）（2026-07-15）
+
+| ID | 内容 | ファイル |
+|----|------|----------|
+| H1 | snapshot bundle からデッドコード除去（`ensureViewGlobals` / parser の `serializeCanvasToDSL`・`generateDSLFromCanvas`） | `aether_export.js` |
+| H2 | export 時 DSL の末尾空白・過剰空行のみ正規化（意味不変） | `aether_export.js` |
+| H3 | JS bundle を gzip → Base64 埋め込み。boot は `DecompressionStream`（非対応時 plain フォールバック） | `aether_export.js` |
+| H-fix | `stripFunctionByName` が正規表現リテラル内の `"` で関数を途中切断していた問題を修正（regex-aware） | `aether_export.js` |
+
+維持: 付箋・接続・プレゼン・テーマ・DSL 編集/適用・詳細・UI shell  
+無効（ビューア仕様）: IndexedDB 永続化（従来どおり）
+
+推定（皇位継承 DSL・画像なし、`scratch/size_phase_h.js`）:
+
+| 指標 | 旧 snapshot | F2 相当 | **H 後** |
+|------|-------------|---------|----------|
+| HTML 合計 | ~164.9 KB | ~148 KB | **~74 KB** |
+| JS embed (b64) | ~86.9 KB plain | ~75 KB plain | **~16.4 KB gzip** |
+| CSS | b64 ~27 KB | plain min ~16 KB | plain min ~16 KB |
+| DSL | b64 ~43 KB | plain ~32 KB | plain ~32 KB |
+
+→ 旧 snapshot 比で **約 55% 減**（主因は gzip）。UI/DSL 情報は同一。  
+要: 現代ブラウザ（`DecompressionStream`）。未対応環境は export 側が plain にフォールバック。
+
+検証: `node --check` / `new Function(bundle)` / dead-code 不在 / verifier **PASS**

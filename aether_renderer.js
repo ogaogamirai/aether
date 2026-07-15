@@ -30,10 +30,10 @@ function themeColor(cssVar, fallback) {
 // 指定された時間(time)が現在アクティブな時間軸(activeTime)において表示可能か判定
 // 累積的な表示：指定された時間軸のインデックス以下であれば表示する
 function isTimeVisible(timeProp) {
-  if (activeTime === null || !timeProp) return true;
+  if (window.activeTime === null || !timeProp) return true;
   
-  const activeIdx = timeSteps.indexOf(activeTime);
-  const targetIdx = timeSteps.indexOf(timeProp);
+  const activeIdx = window.timeSteps.indexOf(window.activeTime);
+  const targetIdx = window.timeSteps.indexOf(timeProp);
   
   if (activeIdx === -1 || targetIdx === -1) return true;
   
@@ -91,8 +91,8 @@ function renderCanvas() {
     el.id = `note-${note.id}`;
 
     // Apply active tag dimmed state immediately on render
-    if (activeTag !== null) {
-      const matches = note.tags && note.tags.includes(activeTag);
+    if (window.activeTag !== null) {
+      const matches = note.tags && note.tags.includes(window.activeTag);
       if (!matches) el.classList.add('dimmed');
     }
 
@@ -113,8 +113,8 @@ function renderCanvas() {
       e.stopPropagation();
       isDraggingNote = true;
       el.classList.add('dragging');
-      noteStartX = e.clientX - note.x * scale;
-      noteStartY = e.clientY - note.y * scale;
+      noteStartX = e.clientX - note.x * window.scale;
+      noteStartY = e.clientY - note.y * window.scale;
       clickStartX = e.clientX;
       clickStartY = e.clientY;
       el.style.cursor = 'grabbing';
@@ -122,8 +122,8 @@ function renderCanvas() {
 
     window.addEventListener('mousemove', (e) => {
       if (isDraggingNote) {
-        note.x = (e.clientX - noteStartX) / scale;
-        note.y = (e.clientY - noteStartY) / scale;
+        note.x = (e.clientX - noteStartX) / window.scale;
+        note.y = (e.clientY - noteStartY) / window.scale;
         el.style.left = `${note.x}px`;
         el.style.top = `${note.y}px`;
         drawAllShapes();
@@ -238,9 +238,9 @@ function drawLineBetween(source, target, strokeColor, strokeWidth, dashArray = '
   if (dashArray) line.setAttribute('stroke-dasharray', dashArray);
   
   // タグフィルターによる半透明化
-  if (activeTag !== null) {
-    const sourceHas = source.tags && source.tags.includes(activeTag);
-    const targetHas = target.tags && target.tags.includes(activeTag);
+  if (window.activeTag !== null) {
+    const sourceHas = source.tags && source.tags.includes(window.activeTag);
+    const targetHas = target.tags && target.tags.includes(window.activeTag);
     if (!sourceHas || !targetHas) {
       line.setAttribute('class', 'dimmed');
     }
@@ -304,10 +304,10 @@ function drawCurveArrow(dw) {
   text.textContent = dw.title;
 
   // タグフィルターによる半透明化
-  if (activeTag !== null) {
-    const dwHas = dw.tags && dw.tags.includes(activeTag);
-    const sourceHas = source.tags && source.tags.includes(activeTag);
-    const targetHas = target.tags && target.tags.includes(activeTag);
+  if (window.activeTag !== null) {
+    const dwHas = dw.tags && dw.tags.includes(window.activeTag);
+    const sourceHas = source.tags && source.tags.includes(window.activeTag);
+    const targetHas = target.tags && target.tags.includes(window.activeTag);
     if (!dwHas && (!sourceHas || !targetHas)) {
       path.setAttribute('class', 'dimmed');
       text.setAttribute('class', 'dimmed');
@@ -366,9 +366,9 @@ function drawCircleArea(dw) {
   text.textContent = `✦ ${dw.title}`;
 
   // タグフィルターによる半透明化
-  if (activeTag !== null) {
-    const dwHas = dw.tags && dw.tags.includes(activeTag);
-    const anyTargetHas = targets.some(n => n.tags && n.tags.includes(activeTag));
+  if (window.activeTag !== null) {
+    const dwHas = dw.tags && dw.tags.includes(window.activeTag);
+    const anyTargetHas = targets.some(n => n.tags && n.tags.includes(window.activeTag));
     if (!dwHas && !anyTargetHas) {
       rect.setAttribute('class', 'dimmed');
       text.setAttribute('class', 'dimmed');
@@ -433,10 +433,10 @@ function drawPresetIcon(dw) {
   text.textContent = dw.title;
 
   // タグフィルターによる半透明化
-  if (activeTag !== null) {
-    const dwHas = dw.tags && dw.tags.includes(activeTag);
+  if (window.activeTag !== null) {
+    const dwHas = dw.tags && dw.tags.includes(window.activeTag);
     const anchorNode = notes.find(n => n.id === dw.anchor);
-    const anchorHas = anchorNode && anchorNode.tags && anchorNode.tags.includes(activeTag);
+    const anchorHas = anchorNode && anchorNode.tags && anchorNode.tags.includes(window.activeTag);
     if (!dwHas && !anchorHas) {
       group.setAttribute('class', 'dimmed');
     }
@@ -472,9 +472,9 @@ function drawRelation(rel) {
   else if (rel.color === 'red' || rel.type === 'conflict') colorHex = '#ef4444';
 
   // タグフィルターとの合致判定
-  const matches = (activeTag === null) || 
-                  (rel.tags && rel.tags.includes(activeTag)) || 
-                  ((source.tags && source.tags.includes(activeTag)) && (target.tags && target.tags.includes(activeTag)));
+  const matches = (window.activeTag === null) || 
+                  (rel.tags && rel.tags.includes(window.activeTag)) || 
+                  ((source.tags && source.tags.includes(window.activeTag)) && (target.tags && target.tags.includes(window.activeTag)));
   const isDimmed = !matches;
 
   if (rel.type === 'conflict') {
@@ -630,14 +630,14 @@ function updateTagsFilterBar(tags) {
 
   // 「すべて」チップを追加
   const allChip = document.createElement('div');
-  allChip.className = 'tag-chip' + (activeTag === null ? ' active' : '');
+  allChip.className = 'tag-chip' + (window.activeTag === null ? ' active' : '');
   allChip.textContent = '✦ すべて';
   allChip.onclick = () => filterByTag(null);
   bar.appendChild(allChip);
 
   tags.forEach(tag => {
     const chip = document.createElement('div');
-    chip.className = 'tag-chip' + (activeTag === tag ? ' active' : '');
+    chip.className = 'tag-chip' + (window.activeTag === tag ? ' active' : '');
     chip.textContent = tag;
     chip.onclick = () => filterByTag(tag);
     bar.appendChild(chip);
@@ -646,7 +646,7 @@ function updateTagsFilterBar(tags) {
 
 // タグによるフィルタリング実行
 function filterByTag(tag) {
-  activeTag = tag;
+  window.activeTag = tag;
   
   // チップのスタイル更新
   document.querySelectorAll('.tag-chip').forEach(chip => {
