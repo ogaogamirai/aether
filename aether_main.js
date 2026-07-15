@@ -17,6 +17,14 @@ const AUTOSAVE_DEBOUNCE_MS = 3000;
 let debounceTimeout = null;
 let _dbReadyPromise = null;
 
+function syncCanvasGlobals() {
+  if (typeof window === 'undefined') return;
+  window.notes = notes;
+  window.connections = connections;
+  window.drawings = drawings;
+  window.relations = relations;
+}
+
 // Apply parsed DSL to Canvas
 function applyDSL() {
   setupCanvasInteractions();
@@ -34,12 +42,7 @@ function applyDSL() {
   drawings = parsed.drawings || [];
   relations = parsed.relations || [];
   // window へも同期（配布HTMLの共有状態を確実に保つ）
-  if (typeof window !== 'undefined') {
-    window.notes = notes;
-    window.connections = connections;
-    window.drawings = drawings;
-    window.relations = relations;
-  }
+  syncCanvasGlobals();
   activeTag = null;
   focusedNoteId = null;
   activeTime = null;
@@ -452,6 +455,7 @@ function resetTransform() {
 // キャンバス上のオーバーレイUI（タグバー・時系列スライダー等）を避けた表示余白を測る
 // ※ control-panel は body flex で whiteboard と横並びのため、clientWidth に既に含まれない。右余白に加算しない。
 function getFitChromePadding() {
+  // 既定余白: タグバー/スライダー未表示時の最低保証。実測で上書きされる。
   const pad = { top: 40, right: 24, bottom: 36, left: 24 };
   const refs = getCanvasRefs();
   if (!refs.container) return pad;
@@ -471,6 +475,7 @@ function getFitChromePadding() {
   }
 
   // プレゼンコントローラーが表示されている場合、下側余白を確保して重なりを避ける
+  // pres bottom 100: #presentation-controller の高さ+マージン相当
   const presController = document.getElementById('presentation-controller');
   if (presController && getComputedStyle(presController).display !== 'none') {
     pad.bottom = Math.max(pad.bottom, 100);
@@ -1029,12 +1034,7 @@ async function loadFromDB() {
       drawings = structured.drawings || [];
       relations = structured.relations || [];
       connections = structured.connections || [];
-      if (typeof window !== 'undefined') {
-        window.notes = notes;
-        window.drawings = drawings;
-        window.relations = relations;
-        window.connections = connections;
-      }
+      syncCanvasGlobals();
       return buildDSLFromState();
     }
 
@@ -1412,7 +1412,6 @@ function prepareMainJsForSnapshot(mainJs) {
   // エクスポート専用以降は配布HTMLに不要
   const cutMarkers = [
     'async function fetchTextAsset',
-    'function sanitizeForInlineScript',
     'function utf8ToBase64',
     'function prepareMainJsForSnapshot',
     'async function exportPortableViewer',
@@ -1750,12 +1749,7 @@ async function applyDefaultOrCachedDsl() {
         drawings = structured.drawings || [];
         relations = structured.relations || [];
         connections = structured.connections || [];
-        if (typeof window !== 'undefined') {
-          window.notes = notes;
-          window.drawings = drawings;
-          window.relations = relations;
-          window.connections = connections;
-        }
+        syncCanvasGlobals();
         return buildDSLFromState();
       })();
       document.getElementById('dsl-input').value = dsl;

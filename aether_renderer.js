@@ -1,3 +1,5 @@
+// Aether Canvas Renderer v4.0
+
 // Predefined beautiful SVG vector paths for icons (Approach A)
 const PRESET_ICONS = {
   brain: "M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.07 19.57 10.48 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm-1-8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5c0 .66-.43 1.21-1.03 1.4-.08.03-.15.07-.22.12-.17.13-.25.33-.25.56v.42c0 .55-.45 1-1 1s-1-.45-1-1v-.92c0-.52.27-.99.71-1.25.13-.08.23-.2.29-.33.09-.23.09-.54-.09-.76-.09-.11-.22-.17-.36-.17-.28 0-.5.22-.5.5 0 .55-.45 1-1 1s-1-.45-1-1zm1 7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z",
@@ -6,6 +8,12 @@ const PRESET_ICONS = {
   lightbulb: "M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1c-.03.02-.06.05-.08.08L13 14.25V16h-2v-1.75l-.77-.57c-.03-.02-.05-.05-.08-.08C8.97 12.54 8 10.9 8 9c0-2.21 1.79-4 4-4s4 1.79 4 4c0 1.9-.97 3.54-2.15 4.6z",
   shield: "M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3zm6 9.09c0 4.02-2.58 7.78-6 8.91-3.42-1.13-6-4.89-6-8.91V6.38l6-2.25 6 2.25v4.71z"
 };
+
+// sticky note 見た目: style.css width 180 / min-height 140 の半分（中心）
+const NOTE_HALF_W = 90;
+const NOTE_HALF_H = 70;
+const NOTE_W = NOTE_HALF_W * 2; // 180
+const NOTE_H = NOTE_HALF_H * 2; // 140
 
 // 指定された時間(time)が現在アクティブな時間軸(activeTime)において表示可能か判定
 // 累積的な表示：指定された時間軸のインデックス以下であれば表示する
@@ -203,10 +211,10 @@ function drawAllShapes() {
 }
 
 function drawLineBetween(source, target, strokeColor, strokeWidth, dashArray = '') {
-  const sx = source.x + 90;
-  const sy = source.y + 70;
-  const tx = target.x + 90;
-  const ty = target.y + 70;
+  const sx = source.x + NOTE_HALF_W;
+  const sy = source.y + NOTE_HALF_H;
+  const tx = target.x + NOTE_HALF_W;
+  const ty = target.y + NOTE_HALF_H;
 
   const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
   line.setAttribute('x1', sx);
@@ -234,10 +242,10 @@ function drawCurveArrow(dw) {
   const target = notes.find(n => n.id === dw.to);
   if (!source || !target) return;
 
-  const sx = source.x + 90;
-  const sy = source.y + 70;
-  const tx = target.x + 90;
-  const ty = target.y + 70;
+  const sx = source.x + NOTE_HALF_W;
+  const sy = source.y + NOTE_HALF_H;
+  const tx = target.x + NOTE_HALF_W;
+  const ty = target.y + NOTE_HALF_H;
 
   const dx = tx - sx;
   const dy = ty - sy;
@@ -307,9 +315,9 @@ function drawCircleArea(dw) {
 
   targets.forEach(n => {
     if (n.x < minX) minX = n.x;
-    if (n.x + 180 > maxX) maxX = n.x + 180;
+    if (n.x + NOTE_W > maxX) maxX = n.x + NOTE_W;
     if (n.y < minY) minY = n.y;
-    if (n.y + 140 > maxY) maxY = n.y + 140;
+    if (n.y + NOTE_H > maxY) maxY = n.y + NOTE_H;
   });
 
   const cx = (minX + maxX) / 2;
@@ -367,8 +375,8 @@ function drawPresetIcon(dw) {
   if (dw.anchor) {
     const anchorNode = notes.find(n => n.id === dw.anchor);
     if (anchorNode) {
-      const ax = anchorNode.x + 90;
-      const ay = anchorNode.y + 70;
+      const ax = anchorNode.x + NOTE_HALF_W;
+      const ay = anchorNode.y + NOTE_HALF_H;
       x = ax + (dw.offset[0] || 0) - 24;
       y = ay + (dw.offset[1] || 0) - 24;
     }
@@ -434,10 +442,10 @@ function drawRelation(rel) {
   const target = notes.find(n => n.id === rel.to);
   if (!source || !target) return;
 
-  const sx = source.x + 90;
-  const sy = source.y + 70;
-  const tx = target.x + 90;
-  const ty = target.y + 70;
+  const sx = source.x + NOTE_HALF_W;
+  const sy = source.y + NOTE_HALF_H;
+  const tx = target.x + NOTE_HALF_W;
+  const ty = target.y + NOTE_HALF_H;
 
   const dx = tx - sx;
   const dy = ty - sy;

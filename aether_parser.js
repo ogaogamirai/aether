@@ -1,4 +1,4 @@
-// Aether DSL Parser & Serializer v3.0
+// Aether DSL Parser & Serializer v4.0 (export format header remains v3.0)
 
 // Aether DSL Parser
 function parseAetherDSL(text) {

@@ -3,6 +3,7 @@ aether.db
 aether_data.json
 mode_flag.txt
 *.db
+.ariadne.db
 __pycache__/
 *.pyc
 .env
@@ -10,3 +11,4 @@ __pycache__/
 venv/
 .DS_Store
 Thumbs.db
+
