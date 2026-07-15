@@ -1023,6 +1023,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
+  console.log('[Aether] build 4.0.3 phase-I (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
 
