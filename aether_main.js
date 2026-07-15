@@ -233,19 +233,28 @@ function scheduleCenterNoteVertically(note) {
     cancelAnimationFrame(window.__aetherCenterRaf);
     window.__aetherCenterRaf = null;
   }
-  // 2フレーム待って詳細パネル切替・DOM 確定後に実測
+  if (window.__aetherCenterTimer) {
+    clearTimeout(window.__aetherCenterTimer);
+    window.__aetherCenterTimer = null;
+  }
+  // 2フレーム + 短遅延: 詳細パネル・幅フィット後の getBoundingClientRect を安定させる
   window.__aetherCenterRaf = requestAnimationFrame(() => {
     window.__aetherCenterRaf = requestAnimationFrame(() => {
       window.__aetherCenterRaf = null;
       centerNoteVertically(note);
+      // レイアウト遅延時の再調整（1回）
+      window.__aetherCenterTimer = setTimeout(() => {
+        window.__aetherCenterTimer = null;
+        centerNoteVertically(note);
+      }, 40);
     });
   });
 }
 
 // プレゼン step 用ビュー:
 // - 新規表示の先頭1枚を選択・詳細表示
-// - 倍率はホワイトボード横幅に最大フィット
-// - 上下は選択付箋が縦中央（上下見切れ可）
+// - 倍率はホワイトボード横幅に最大フィット（高さはフィットしない）
+// - 上下は選択付箋が「見える領域」の縦中央（上下見切れ可）
 function focusPresentationStepView() {
   const refs = getCanvasRefs();
   if (!refs.container || !refs.transformLayer) return;
@@ -261,12 +270,13 @@ function focusPresentationStepView() {
   }
 
   const focusNote = getFirstNoteForCurrentStep();
+  // 詳細タブ切替は幅フィット後のレイアウトに影響するため、先に開いてから測る
   if (focusNote && typeof showNodeDetails === 'function') {
+    // showNodeDetails 内の scheduleCenter は幅フィット前なので、後で上書きする
     showNodeDetails(focusNote);
   }
 
-  // サイドバー開閉直後に幅が確定してからフィット
-  requestAnimationFrame(() => {
+  const applyWidthFitThenCenter = () => {
     const container = getCanvasRefs().container;
     if (!container) return;
 
@@ -311,17 +321,22 @@ function focusPresentationStepView() {
     const contentW = Math.max(1, maxX - minX);
 
     const sidePad = 16;
+    // control-panel は flex 横並びのため clientWidth はホワイトボード幅のみ
     const viewW = Math.max(120, container.clientWidth - sidePad * 2);
 
-    // step 切替時のみ: 横幅フィット + 横中央
+    // 横幅のみ最大フィット（縦は centerNoteVertically が担当）
     scale = Math.max(0.15, Math.min(3.0, (viewW / contentW) * 0.99));
     panX = sidePad + (viewW - contentW * scale) / 2 - minX * scale;
     updateTransform();
 
-    // 選択付箋を縦中央へ（scale/panX 適用後に実測で panY のみ調整）
     if (focusNote) {
       scheduleCenterNoteVertically(focusNote);
     }
+  };
+
+  // 詳細パネル・サイドバー開閉後のレイアウト確定を2フレーム待つ
+  requestAnimationFrame(() => {
+    requestAnimationFrame(applyWidthFitThenCenter);
   });
 }
 
@@ -720,10 +735,15 @@ window.addEventListener('keydown', (e) => {
   }
 
   // F: グラフ全体表示（入力中は無効）
+  // プレゼン中は「横最大 + 選択縦中央」を維持（fitToView の縦縮めを避ける）
   if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) {
     if (isTypingTarget(e.target)) return;
     e.preventDefault();
-    fitToView();
+    if (isPresentationMode) {
+      focusPresentationStepView();
+    } else {
+      fitToView();
+    }
     return;
   }
 

@@ -89,7 +89,15 @@ const bundleJs = buildSnapshotBundle(parserJs, rendererJs, combinedMain);
 維持: 付箋・接続・プレゼン・テーマ・DSL 編集/適用・詳細表示  
 無効（ビューア仕様）: IndexedDB 永続化（配布 HTML では不要）
 
-## Phase E（未着手）
+## Phase E — プレゼン表示修復 + 安全 minify（2026-07-15）
+
+| ID | 内容 |
+|----|------|
+| E1 | プレゼン: 横幅最大フィット後に選択付箋を縦中央（2rAF + 再測） |
+| E2 | プレゼン中 F キーは `fitToView`（縦縮め）ではなく `focusPresentationStepView` |
+| E3 | 配布 JS minify を無効化（regex 破壊を回避）。CSS のみ軽圧縮。storage 除外は維持 |
+
+## Phase F（未着手）
 
 - icon 背景 `rgba(22,26,33,0.8)` のテーマ連動（任意）
 - 配布 HTML の DSL 画像圧縮オプション（任意）

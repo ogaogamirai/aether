@@ -91,28 +91,17 @@ function utf8ToBase64(str) {
   return btoa(binary);
 }
 
-// 配布用: 表示を壊さない範囲で空白・コメントを削る（文字列リテラルは保護）
+// 配布用 JS: 正規表現を壊す minify は禁止。空白はそのまま（storage 除外が主効果）
 function minifySnapshotJs(src) {
-  let s = String(src || '');
-  const held = [];
-  s = s.replace(/(["'`])(?:\\.|(?!\1)[\s\S])*\1/g, (m) => {
-    held.push(m);
-    return '\u0000' + (held.length - 1) + '\u0000';
-  });
-  s = s.replace(/\/\*[\s\S]*?\*\//g, '');
-  s = s.replace(/(^|[^:])\/\/.*$/gm, '$1');
-  s = s.replace(/\s+/g, ' ');
-  s = s.replace(/\s*([{}();,=+\-*/<>!&|?:\[\]])\s*/g, '$1');
-  s = s.replace(/\u0000(\d+)\u0000/g, (_, i) => held[Number(i)]);
-  return s.trim();
+  return String(src || '').trim() + '\n';
 }
 
+// CSS のみ軽量圧縮（url/文字列は触らない）
 function minifySnapshotCss(src) {
   let s = String(src || '');
   s = s.replace(/\/\*[\s\S]*?\*\//g, '');
-  s = s.replace(/\s+/g, ' ');
-  s = s.replace(/\s*([{}:;,>])\s*/g, '$1');
-  s = s.replace(/;}/g, '}');
+  s = s.replace(/\n\s*\n+/g, '\n');
+  s = s.replace(/[ \t]+/g, ' ');
   return s.trim();
 }
 
