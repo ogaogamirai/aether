@@ -73,6 +73,89 @@ function connectionStoreId(conn) {
   return String(conn.source || '') + '->' + String(conn.target || '');
 }
 
+function allocUniqueId(used, base) {
+  const root = String(base || 'item') || 'item';
+  if (!used.has(root)) {
+    used.add(root);
+    return root;
+  }
+  let i = 2;
+  let next = root + '_' + i;
+  while (used.has(next)) {
+    i += 1;
+    next = root + '_' + i;
+  }
+  used.add(next);
+  return next;
+}
+
+// IndexedDB keyPath 衝突を避ける。配列順は維持し、後勝ちではなく後続をリネーム。
+function dedupeCanvasState(raw) {
+  const state = {
+    notes: Array.isArray(raw && raw.notes) ? raw.notes : [],
+    drawings: Array.isArray(raw && raw.drawings) ? raw.drawings : [],
+    relations: Array.isArray(raw && raw.relations) ? raw.relations : [],
+    connections: Array.isArray(raw && raw.connections) ? raw.connections : []
+  };
+  const renames = [];
+  const usedNotes = new Set();
+  const usedDrawings = new Set();
+  const usedRelations = new Set();
+  const usedConnections = new Set();
+
+  state.notes.forEach((note) => {
+    const prev = String(note.id || '');
+    const next = allocUniqueId(usedNotes, prev);
+    if (next !== prev) {
+      note.id = next;
+      renames.push({ kind: 'sticky', from: prev, to: next });
+    }
+  });
+
+  state.drawings.forEach((dw) => {
+    const prev = String(dw.id || '');
+    const next = allocUniqueId(usedDrawings, prev);
+    if (next !== prev) {
+      dw.id = next;
+      renames.push({ kind: 'drawing', from: prev, to: next });
+    }
+  });
+
+  state.relations.forEach((rel) => {
+    const base = relationStoreId(rel);
+    let key = base;
+    if (usedRelations.has(key)) {
+      let i = 2;
+      key = base + '#' + i;
+      while (usedRelations.has(key)) {
+        i += 1;
+        key = base + '#' + i;
+      }
+      renames.push({ kind: 'relation', from: base, to: key });
+    }
+    usedRelations.add(key);
+    rel._storeId = key;
+  });
+
+  state.connections.forEach((conn) => {
+    const base = connectionStoreId(conn);
+    let key = base;
+    if (usedConnections.has(key)) {
+      let i = 2;
+      key = base + '#' + i;
+      while (usedConnections.has(key)) {
+        i += 1;
+        key = base + '#' + i;
+      }
+      renames.push({ kind: 'connection', from: base, to: key });
+    }
+    usedConnections.add(key);
+    conn._storeId = key;
+  });
+
+  return { state, renames };
+}
+
 function normalizeNoteForStore(note) {
   return {
     id: note.id,
@@ -107,7 +190,7 @@ function normalizeDrawingForStore(dw) {
 
 function normalizeRelationForStore(rel) {
   return {
-    id: relationStoreId(rel),
+    id: rel._storeId || relationStoreId(rel),
     from: rel.from,
     to: rel.to,
     type: rel.type || 'default',
@@ -120,7 +203,7 @@ function normalizeRelationForStore(rel) {
 
 function normalizeConnectionForStore(conn) {
   return {
-    id: connectionStoreId(conn),
+    id: conn._storeId || connectionStoreId(conn),
     source: conn.source,
     target: conn.target
   };
@@ -172,10 +255,16 @@ async function updateNotePositionInDB(noteId, newX, newY) {
         store.put(row);
       }
     }
-    // legacy DSL ミラーも軽量更新（エディタ表示用に後で rebuild 可）
     await idbTxDone(tx);
     // エディタ座標だけ即時反映（全文 rebuild は重いので座標行のみ置換）
     patchDslInputNotePos(noteId, newX, newY);
+    // 起動は legacy current_dsl 優先のため、ドラッグ後も全文ミラーを同期
+    const input = document.getElementById('dsl-input');
+    if (input && input.value && db.objectStoreNames.contains(STORE_NAME)) {
+      const txLegacy = db.transaction(STORE_NAME, 'readwrite');
+      txLegacy.objectStore(STORE_NAME).put(input.value, 'current_dsl');
+      await idbTxDone(txLegacy);
+    }
     console.log('[Aether IndexedDB] note position updated:', noteId, newX, newY);
   } catch (err) {
     console.warn('[Aether IndexedDB] updateNotePositionInDB failed:', err);
@@ -340,10 +429,18 @@ async function loadStructuredStateFromDB() {
   }
 }
 
-// legacy: board_state.current_dsl テキスト読込
+// legacy: board_state.current_dsl テキスト読込（順序保持のため legacy 優先）
 async function loadFromDB() {
   try {
-    // 構造化ストア優先
+    const db = await initDB();
+    if (db.objectStoreNames.contains(STORE_NAME)) {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const dsl = await idbReq(store.get('current_dsl'));
+      await idbTxDone(tx);
+      if (dsl && String(dsl).trim()) return dsl;
+    }
+
     const structured = await loadStructuredStateFromDB();
     if (structured && structured.notes && structured.notes.length) {
       notes = structured.notes;
@@ -353,14 +450,7 @@ async function loadFromDB() {
       syncCanvasGlobals();
       return buildDSLFromState();
     }
-
-    const db = await initDB();
-    if (!db.objectStoreNames.contains(STORE_NAME)) return null;
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const dsl = await idbReq(store.get('current_dsl'));
-    await idbTxDone(tx);
-    return dsl || null;
+    return null;
   } catch (err) {
     console.error('[IndexedDB] Load failed:', err);
     return null;

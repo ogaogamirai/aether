@@ -40,11 +40,16 @@ function applyDSL() {
     return;
   }
   const parsed = parseAetherDSL(text);
+  const deduped = (typeof dedupeCanvasState === 'function')
+    ? dedupeCanvasState(parsed)
+    : { state: parsed, renames: [] };
+  const state = deduped.state || parsed;
+  const renames = deduped.renames || [];
 
-  notes = parsed.notes || [];
-  connections = parsed.connections || [];
-  drawings = parsed.drawings || [];
-  relations = parsed.relations || [];
+  notes = state.notes || [];
+  connections = state.connections || [];
+  drawings = state.drawings || [];
+  relations = state.relations || [];
   // window へも同期（配布HTMLの共有状態を確実に保つ）
   syncCanvasGlobals();
   window.activeTag = null;
@@ -59,6 +64,11 @@ function applyDSL() {
     return;
   }
 
+  // 重複リネーム後はエディタDSLも一意ID版へ揃える（IDB legacy と一致）
+  if (renames.length && typeof buildDSLFromState === 'function' && input) {
+    input.value = buildDSLFromState();
+  }
+
   const allTags = new Set();
   notes.forEach(n => { if (n.tags) n.tags.forEach(t => allTags.add(t)); });
   drawings.forEach(d => { if (d.tags) d.tags.forEach(t => allTags.add(t)); });
@@ -71,7 +81,19 @@ function applyDSL() {
   relations.forEach(r => { if (r.time) allTimes.add(r.time); });
   updateTimeSlider(Array.from(allTimes));
 
-  showToast('Aether DSL を適用しました', 'success');
+  if (renames.length) {
+    const stickyN = renames.filter(r => r.kind === 'sticky').length;
+    const drawingN = renames.filter(r => r.kind === 'drawing').length;
+    const edgeN = renames.length - stickyN - drawingN;
+    showToast(
+      'Aether DSL を適用（重複IDを' + renames.length + '件リネーム: sticky ' + stickyN +
+      ' / drawing ' + drawingN + ' / edge ' + edgeN + '）',
+      'success'
+    );
+    console.warn('[Aether] Duplicate IDs renamed before IndexedDB sync:', renames);
+  } else {
+    showToast('Aether DSL を適用しました', 'success');
+  }
   if (typeof window.__AETHER_SNAPSHOT__ === 'undefined' || !window.__AETHER_SNAPSHOT__) {
     // フェーズ2: エディタ適用時は差分同期（insert/update/delete）
     syncBoardStateToDB().catch(err => {
@@ -957,10 +979,24 @@ function exportDSLToFile() {
 
 const DEFAULT_DSL = "# Aether DSL Auto-Saved v3.0\n\nsticky Origin_J \"日本人起源論\" {\n  pos: 420 80\n  color: \"blue\"\n  tags: \"全体概要\"\n  desc: \"日本列島の人間集団がどのような系譜や混血プロセスを経て形成されたかを探る学術・文化論。古くは単一起源説から始まり、混血説、二重構造、そして現代ゲノム科学による三重構造モデルへと進化を遂げている。\"\n}\n\nsticky Y_D1a2a \"Y染色体D1a2a系統\" {\n  pos: 100 250\n  color: \"purple\"\n  tags: \"科学・論文説\"\n  desc: \"東アジアの他地域ではほぼ見られない日本列島特有のY染色体系統（約35%）。世界的にはチベットに親縁系統が存在し、縄文男系系譜を引き継ぐ証拠とされる。\\n\\nアインシュタインの方程式：$ E = mc^2 $\\n頻度の正規分布モデル：$$ f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{1}{2}\\left(\\frac{x-\\mu}{\\sigma}\\right)^2} $$\\n\\n![ゲノムDNA解析イメージ](https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=400)\"\n  time: \"1_縄文期\"\n  tone: \"stable\"\n}\n\nsticky Jomon_Single \"単一縄文人起源説\" {\n  pos: 420 250\n  color: \"green\"\n  tags: \"考古学・従来説\"\n  desc: \"日本列島の住民は、外部からの大規模な混血を経ずに、縄文人が直接的に現代日本人へと進化したとする極めて初期の説。近代以降の骨格比較研究やゲノム解析により、現在はこの仮説は否定されている。\"\n  time: \"1_縄文期\"\n  tone: \"tension\"\n}\n\nsticky Dual_Structure \"二重構造モデル (埴原和郎)\" {\n  pos: 740 250\n  color: \"green\"\n  tags: \"考古学・従来説\"\n  desc: \"1991年に人類学者・埴原和郎が提唱した定説。日本人は「東南アジア系祖先から派生した縄文人」と、「北東アジア系祖先から派生し弥生時代に大挙渡来した渡来人」の二重の系統の混血によって形成されたとする。\"\n  time: \"2_弥生期\"\n}\n\nsticky Triple_Structure \"現代ゲノムの三重構造モデル\" {\n  pos: 420 450\n  color: \"purple\"\n  tags: \"科学・論文説\"\n  desc: \"2021年の古代DNA解析によって提唱された最新モデル。従来の「縄文・弥生」の二重構造に加え、古墳時代に大陸から大量の「第3の祖先集団（東アジア系）」が渡来し現代日本人の遺伝的ベースを決定づけたとする説。\\n\\n| 祖先集団 | 推定割合 | 主な流入時期 |\\n|---|---|---|\\n| 縄文系 | 約13% | 縄文時代以前 |\\n| 弥生系 | 約30% | 弥生時代 |\\n| 古墳系 | 約57% | 古墳時代 |\"\n  time: \"3_古墳期\"\n}\n\nsticky SC_Paper_2021 \"2021年ゲノム解析論文\" {\n  pos: 100 450\n  color: \"purple\"\n  tags: \"科学・論文説\"\n  desc: \"金沢大学や理化学研究所などの共同研究チームがサイエンス誌の姉妹紙に発表した画期的な論文。縄文人・弥生人・古墳人の古代ゲノムを解読し、現代日本人のルーツが古墳時代に完成した『三重構造』であることを初めて実証した。\"\n  time: \"3_古墳期\"\n}\n\nsticky YT_Lost_Tribes \"日ユ同祖論 (失われた10支族)\" {\n  pos: 740 650\n  color: \"yellow\"\n  tags: \"YouTube・オカルト説\"\n  desc: \"古代イスラエルの失われた10支族の一部が日本列島に渡来し、大和民族の祖先および皇室のルーツになったとする説。言語や神道儀礼の類似性が指摘されるが、学術的な歴史学やゲノム科学では裏付けがない。\"\n  time: \"4_拡散・論争\"\n  tone: \"tension\"\n}\n\nsticky YT_Ainu_Jewish \"アイヌ・ユダヤ同祖説\" {\n  pos: 980 650\n  color: \"yellow\"\n  tags: \"YouTube・オカルト説\"\n  desc: \"アイヌ民族や皇室がユダヤ人の末裔であるとする説。特定の儀礼や言語の類似を根拠にするが、遺伝学・言語学・考古学のいずれも支持しない。\"\n  time: \"4_拡散・論争\"\n  tone: \"tension\"\n}\n\nsticky YT_Hinomoto \"日の本＝ひのもと(火の元)説\" {\n  pos: 500 650\n  color: \"yellow\"\n  tags: \"YouTube・オカルト説\"\n  desc: \"日本の国名「日の本」が太陽崇拝に由来し、古代ユダヤ・エジプトなどの宗教と連続しているとする説。文学的な比喩に留まり、学術的系譜の裏付けはない。\"\n  time: \"4_拡散・論争\"\n  tone: \"tension\"\n}\n\nsticky YT_Korean_Origin \"朝鮮半島起源強調説\" {\n  pos: 260 650\n  color: \"yellow\"\n  tags: \"YouTube・オカルト説\"\n  desc: \"日本人の主要な祖先が朝鮮半島から直接渡来したと強調する説。一部の mitochondrial DNA や Y染色体ハプログループの類似性が指摘されるが、現代ゲノム解析は「朝鮮半島経由の東アジア系流入」の一部要素を示すに留まり、単純な起源置換ではない。\"\n  time: \"4_拡散・論争\"\n  tone: \"tension\"\n}\n\nrelation Origin_J -> Y_D1a2a {\n  type: \"evidence\"\n  label: \"Y染色体D1a2aは縄文系統の一証拠\"\n  color: \"blue\"\n}\n\nrelation Origin_J -> Jomon_Single {\n  type: \"historical\"\n  label: \"初期の単一起源仮説\"\n  color: \"green\"\n}\n\nrelation Origin_J -> Dual_Structure {\n  type: \"historical\"\n  label: \"1991年 二重構造モデル\"\n  color: \"green\"\n}\n\nrelation Origin_J -> Triple_Structure {\n  type: \"evidence\"\n  label: \"2021年 三重構造モデル\"\n  color: \"purple\"\n}\n\nrelation Triple_Structure -> SC_Paper_2021 {\n  type: \"source\"\n  label: \"2021年古代ゲノム解析\"\n  color: \"purple\"\n}\n\nrelation Dual_Structure -> Triple_Structure {\n  type: \"update\"\n  label: \"二重構造を更新\"\n  color: \"purple\"\n}\n\nrelation YT_Lost_Tribes -> YT_Ainu_Jewish {\n  type: \"similar\"\n  label: \"同系譜主張\"\n  color: \"yellow\"\n}\n\nrelation YT_Hinomoto -> YT_Lost_Tribes {\n  type: \"similar\"\n  label: \"象徴主義的類似\"\n  color: \"yellow\"\n}\n\nrelation YT_Korean_Origin -> YT_Lost_Tribes {\n  type: \"conflict\"\n  label: \"系譜解釈の対立\"\n  color: \"yellow\"\n}\n\nrelation YT_Lost_Tribes -> Triple_Structure {\n  type: \"conflict\"\n  label: \"学術的根拠の対比\"\n  color: \"yellow\"\n}\n";
 
-// Boot helpers: structured IndexedDB → legacy DSL → DEFAULT_DSL
+// Boot helpers: legacy DSL（順序保持）→ structured → DEFAULT_DSL
 async function applyDefaultOrCachedDsl() {
   try {
-    // 1) 構造化ストア優先（notes があれば DSL 再構成して適用）
+    // 1) legacy board_state.current_dsl 優先（配列順・全文を保持）
+    const db = await initDB();
+    if (db.objectStoreNames.contains(STORE_NAME)) {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const legacyDsl = await idbReq(tx.objectStore(STORE_NAME).get('current_dsl'));
+      await idbTxDone(tx);
+      if (legacyDsl && String(legacyDsl).trim()) {
+        document.getElementById('dsl-input').value = legacyDsl;
+        applyDSL(); // 重複IDリネーム + 構造化ストア同期
+        console.log('[Aether IndexedDB] Loaded legacy current_dsl.');
+        return;
+      }
+    }
+
+    // 2) 構造化ストア（legacy が無い場合のフォールバック）
     const structured = await loadStructuredStateFromDB();
     if (structured && structured.notes && structured.notes.length) {
       const dsl = (() => {
@@ -972,24 +1008,9 @@ async function applyDefaultOrCachedDsl() {
         return buildDSLFromState();
       })();
       document.getElementById('dsl-input').value = dsl;
-      // applyDSL は再パース＋差分同期する（初回はほぼ no-op 差分）
       applyDSL();
       console.log('[Aether IndexedDB] Loaded structured stores.');
       return;
-    }
-
-    // 2) legacy board_state.current_dsl
-    const db = await initDB();
-    if (db.objectStoreNames.contains(STORE_NAME)) {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const legacyDsl = await idbReq(tx.objectStore(STORE_NAME).get('current_dsl'));
-      await idbTxDone(tx);
-      if (legacyDsl && String(legacyDsl).trim()) {
-        document.getElementById('dsl-input').value = legacyDsl;
-        applyDSL(); // パース後に構造化ストアへマイグレーション
-        console.log('[Aether IndexedDB] Loaded legacy current_dsl and migrated.');
-        return;
-      }
     }
   } catch (err) {
     console.warn('[Aether IndexedDB] Restore skipped:', err);

@@ -150,3 +150,15 @@ E3 で JS minify を全面無効化した結果、engine が太っていた。
 要: 現代ブラウザ（`DecompressionStream`）。未対応環境は export 側が plain にフォールバック。
 
 検証: `node --check` / `new Function(bundle)` / dead-code 不在 / verifier **PASS**
+
+## Phase I — IndexedDB 重複ID消失の修正（2026-07-16）
+
+| ID | 内容 | ファイル |
+|----|------|----------|
+| I1 | `dedupeCanvasState`: sticky/drawing 重複を `_2` リネーム、relation/connection は store id に `#n` | `aether_storage.js` |
+| I2 | `applyDSL` で dedupe 後に IDB 同期。リネーム時は toast + DSL 再生成 | `aether_main.js` |
+| I3 | 起動順を **legacy `current_dsl` 優先** → structured → DEFAULT（順序保持） | `aether_main.js` / `loadFromDB` |
+| I4 | ドラッグ座標更新後に legacy `current_dsl` も同期 | `aether_storage.js` |
+
+原因: 構造化 IDB の `keyPath: 'id'` が同名 sticky/drawing を上書きし、再起動で欠落していた。  
+検証: 皇位継承 DSL で notes 33→33 / drawings 12→12 / relations 77→77（旧: 30/7/49）。`node --check` PASS。
