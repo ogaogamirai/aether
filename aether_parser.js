@@ -60,6 +60,52 @@ function parseAetherDSL(text) {
       continue;
     }
 
+    // Phase K3: callout (stored as drawing type=callout)
+    if (line.startsWith('callout')) {
+      const match = line.match(/^callout\s+(\w+)\s+"([^"]+)"\s*\{/);
+      if (match) {
+        currentDrawing = {
+          id: match[1],
+          title: match[2],
+          type: 'callout',
+          from: '',
+          to: '',
+          style: 'solid',
+          color: 'blue',
+          targets: [],
+          anchor: '',
+          offset: [40, -50],
+          pos: [100, 100],
+          tags: [],
+          time: ''
+        };
+      }
+      continue;
+    }
+
+    // Phase K3: path (stored as drawing type=path; nodes → targets)
+    if (line.startsWith('path')) {
+      const match = line.match(/^path\s+(\w+)\s+"([^"]+)"\s*\{/);
+      if (match) {
+        currentDrawing = {
+          id: match[1],
+          title: match[2],
+          type: 'path',
+          from: '',
+          to: '',
+          style: 'pulse',
+          color: 'purple',
+          targets: [],
+          anchor: '',
+          offset: [0, 0],
+          pos: [100, 100],
+          tags: [],
+          time: ''
+        };
+      }
+      continue;
+    }
+
     // Relation blocks parsing (New in v3.0)
     if (line.startsWith('relation')) {
       const match = line.match(/^relation\s+(\w+)\s*->\s*(\w+)\s*\{/);
@@ -143,8 +189,8 @@ function parseAetherDSL(text) {
           currentDrawing.offset = val.split(/\s+/).map(Number);
         } else if (prop === 'pos') {
           currentDrawing.pos = val.split(/\s+/).map(Number);
-        } else if (prop === 'targets') {
-          currentDrawing.targets = val.split(/\s+/);
+        } else if (prop === 'targets' || prop === 'nodes') {
+          currentDrawing.targets = val.split(/\s+/).filter(Boolean);
         } else if (prop === 'tags') {
           currentDrawing.tags = val.split(/\s+/);
         } else if (prop === 'time') {
@@ -227,6 +273,26 @@ function serializeCanvasToDSL() {
   });
 
   drawings.forEach(dw => {
+    if (dw.type === 'callout') {
+      dsl += `callout ${dw.id} "${dw.title}" {\n`;
+      if (dw.anchor) dsl += `  anchor: "${dw.anchor}"\n`;
+      if (dw.offset) dsl += `  offset: ${dw.offset[0]} ${dw.offset[1]}\n`;
+      if (dw.color) dsl += `  color: "${dw.color}"\n`;
+      if (dw.tags && dw.tags.length > 0) dsl += `  tags: "${dw.tags.join(' ')}"\n`;
+      if (dw.time) dsl += `  time: "${dw.time}"\n`;
+      dsl += `}\n\n`;
+      return;
+    }
+    if (dw.type === 'path') {
+      dsl += `path ${dw.id} "${dw.title}" {\n`;
+      if (dw.targets && dw.targets.length > 0) dsl += `  nodes: "${dw.targets.join(' ')}"\n`;
+      if (dw.style) dsl += `  style: "${dw.style}"\n`;
+      if (dw.color) dsl += `  color: "${dw.color}"\n`;
+      if (dw.tags && dw.tags.length > 0) dsl += `  tags: "${dw.tags.join(' ')}"\n`;
+      if (dw.time) dsl += `  time: "${dw.time}"\n`;
+      dsl += `}\n\n`;
+      return;
+    }
     dsl += `drawing ${dw.id} "${dw.title}" {\n`;
     dsl += `  type: "${dw.type}"\n`;
     if (dw.from) dsl += `  from: "${dw.from}"\n`;
@@ -236,7 +302,7 @@ function serializeCanvasToDSL() {
     if (dw.anchor) dsl += `  anchor: "${dw.anchor}"\n`;
     if (dw.offset) dsl += `  offset: ${dw.offset[0]} ${dw.offset[1]}\n`;
     if (dw.pos && !dw.anchor) dsl += `  pos: ${dw.pos[0]} ${dw.pos[1]}\n`;
-    if (dw.targets.length > 0) dsl += `  targets: "${dw.targets.join(' ')}"\n`;
+    if (dw.targets && dw.targets.length > 0) dsl += `  targets: "${dw.targets.join(' ')}"\n`;
     if (dw.tags && dw.tags.length > 0) {
       dsl += `  tags: "${dw.tags.join(' ')}"\n`;
     }

@@ -184,3 +184,13 @@ E3 で JS minify を全面無効化した結果、engine が太っていた。
 | K3 | 詳細パネルに role/confidence 表示、`?v=4.0.5` | main / index |
 
 未知値は無視。属性省略時は従来どおり。既存 DSL は破壊しない。
+
+## Phase K3 — callout / path（2026-07-16）
+
+| ID | 内容 | ファイル |
+|----|------|----------|
+| K3a | `callout ID "text" { anchor offset color tags time }` → drawing type=callout | parser / renderer / storage |
+| K3b | `path ID "label" { nodes style color tags time }` → drawing type=path（番号付き誘導線） | parser / renderer / storage |
+| K3c | `?v=4.0.6` | index |
+
+内部は既存 drawings ストアに格納（IDB スキーマ変更なし）。serialize は callout/path 構文で再出力。

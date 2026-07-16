@@ -503,6 +503,26 @@ function buildDSLFromState() {
     dsl += '}\n\n';
   });
   drawings.forEach(dw => {
+    if (dw.type === 'callout') {
+      dsl += 'callout ' + dw.id + ' "' + dw.title + '" {\n';
+      if (dw.anchor) dsl += '  anchor: "' + dw.anchor + '"\n';
+      if (dw.offset) dsl += '  offset: ' + dw.offset[0] + ' ' + dw.offset[1] + '\n';
+      if (dw.color) dsl += '  color: "' + dw.color + '"\n';
+      if (dw.tags && dw.tags.length > 0) dsl += '  tags: "' + dw.tags.join(' ') + '"\n';
+      if (dw.time) dsl += '  time: "' + dw.time + '"\n';
+      dsl += '}\n\n';
+      return;
+    }
+    if (dw.type === 'path') {
+      dsl += 'path ' + dw.id + ' "' + dw.title + '" {\n';
+      if (dw.targets && dw.targets.length > 0) dsl += '  nodes: "' + dw.targets.join(' ') + '"\n';
+      if (dw.style) dsl += '  style: "' + dw.style + '"\n';
+      if (dw.color) dsl += '  color: "' + dw.color + '"\n';
+      if (dw.tags && dw.tags.length > 0) dsl += '  tags: "' + dw.tags.join(' ') + '"\n';
+      if (dw.time) dsl += '  time: "' + dw.time + '"\n';
+      dsl += '}\n\n';
+      return;
+    }
     dsl += 'drawing ' + dw.id + ' "' + dw.title + '" {\n';
     dsl += '  type: "' + dw.type + '"\n';
     if (dw.from) dsl += '  from: "' + dw.from + '"\n';

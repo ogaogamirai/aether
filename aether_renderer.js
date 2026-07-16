@@ -257,8 +257,163 @@ function drawAllShapes() {
         if (anchorNode && !isTimeVisible(anchorNode.time)) return;
       }
       drawPresetIcon(dw);
+    } else if (dw.type === 'callout') {
+      drawCallout(dw);
+    } else if (dw.type === 'path') {
+      drawGuidePath(dw);
     }
   });
+}
+
+function drawingColorHex(color, fallback) {
+  if (color === 'purple') return '#8b5cf6';
+  if (color === 'green') return '#10b981';
+  if (color === 'pink') return '#ec4899';
+  if (color === 'yellow') return '#eab308';
+  if (color === 'red') return '#ef4444';
+  if (color === 'orange') return '#f59e0b';
+  if (color === 'blue') return '#3b82f6';
+  return fallback || '#3b82f6';
+}
+
+// Phase K3: callout — 付箋に付く吹き出し注釈
+function drawCallout(dw) {
+  const anchorId = dw.anchor || '';
+  const anchor = notes.find(n => n.id === anchorId);
+  if (!anchor) return;
+  if (!isTimeVisible(anchor.time)) return;
+
+  const ox = (dw.offset && dw.offset[0] !== undefined) ? Number(dw.offset[0]) : 40;
+  const oy = (dw.offset && dw.offset[1] !== undefined) ? Number(dw.offset[1]) : -50;
+  const ax = anchor.x + NOTE_HALF_W;
+  const ay = anchor.y + 12;
+  const bx = ax + (isNaN(ox) ? 40 : ox);
+  const by = ay + (isNaN(oy) ? -50 : oy);
+  const colorHex = drawingColorHex(dw.color, '#3b82f6');
+  const label = String(dw.title || '').slice(0, 80);
+
+  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  group.setAttribute('class', 'aether-callout');
+
+  const stem = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  stem.setAttribute('x1', ax);
+  stem.setAttribute('y1', ay);
+  stem.setAttribute('x2', bx);
+  stem.setAttribute('y2', by + 14);
+  stem.setAttribute('stroke', colorHex);
+  stem.setAttribute('stroke-width', '1.5');
+  stem.setAttribute('stroke-dasharray', '3 3');
+  group.appendChild(stem);
+
+  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  text.setAttribute('x', bx);
+  text.setAttribute('y', by);
+  text.setAttribute('font-size', '11px');
+  text.setAttribute('font-family', 'var(--font-display), sans-serif');
+  text.setAttribute('font-weight', '600');
+  text.setAttribute('fill', colorHex);
+  text.setAttribute('text-anchor', 'middle');
+  text.textContent = label;
+  group.appendChild(text);
+
+  // 背景は text 後に測れないため推定幅で矩形
+  const padX = 10;
+  const padY = 6;
+  const estW = Math.max(48, label.length * 7 + padX * 2);
+  const estH = 22;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', bx - estW / 2);
+  rect.setAttribute('y', by - 14);
+  rect.setAttribute('width', estW);
+  rect.setAttribute('height', estH);
+  rect.setAttribute('rx', '8');
+  rect.setAttribute('fill', themeColor('--bg-card', 'rgba(22,26,33,0.85)'));
+  rect.setAttribute('stroke', colorHex);
+  rect.setAttribute('stroke-width', '1.5');
+  group.insertBefore(rect, text);
+
+  const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dot.setAttribute('cx', ax);
+  dot.setAttribute('cy', ay);
+  dot.setAttribute('r', '3.5');
+  dot.setAttribute('fill', colorHex);
+  group.appendChild(dot);
+
+  appendToSvg(group);
+}
+
+// Phase K3: path — 複数付箋を結ぶ誘導パス
+function drawGuidePath(dw) {
+  const ids = Array.isArray(dw.targets) ? dw.targets : [];
+  if (ids.length < 2) return;
+
+  const pts = [];
+  for (let i = 0; i < ids.length; i++) {
+    const n = notes.find(note => note.id === ids[i]);
+    if (!n || !isTimeVisible(n.time)) return;
+    pts.push({ x: n.x + NOTE_HALF_W, y: n.y + NOTE_HALF_H, id: n.id });
+  }
+  if (pts.length < 2) return;
+
+  const colorHex = drawingColorHex(dw.color, '#8b5cf6');
+  const style = String(dw.style || 'pulse').toLowerCase();
+  let d = 'M ' + pts[0].x + ' ' + pts[0].y;
+  for (let i = 1; i < pts.length; i++) {
+    d += ' L ' + pts[i].x + ' ' + pts[i].y;
+  }
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', d);
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', colorHex);
+  path.setAttribute('stroke-width', '3');
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('stroke-linejoin', 'round');
+  path.setAttribute('opacity', '0.85');
+  if (style === 'pulse' || style === 'flow' || style === 'forward') {
+    path.classList.add('guide-path-pulse');
+  } else if (style === 'dashed') {
+    path.setAttribute('stroke-dasharray', '10 6');
+  }
+  appendToSvg(path);
+
+  // ノード上の番号マーカー
+  pts.forEach((p, idx) => {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('cx', p.x);
+    c.setAttribute('cy', p.y);
+    c.setAttribute('r', '9');
+    c.setAttribute('fill', colorHex);
+    c.setAttribute('opacity', '0.9');
+    appendToSvg(c);
+    const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    t.setAttribute('x', p.x);
+    t.setAttribute('y', p.y + 3.5);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('fill', '#fff');
+    t.setAttribute('font-size', '10px');
+    t.setAttribute('font-weight', '700');
+    t.setAttribute('font-family', 'var(--font-display), sans-serif');
+    t.textContent = String(idx + 1);
+    appendToSvg(t);
+  });
+
+  if (dw.title) {
+    const mid = pts[Math.floor((pts.length - 1) / 2)];
+    const mid2 = pts[Math.min(pts.length - 1, Math.floor((pts.length - 1) / 2) + 1)];
+    const lx = (mid.x + mid2.x) / 2;
+    const ly = (mid.y + mid2.y) / 2 - 12;
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('x', lx);
+    label.setAttribute('y', ly);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('fill', colorHex);
+    label.setAttribute('font-size', '11px');
+    label.setAttribute('font-weight', '600');
+    label.setAttribute('font-family', 'var(--font-display), sans-serif');
+    label.textContent = dw.title;
+    appendToSvg(label);
+  }
 }
 
 function drawLineBetween(source, target, strokeColor, strokeWidth, dashArray = '') {

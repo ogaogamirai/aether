@@ -904,6 +904,15 @@ body:not(.light-theme) .sticky-badge.role-badge {
   animation: none;
 }
 
+/* Phase K3: guide path pulse */
+@keyframes aether-guide-pulse {
+  to { stroke-dashoffset: -28; }
+}
+.connections-layer .guide-path-pulse {
+  stroke-dasharray: 10 8;
+  animation: aether-guide-pulse 1.1s linear infinite;
+}
+
 /* Details Table Styling */
 .details-table {
   width: 100%;
