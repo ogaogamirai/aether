@@ -63,7 +63,8 @@ http://localhost:8080/?dsl=themes/test_svg_rgb.txt
 - `aether_main.js` — 制御・構造化 IndexedDB・export・プレゼン
 - `aether_parser.js` — DSL パーサ
 - `aether_renderer.js` — キャンバス描画
-- `aether_dsl.txt` — 共有用 DSL 正本（サンプル）
+- `aether_dsl.txt` — LIVE 向け投影 DSL（Board 利用時は export 結果）
+- `aether_board/` — SQLite 蓄積・CLI（AI 正本）。詳細は `aether_board/README.md`
 - `themes/` — テーマ DSL / 配布スナップショット
 - `AETHER_WELCOME_GUIDE.md` — エージェント向け招待状・操作ガイド
 - `SKILL.md` — DSL 構文と作業プロトコル
@@ -80,9 +81,14 @@ aether_db
 - DSL 適用 → オブジェクト差分同期
 - 旧データの `current_dsl` は初回起動時に構造化ストアへマイグレーション
 
-## DSL の正本
+## 正本の考え方
 
-エージェント／人間が共有する図面の正本は `aether_dsl.txt`（または `themes/*.txt`）です。  
-IndexedDB はブラウザ個人の作業キャッシュであり、共有媒体ではありません。
+| 運用 | 正本 | 投影 |
+|---|---|---|
+| **Aether Board（推奨・蓄積）** | `aether_board/aether.db` | `aether_dsl.txt`（export） |
+| **簡易（DSL 直編集）** | `aether_dsl.txt` / `themes/*.txt` | 同左 |
+
+IndexedDB はブラウザ個人の作業キャッシュであり、共有媒体ではありません。  
+Board の正本ルール・CLI は [aether_board/README.md](./aether_board/README.md)。
 
 詳細な操作・構文は [AETHER_WELCOME_GUIDE.md](./AETHER_WELCOME_GUIDE.md) と [SKILL.md](./SKILL.md) を参照してください。

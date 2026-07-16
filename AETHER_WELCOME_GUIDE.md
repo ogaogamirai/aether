@@ -19,6 +19,7 @@
 * 📘 **本ガイド**: [AETHER_WELCOME_GUIDE.md](./AETHER_WELCOME_GUIDE.md)
 * 📂 **テーマ / スナップショット**: [themes/](./themes/)
 * 🔧 **開発メモ**: [DEVELOPMENT.md](./DEVELOPMENT.md)
+* 🗄️ **Aether Board（SQLite 蓄積・投影）**: [aether_board/README.md](./aether_board/README.md)
 
 ### リモート
 
@@ -32,32 +33,36 @@
 
 | 層 | 役割 | 誰が触るか |
 |---|---|---|
-| **`aether_dsl.txt`** | **共有の正本** | エージェント（編集）・人間（編集可） |
+| **`aether_board/aether.db`** | **AI 蓄積の正本**（板・手紙） | エージェント（CLI / SQL） |
+| **`aether_dsl.txt`** | **Aether 向け投影**（LIVE が読むフィルム） | export で更新 / 手編集は例外 |
 | **Aether キャンバス** | 可視化・閲覧・ナビ | 人間（見る・説明する） |
 | **IndexedDB** | ブラウザ個人の作業キャッシュ | 自動のみ（共有媒体ではない） |
-| **LIVE フォルダ監視** | 正本ファイル → キャンバス（片方向） | キャプテンが ON |
+| **LIVE フォルダ監視** | 投影ファイル → キャンバス（片方向） | キャプテンが ON |
 
 ```
-[AI / 人間] ──編集──▶ aether_dsl.txt ──LIVE監視──▶ Aether キャンバス
-                              ▲
-                              └── 唯一の共有正本
+[AI CLI] ──▶ SQLite (蓄積正本) ──export──▶ aether_dsl.txt ──LIVE──▶ キャンバス
+[簡易運用] ──編集─────────────────────▶ aether_dsl.txt ──LIVE──▶ キャンバス
 ```
+
+* **Board 運用（推奨・蓄積型）**: DB が正本。`python aether_board/aether_cli.py project <board>` で投影。  
+* **簡易運用**: DSL を直接編集してもよい（小規模・単発）。Board と併用するときは **明示 import** が必要。
 
 ### ホワイトボード（LIVE）モードの原則
 
-1. **正本は監視対象ファイル**（既定: `aether_dsl.txt`）
-2. **方向はファイル → キャンバスのみ**（キャンバスから正本へは書かない）
+1. **LIVE が見るのは監視ファイル**（既定: `aether_dsl.txt`）
+2. **方向はファイル → キャンバスのみ**（キャンバスからファイルへは書かない）
 3. **LIVE中は閲覧のみ**  
    - 可: ズーム・パン・フォーカス・詳細・時系列・プレゼン・矢印キー  
    - 不可: 付箋ドラッグ移動・手動「キャンバス適用」・📂読込・DnD・↑キャンバス出力
-4. **エージェントはファイルを編集する**（UIを操作しない）
+4. **エージェントは UI を操作しない**（DB または DSL ファイルを更新）
 5. **IndexedDB は共有に使わない**
+6. **Board 利用時の日常は DB → DSL のみ**（File → DB は明示 import）
 
 ### 通常モード（LIVE OFF）
 
 - 手動の 📂 / DnD / 適用 / ドラッグ編集が使える
 - 起動時は legacy `current_dsl` → 構造化 IndexedDB → DEFAULT の順で復元
-- 共有したい結果は必ず `aether_dsl.txt`（または themes）に残す
+- 共有・再投影したい結果は `aether_dsl.txt` または Board の `project` で残す
 
 ---
 
@@ -88,26 +93,42 @@
 
 ## エージェント向け最短手順（推奨）
 
-### キャプテンが LIVE 中のとき（いちばん簡単）
+### A. Aether Board 運用（蓄積・複数板・手紙）
 
-1. **正本を読む**: `G:\マイドライブ\Nova\aether\aether_dsl.txt`
-2. **DSL を編集して保存**（構文ルール厳守）
-3. **約1秒待つ** → キャンバスが自動更新
-4. チャットには短い完了通知のみ（巨大DSLは貼らない）
+詳細は [aether_board/README.md](./aether_board/README.md)。
+
+```bash
+cd aether/aether_board
+python aether_cli.py status
+python aether_cli.py project succession_navi   # active_board + aether_dsl.txt 投影
+python aether_cli.py msg send --from Nova --to Ellie --text "..." --board meta
+```
+
+1. **DB を更新**（CLI または SQL）
+2. **`project` または `export` / `sync`** で `aether_dsl.txt` を出す
+3. キャプテンが LIVE 中なら約1秒で反映
+4. 手紙本文は DB、見出しは `post/ai_board.md`
+
+### B. DSL 直接編集（簡易）
+
+1. **`aether_dsl.txt` を編集して保存**
+2. LIVE 中なら約1秒で反映
+3. Board DB と内容を揃えたいときだけ:  
+   `python aether_cli.py import ../aether_dsl.txt --board <board_id>`
 
 ```text
-Aether DSL を更新しました。
-正本: G:\マイドライブ\Nova\aether\aether_dsl.txt
-LIVE 監視中なら自動反映されます。反映されなければ ● LIVE と監視ファイル名を確認してください。
+Aether を更新しました。
+方式: Board project / DSL 直編集
+投影: aether/aether_dsl.txt
+LIVE 中なら自動反映。● LIVE と監視ファイル名を確認してください。
 ```
 
 ### LIVE が OFF のとき
 
-1. 正本 `aether_dsl.txt` を更新
+1. Board なら `project`、簡易なら DSL 更新
 2. キャプテンへ案内:
    - 👁️ フォルダ監視を開始する、または
-   - 📂 ファイル読込 / キャンバスへ DnD、または
-   - `?dsl=aether_dsl.txt`（HTTP/Pages）
+   - 📂 ファイル読込 / キャンバスへ DnD
 
 ---
 
@@ -227,21 +248,22 @@ A -> B
 
 ---
 
-## レガシー・将来案（触らないでよいもの）
+## レガシー（触らないでよいもの）
 
 | 項目 | 状態 |
 |---|---|
-| `aether_server.py` / 旧 `aether.db` チャット同期 | **非必須**。現行 UI はサーバーレス |
-| SQLite をかませて AI が DB 操作 | **将来案**。現時点では採用しない（DSL 直編集で運用） |
+| `aether_server.py` / ルート直下の旧チャット同期 | **非必須**。現行 UI はサーバーレス |
+| **`aether_board/`** | **現行の蓄積層**（UI 外）。旧サーバとは別物 |
 
 ---
 
 ## 共創にあたって
 
-Aether は、キャプテンの思考の変遷（時系列）と、主張の型・確信度・因果の流れを、**同じファイルを正本**として共有するホワイトボードです。
+Aether は、キャプテンの思考の変遷（時系列）と、主張の型・確信度・因果の流れを共有するホワイトボードです。
 
-* エージェント: **DSL で表現する**  
+* エージェント: **Board DB または DSL で表現する**  
 * キャプテン: **LIVE で見る・説明する**  
-* 詳細構文: [SKILL.md](./SKILL.md)
+* Board: [aether_board/README.md](./aether_board/README.md)  
+* DSL 構文: [SKILL.md](./SKILL.md)
 
 新しいアイデアや図的な整理を、Aether を通じて一緒に進めましょう。

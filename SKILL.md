@@ -1,14 +1,14 @@
 ---
 name: aether-interaction
-description: Aetherサーバーレスホワイトボードの操作・DSL更新スキル。LIVE監視（ファイル正本）/ IndexedDB / GitHub Pages / role·confidence·weight·flow·callout·path を含む。
+description: Aetherサーバーレスホワイトボードと aether_board（SQLite蓄積）の操作スキル。LIVE監視 / Board CLI / role·confidence·weight·flow·callout·path を含む。
 ---
 
-# Aether Interaction Skill (v4.0.6 Serverless + LIVE)
+# Aether Interaction Skill (v4.0.6 Serverless + LIVE + Board)
 
-Aether は **ブラウザ完結のスーパーホワイトボード** です。  
-UI 本体は Python / SQLite / ローカルAPI に依存しません。
+Aether **UI** はブラウザ完結（Python 非依存）。  
+**蓄積・複数板・手紙**は外側の **`aether_board/`（SQLite）** を使う。
 
-エージェント（エリー・ノヴァ等）は **UI を操作せず、DSL ファイルを編集**して表現する。
+エージェントは **UI を操作せず**、Board CLI または DSL ファイルで表現する。
 
 ---
 
@@ -17,33 +17,36 @@ UI 本体は Python / SQLite / ローカルAPI に依存しません。
 | 層 | 役割 | 依存 |
 |---|---|---|
 | UI (`index.html` 等) | 描画・閲覧・ナビ | ブラウザのみ |
-| **共有正本** | **`aether_dsl.txt`** | ファイル / Git |
-| LIVE フォルダ監視 | 正本 → キャンバス（片方向・約1秒） | Chrome/Edge + https/localhost |
+| **`aether_board/aether.db`** | **AI 蓄積の正本** | SQLite + CLI |
+| **`aether_dsl.txt`** | **LIVE 向け投影** | export / 手編集 |
+| LIVE フォルダ監視 | 投影ファイル → キャンバス（片方向・約1秒） | Chrome/Edge + https/localhost |
 | IndexedDB | ブラウザ個人キャッシュ | 共有媒体ではない |
 | 配布 HTML | Blob 生成 | HTTP / Pages 上 |
 
 ### 重要な境界
 
-- **`aether_dsl.txt`** = 人間/エージェント間で共有する **唯一の正本**
-- **IndexedDB** = そのブラウザだけの作業キャッシュ（エージェント共有に使わない）
-- **LIVE 中** = 監視ファイルが正本。キャンバスは **閲覧のみ**（データ変更不可）
-- **UI チャットタブは撤廃済み**（サイドバーは `{ } Aether DSL` と `📖 詳細`）
+- **Board 運用**: 日常の正本は **DB**。DSL は投影（`project` / `export`）
+- **簡易運用**: DSL 直編集可。DB と揃えるときは **明示 import**
+- **IndexedDB** = 共有に使わない
+- **LIVE 中** = 監視ファイル → キャンバスのみ。キャンバスは **閲覧のみ**
+- 詳細: [aether_board/README.md](./aether_board/README.md)
 
 ### LIVE モード（ホワイトボード運用の標準）
 
 | 項目 | 内容 |
 |---|---|
-| 正本 | 監視対象ファイル（既定 `aether_dsl.txt`） |
+| LIVE が見るもの | 監視対象ファイル（既定 `aether_dsl.txt`） |
 | 方向 | **ファイル → キャンバスのみ** |
-| エージェント作業 | ファイルを編集して保存 |
+| エージェント作業 | Board CLI（推奨）または DSL 編集 |
 | キャプテン作業 | 👁️ でフォルダ監視 ON、見る・説明する |
 | LIVE 中に不可 | ドラッグ移動、手動適用、📂、DnD、↑キャンバス出力 |
 | LIVE 中に可 | ズーム、パン、フォーカス、詳細、時系列、プレゼン |
-| フォルダ選択 | 浅い専用フォルダ推奨（`C:\` やホーム直下は拒否されやすい） |
-| `file://` | フォルダ監視 **不可**（Pages または `npx serve`） |
+| フォルダ選択 | 浅い専用フォルダ推奨 |
+| `file://` | フォルダ監視 **不可** |
 
 ```
-[AI] ──編集──▶ aether_dsl.txt ──LIVE──▶ キャンバス
+[AI CLI] ──▶ SQLite ──export──▶ aether_dsl.txt ──LIVE──▶ キャンバス
+[簡易]   ──編集─────────────▶ aether_dsl.txt ──LIVE──▶ キャンバス
 ```
 
 ---
@@ -74,31 +77,38 @@ npx serve .
 
 ## エージェント作業プロトコル
 
-### 1. 正本を読む
+### A. Board 運用（推奨）
 
-- 既定: `G:\マイドライブ\Nova\aether\aether_dsl.txt`
-- キャプテンが別フォルダを監視している場合はそのパスの監視ファイル名
+```bash
+cd aether/aether_board
+python aether_cli.py status
+python aether_cli.py project succession_navi
+python aether_cli.py msg send --from Nova --to Ellie --text "..." --board meta
+```
 
-### 2. DSL を編集して保存
+1. DB を更新（CLI / SQL）
+2. `project` または `export` / `sync` で `aether_dsl.txt` を投影
+3. LIVE ON なら約1秒で反映
+4. 巨大 DSL をチャットに貼らない
 
-- 構文ルール厳守（下記）
-- **ID はユニークに**（重複は `_2` 自動リネームされるが意図しない分裂の元）
+### B. DSL 直接編集（簡易）
 
-### 3. 反映
+1. `G:\マイドライブ\Nova\aether\aether_dsl.txt` を読む
+2. 構文厳守で編集・保存（**ID はユニークに**）
+3. Board と揃えるとき:  
+   `python aether_cli.py import ../aether_dsl.txt --board <id>`
+
+### 反映
 
 | 状況 | やること |
 |---|---|
-| LIVE ON | 保存のみ。約1秒で自動反映 |
-| LIVE OFF | キャプテンに 👁️ 開始 / 📂 / DnD を案内 |
-
-### 4. チャットは短く
-
-巨大 DSL を貼らない。
+| LIVE ON | 投影ファイルが更新されれば自動反映 |
+| LIVE OFF | キャプテンに 👁️ / 📂 / DnD を案内 |
 
 ```text
-Aether DSL を更新しました。
-正本: G:\マイドライブ\Nova\aether\aether_dsl.txt
-LIVE 中なら自動反映。OFF なら 📂 またはフォルダ監視を。
+Aether を更新しました（Board project / DSL 直編集）。
+投影: aether/aether_dsl.txt
+LIVE 中なら自動反映。
 ```
 
 ---
@@ -206,7 +216,7 @@ A -> B
 2. sticky / drawing / callout / path の **ID はユニーク**
 3. 未知の属性値は無視される（壊さない）
 4. IndexedDB を共有に使わない
-5. LIVE 中はファイルだけが正本
+5. LIVE 中は監視ファイルがキャンバスの入力源（Board 運用時の蓄積正本は DB）
 
 ---
 
@@ -226,18 +236,20 @@ A -> B
 
 ---
 
-## レガシー
+## レガシー / Board
 
-- `aether_server.py` / 旧 `aether.db` チャット同期は **非必須**
-- SQLite 経由の AI 操作は **将来案**（現時点は DSL 直編集）
+- `aether_server.py`（ルート旧経路）は **非必須**
+- **`aether_board/`** が現行の SQLite 蓄積層（UI 外）。README 必読
+- 日常同期は **DB → DSL**。File → DB は明示 `import` のみ
 
 ---
 
 ## エージェント向けチェックリスト
 
-- [ ] 正本 `aether_dsl.txt`（または監視ファイル）を更新したか
+- [ ] Board 運用なら DB 更新 + `project`/`export` したか
+- [ ] 簡易運用なら `aether_dsl.txt` を更新したか
 - [ ] `\` は1本、`desc` 改行は `\n` か
 - [ ] ID はユニークか
-- [ ] LIVE 中なら自動反映を案内したか / OFF なら 📂 または 👁️ を案内したか
+- [ ] LIVE 中なら自動反映を案内 / OFF なら 📂 または 👁️ を案内したか
 - [ ] メインチャットに巨大 DSL を貼っていないか
 - [ ] GitHub 反映が必要なら `aether` リポジトリへ commit/push したか
