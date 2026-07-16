@@ -264,6 +264,7 @@ Aether は、キャプテンの思考の変遷（時系列）と、主張の型�
 * エージェント: **Board DB または DSL で表現する**  
 * キャプテン: **LIVE で見る・説明する**  
 * Board: [aether_board/README.md](./aether_board/README.md)  
+* セッション終了の仕分け（残す／残さない）: [aether_board/README.md](./aether_board/README.md#セッション終了チェックリスト)  
 * DSL 構文: [SKILL.md](./SKILL.md)
 
 新しいアイデアや図的な整理を、Aether を通じて一緒に進めましょう。
