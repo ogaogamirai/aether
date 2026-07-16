@@ -1,175 +1,247 @@
 # Aether (エーテル) ✦ 招待状 兼 スタートアップガイド for Agents
 
-ようこそ、Aetherの共創世界へ！  
-このドキュメントは、キャプテン（人間）とAIエージェントが、無限のキャンバスを通じて思考をビジュアル可視化し、多元的な関係性を紡ぐための**共通説明書（ポータル）**です。
+ようこそ、Aetherの共創世界へ。  
+このドキュメントは、キャプテン（人間）とAIエージェント（エリー・ノヴァなど）が、**DSLファイルを正本**として思考をビジュアル化する共通説明書です。
 
-新しくプロジェクトに参加したエージェントは、まずこのガイドと関連スキルを読み込み、安全かつ効果的にホワイトボードを共同編集してください。
+新しく参加したエージェントは、まず本ガイドと [SKILL.md](./SKILL.md) を読み、**ホワイトボード（LIVE）モード**を前提に表現してください。
 
 ---
 
-## 🗺️ 関連リソースの配置マップ
+## 関連リソースの配置マップ
 
 ### ローカル（Nova ホーム）
 
-* 🌐 **Aether メイン操作画面**:  
-  [index.html](file:///G:/%E3%83%9E%E3%82%A4%E3%83%89%E3%83%A9%E3%82%A4%E3%83%96/Nova/aether/index.html)
+* 🌐 **Aether UI（Pages 推奨）**: https://ogaogamirai.github.io/aether/
 * 📝 **共有ホワイトボード正本 (DSL)**:  
-  [aether_dsl.txt](file:///G:/%E3%83%9E%E3%82%A4%E3%83%89%E3%83%A9%E3%82%A4%E3%83%96/Nova/aether/aether_dsl.txt)
-* 📂 **テーマ / 配布スナップショット**:  
-  [themes/](./themes/)
-* 📖 **エージェント操作スキル (詳細ルール)**:  
-  [SKILL.md](./SKILL.md)
-* 📘 **本ガイド**:  
-  [AETHER_WELCOME_GUIDE.md](./AETHER_WELCOME_GUIDE.md)
+  [aether_dsl.txt](file:///G:/%E3%83%9E%E3%82%A4%E3%83%89%E3%83%A9%E3%82%A4%E3%83%96/Nova/aether/aether_dsl.txt)  
+  パス: `G:\マイドライブ\Nova\aether\aether_dsl.txt`
+* 📖 **エージェント操作スキル（構文詳細）**: [SKILL.md](./SKILL.md)
+* 📘 **本ガイド**: [AETHER_WELCOME_GUIDE.md](./AETHER_WELCOME_GUIDE.md)
+* 📂 **テーマ / スナップショット**: [themes/](./themes/)
+* 🔧 **開発メモ**: [DEVELOPMENT.md](./DEVELOPMENT.md)
 
-### リモート（GitHub / Pages）
+### リモート
 
 * リポジトリ: https://github.com/ogaogamirai/aether
-* GitHub Pages（推奨公開先）: https://ogaogamirai.github.io/aether/
-* 外部DSL起動例: `https://ogaogamirai.github.io/aether/?dsl=themes/xxx.txt`
-* 配布用HTML出力を含む全機能は **HTTP / Pages 上** で利用可能
+* GitHub Pages: https://ogaogamirai.github.io/aether/
+* 資産キャッシュ: `?v=4.0.6` 系（ハードリロードで最新JSを取得）
 
 ---
 
-## ⚡ 現行仕様サマリ（v4.x Serverless Super Whiteboard）
+## 現行アーキテクチャ（必読）
 
-Aether UI は **Python / SQLite / ローカルAPI 非依存** のブラウザ完結型ホワイトボードです。
+| 層 | 役割 | 誰が触るか |
+|---|---|---|
+| **`aether_dsl.txt`** | **共有の正本** | エージェント（編集）・人間（編集可） |
+| **Aether キャンバス** | 可視化・閲覧・ナビ | 人間（見る・説明する） |
+| **IndexedDB** | ブラウザ個人の作業キャッシュ | 自動のみ（共有媒体ではない） |
+| **LIVE フォルダ監視** | 正本ファイル → キャンバス（片方向） | キャプテンが ON |
 
-| 機能 | 仕組み |
+```
+[AI / 人間] ──編集──▶ aether_dsl.txt ──LIVE監視──▶ Aether キャンバス
+                              ▲
+                              └── 唯一の共有正本
+```
+
+### ホワイトボード（LIVE）モードの原則
+
+1. **正本は監視対象ファイル**（既定: `aether_dsl.txt`）
+2. **方向はファイル → キャンバスのみ**（キャンバスから正本へは書かない）
+3. **LIVE中は閲覧のみ**  
+   - 可: ズーム・パン・フォーカス・詳細・時系列・プレゼン・矢印キー  
+   - 不可: 付箋ドラッグ移動・手動「キャンバス適用」・📂読込・DnD・↑キャンバス出力
+4. **エージェントはファイルを編集する**（UIを操作しない）
+5. **IndexedDB は共有に使わない**
+
+### 通常モード（LIVE OFF）
+
+- 手動の 📂 / DnD / 適用 / ドラッグ編集が使える
+- 起動時は legacy `current_dsl` → 構造化 IndexedDB → DEFAULT の順で復元
+- 共有したい結果は必ず `aether_dsl.txt`（または themes）に残す
+
+---
+
+## 現行仕様サマリ（v4.0.6）
+
+| 機能 | 内容 |
 |---|---|
-| オートセーブ | **構造化 IndexedDB（v2）** + 差分更新 |
-| ドラッグ保存 | 動かした付箋の座標のみ `notes` ストアへ PUT（全文再構築しない） |
-| DSL適用 | パース結果と DB の差分（insert / update / delete）を同期 |
-| 起動時復元 | 構造化ストア → legacy `current_dsl` → 同梱 DEFAULT_DSL |
-| URL起動 | `?dsl=相対パスまたはCORS許可URL` で外部DSLを自動読込 |
-| インポート | 📂 ファイル読込 / キャンバスへの `.txt` `.dsl` DnD |
-| エクスポート | 💾 DSLテキスト / 📤 配布用HTML（フロントエンド Blob 生成） |
-| 画像インライン | jpg/png は Base64、**svg は `data:image/svg+xml;utf8`** |
-| プレゼン | 🎬 / **P** … step 切替・詳細表示・横幅フィット・選択付箋の縦中央 |
-| サイドバー | `{ } Aether DSL` と `📖 詳細` のみ（**チャットタブなし**） |
-| 共有の正本 | `aether_dsl.txt`（IndexedDB は個人キャッシュ） |
+| LIVE | 👁️ フォルダ監視・● LIVE・監視ファイル名（既定 `aether_dsl.txt`） |
+| ポーリング | 約1秒・`lastModified` + 本文比較で変更時のみ適用 |
+| 空フォルダ | 監視ファイルが無ければ作成し seed を書く |
+| Phase K1 | sticky `role` / `confidence` |
+| Phase K2 | relation `weight` / `flow` |
+| Phase K3 | `callout` / `path` |
+| 重複ID | 適用時に `_2` 等へ自動リネーム（件数欠落を防止） |
+| 配布HTML | HTTP / Pages 上で 📤 出力 |
+| 起動 `?dsl=` | 相対パスまたは CORS 許可 URL |
 
-### IndexedDB 構造（v2）
+### LIVE の前提・制限
 
-```
-aether_db
-├── notes          # sticky（keyPath: id）
-├── drawings       # drawing（keyPath: id）
-├── relations      # relation（keyPath: id = "from->to"）
-├── connections    # 単純 A -> B（keyPath: id = "source->target"）
-└── board_state    # legacy: key 'current_dsl'（互換・マイグレーション用）
-```
-
-* ドラッグ終了 → `updateNotePositionInDB(id, x, y)` のみ  
-* 「キャンバス適用」→ `syncBoardStateToDB()` で差分同期  
-* 旧ブラウザの `current_dsl` 全文は初回起動時に構造化ストアへ自動移行
-
-### 起動経路の違い
-
-| 経路 | 閲覧・編集・DnD・IndexedDB | 配布用HTML出力 | `?dsl=` 自動読込 |
-|---|---|---|---|
-| `file://` で index.html を直接開く | ✅ | ❌（`fetch` 制限） | 制限あり |
-| ローカル HTTP（`npx serve` 等） | ✅ | ✅ | ✅ |
-| GitHub Pages | ✅ | ✅ | ✅ |
-
-```bash
-# ローカルHTTP例
-cd aether
-npx serve .
-# または
-python -m http.server 8080
-
-# 外部DSL起動例
-# http://localhost:8080/?dsl=aether_dsl.txt
-# http://localhost:8080/?dsl=themes/test_svg_rgb.txt
-```
+| 項目 | 内容 |
+|---|---|
+| ブラウザ | Chrome / Edge 推奨 |
+| URL | **https または localhost**（`file://` ではフォルダ監視不可） |
+| フォルダ選択 | **専用の浅いフォルダ**を選ぶ（`C:\` やホーム直下は「システムファイル」で拒否されやすい） |
+| 推奨監視先 | 例: `G:\マイドライブ\Nova\aether`（中に `aether_dsl.txt`） |
 
 ---
 
-## 🧭 エージェント向け最短手順
+## エージェント向け最短手順（推奨）
 
-1. **正本を読む**: `aether_dsl.txt`（または `themes/*.txt`）
-2. **DSLを更新して保存**: 構文ルールを厳守（下記 / SKILL.md）
-3. **キャプテンへ反映方法を案内**:
-   - UI の `📂 ファイル読込`、または
-   - キャンバスへ `.txt` / `.dsl` をドラッグ＆ドロップ、または
-   - `?dsl=...` URL、または
-   - Pages/HTTP 上で `📤 配布用HTMLを出力` して単体HTMLを共有
-4. **メインチャットは短く**: 巨大DSLは貼らない
+### キャプテンが LIVE 中のとき（いちばん簡単）
+
+1. **正本を読む**: `G:\マイドライブ\Nova\aether\aether_dsl.txt`
+2. **DSL を編集して保存**（構文ルール厳守）
+3. **約1秒待つ** → キャンバスが自動更新
+4. チャットには短い完了通知のみ（巨大DSLは貼らない）
 
 ```text
 Aether DSL を更新しました。
-正本: aether/aether_dsl.txt
-UI 反映: ファイル読込 または キャンバスへ DnD してください。
-（任意）共有URL: .../aether/?dsl=themes/xxx.txt
+正本: G:\マイドライブ\Nova\aether\aether_dsl.txt
+LIVE 監視中なら自動反映されます。反映されなければ ● LIVE と監視ファイル名を確認してください。
 ```
 
-> **注意**: IndexedDB はブラウザ個人の作業キャッシュです。エージェント間の共有媒体ではありません。
+### LIVE が OFF のとき
+
+1. 正本 `aether_dsl.txt` を更新
+2. キャプテンへ案内:
+   - 👁️ フォルダ監視を開始する、または
+   - 📂 ファイル読込 / キャンバスへ DnD、または
+   - `?dsl=aether_dsl.txt`（HTTP/Pages）
 
 ---
 
-## 🛠️ 基本ルール（表示崩れ防止）
+## 表現のための DSL（エージェント用チートシート）
 
-### 1. バックスラッシュ（`\`）は常に1本
-* `desc` 内の LaTeX は通常どおり `\frac`, `\sigma`, `\mu` と書く
-* `\\frac` のように多重エスケープされても描画側で自動補正される
+詳細・全属性は [SKILL.md](./SKILL.md)。ここでは**よく使うもの**だけ。
 
-### 2. 改行は `\n`
-* 例: `desc: "第一段落。\n\n第二段落。"`
+### 1. sticky（付箋）
 
-### 3. 画像
-* `![alt](URLまたはパス)` 形式（`![alt](<url>)` も可）
-* 配布用HTML出力時:
-  * **jpg / png / gif / webp** → Base64 data URI
-  * **svg** → `data:image/svg+xml;utf8,...`（Base64 化しない）
+```text
+sticky CLAIM1 "主張の一文" {
+  pos: 200 120
+  color: "blue"
+  tags: "テーマA"
+  role: "claim"
+  confidence: "high"
+  desc: "本文。改行は\\n。数式は $E=mc^2$。"
+  time: "1_導入"
+  tone: "stable"
+}
+```
 
-### 4. 主要オブジェクト（詳細は SKILL.md）
-* `sticky` … 付箋
-* `drawing` … 領域 / アイコン
-* `relation` … 意味的な接続線
-* `A -> B` … 単純接続
+| 属性 | 意味 | 例 |
+|---|---|---|
+| `role` | 主張の型（左ボーダー＋バッジ） | `claim` / `evidence` / `caveat` / `question` |
+| `confidence` | 確信度 | `high` / `mid` / `low` または `0.0`–`1.0` |
+| `tone` | 脈動 | `stable` / `tension` / `excited` |
+| `time` | 時系列ステップ | `1_導入`（スライダー累積表示） |
+| `color` | 付箋色 | `blue` `green` `yellow` `purple` `orange` `red` `pink` |
+
+### 2. relation（意味的な線）
+
+```text
+relation CLAIM1 -> EV1 {
+  type: "evidence"
+  label: "支える"
+  color: "green"
+  weight: 4
+  flow: "forward"
+}
+```
+
+| 属性 | 意味 |
+|---|---|
+| `weight` | 線の太さ（1–5） |
+| `flow: "forward"` | 流れるアニメ |
+| `type` | `default` / `evidence` / `conflict` / `influence` / `similarity` など |
+
+### 3. callout（注釈・Phase 3）
+
+```text
+callout NOTE1 "ここが要点" {
+  anchor: "CLAIM1"
+  offset: 50 -70
+  color: "blue"
+  time: "1_導入"
+}
+```
+
+* `anchor` … 付く sticky の ID  
+* `offset` … アンカーからの相対位置  
+
+### 4. path（誘導ルート・Phase 3）
+
+```text
+path STORY "説明の道筋" {
+  nodes: "S0 S1 S2 S3"
+  style: "pulse"
+  color: "purple"
+  time: "1_導入"
+}
+```
+
+* `nodes` … 順番に結ぶ sticky ID（空白区切り）  
+* `style` … `pulse`（流れ）/ `dashed`  
+
+### 5. drawing（領域・アイコン）
+
+従来どおり `drawing` ブロック（円領域・アイコン等）。詳細は SKILL.md。
+
+### 6. 単純接続
+
+```text
+A -> B
+```
 
 ---
 
-## 🖥️ UI 操作マップ（キャプテン向け）
+## 基本ルール（表示崩れ・共有事故の防止）
+
+1. **`\` は1本**（LaTeX は `\frac`。過剰エスケープしない）  
+2. **改行は `\n`**（`desc` 内）  
+3. **ID はユニークに**（重複は自動 `_2` 化されるが、意図しない分裂の元）  
+4. **巨大DSLをチャットに貼らない**（ファイルを正本にする）  
+5. **IndexedDB を共有経路にしない**  
+6. **LIVE中に「キャンバスを直したつもり」にならない**（正本はファイル）  
+7. **画像**は `![alt](url)`。配布HTMLでは jpg/png 等をインライン化  
+
+---
+
+## UI 操作マップ（キャプテン向け）
 
 | 操作 | 場所 / キー | 説明 |
 |---|---|---|
-| DSL 編集 | `{ } Aether DSL` | 編集 → `↓ キャンバス適用`（差分DB同期） |
-| ファイル読込 | DSL タブ | `.txt` / `.dsl` / `.json` |
-| ファイル保存 | DSL タブ | 現在 DSL をダウンロード |
-| DnD インポート | キャンバス全体 | ドロップで即適用 |
-| 配布用HTML | DSL タブ | 自己完結 HTML（HTTP/Pages 上） |
-| 詳細表示 | `📖 詳細` / 付箋クリック | 付箋クリックで表示 |
-| 時系列 | 上部スライダー | `time` プロパティ（累積表示） |
-| タグ | 左上フィルター | `tags` プロパティ |
-| 全体表示 | **F** / ツールバー `⊡` | 上部UIを避けて全付箋を収める |
-| プレゼン | **P** / 🎬 | ステップ再生モード |
-| プレゼン前/次 | **Ctrl+← / Ctrl+→** | 時間ステップ移動 |
-| 付箋間移動 | 矢印キー | 選択移動（プレゼン中は縦中央合わせ） |
+| フォルダ監視 | 👁️ / ■ 監視停止 | LIVE ON/OFF |
+| LIVE 表示 | ● LIVE / ○ IDLE | 監視中インジケータ |
+| 監視ファイル名 | DSLタブ下部 | 既定 `aether_dsl.txt` |
+| DSL 編集 | `{ } Aether DSL` | LIVE中は読取専用 |
+| キャンバス適用 | ↓ | LIVE中は無効 |
+| ファイル読込 / 保存 | 📂 / 💾 | LIVE中 📂 は無効 |
+| 詳細 | 📖 / 付箋クリック | 可（LIVE中も） |
+| 時系列 | 上部スライダー | `time` |
+| 全体表示 | **F** | 全付箋を収める |
+| プレゼン | **P** | ステップ再生 |
+| 前/次 | **Ctrl+← / →** | 時間ステップ |
 | 終了 | **Esc** | プレゼン終了 / 選択解除 |
-| テーマ | ツールバー 🌙/☀️ | ライト / ダーク |
-
-### プレゼンモードの挙動
-
-1. 開始時は最初の実時間ステップへ移動
-2. その step で**新たに表示される先頭1枚**を選択し詳細表示
-3. **倍率** = ホワイトボード領域（詳細パネルを除く）の横幅に最大フィット
-4. **縦位置** = 選択付箋が見える領域の上下中央（上下見切れ可）
-5. 矢印キーで別付箋を選んだときも、倍率・横位置は維持し縦中央のみ更新
 
 ---
 
-## 🗄️ レガシーについて
+## レガシー・将来案（触らないでよいもの）
 
-`aether_server.py` / `aether.db` / チャット同期系は旧経路です。  
-**現行 UI の必須経路ではありません。** サーバーレス運用では起動不要です。
+| 項目 | 状態 |
+|---|---|
+| `aether_server.py` / 旧 `aether.db` チャット同期 | **非必須**。現行 UI はサーバーレス |
+| SQLite をかませて AI が DB 操作 | **将来案**。現時点では採用しない（DSL 直編集で運用） |
 
 ---
 
-## 🤝 共創にあたって
+## 共創にあたって
 
-Aetherは、キャプテンの思考の変遷（時系列スライダー）や、感情のうねり（`stable` / `tension` / `excited` などの脈動オーラ）を可視化するホワイトボードです。
+Aether は、キャプテンの思考の変遷（時系列）と、主張の型・確信度・因果の流れを、**同じファイルを正本**として共有するホワイトボードです。
 
-新しいアイデア、多元的な説、図的な整理を、Aether を通じて一緒に進めましょう。  
-詳細な構文・作業プロトコルは [SKILL.md](./SKILL.md) を参照してください。
+* エージェント: **DSL で表現する**  
+* キャプテン: **LIVE で見る・説明する**  
+* 詳細構文: [SKILL.md](./SKILL.md)
+
+新しいアイデアや図的な整理を、Aether を通じて一緒に進めましょう。
