@@ -174,3 +174,13 @@ E3 で JS minify を全面無効化した結果、engine が太っていた。
 
 仕様: 監視ファイルが唯一の正本。キャンバス・IDB は表示キャッシュ。双方向書き戻しなし。  
 前提: Chrome/Edge の `https` または `localhost`（`file://` 非対応）。
+
+## Phase K — 表現拡張 role/confidence + weight/flow（2026-07-16）
+
+| ID | 内容 | ファイル |
+|----|------|----------|
+| K1 | sticky `role` (claim/evidence/caveat/question)・`confidence` (high/mid/low または 0–1) | parser / renderer / storage / style |
+| K2 | relation `weight` (1–5→線幅)・`flow: forward`（破線アニメ） | parser / renderer / storage / style |
+| K3 | 詳細パネルに role/confidence 表示、`?v=4.0.5` | main / index |
+
+未知値は無視。属性省略時は従来どおり。既存 DSL は破壊しない。

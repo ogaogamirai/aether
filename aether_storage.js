@@ -166,7 +166,9 @@ function normalizeNoteForStore(note) {
     tags: Array.isArray(note.tags) ? note.tags.slice() : [],
     desc: note.desc || '',
     time: note.time || '',
-    tone: note.tone || ''
+    tone: note.tone || '',
+    role: note.role || '',
+    confidence: note.confidence || ''
   };
 }
 
@@ -197,7 +199,9 @@ function normalizeRelationForStore(rel) {
     label: rel.label || '',
     color: rel.color || 'blue',
     tags: Array.isArray(rel.tags) ? rel.tags.slice() : [],
-    time: rel.time || ''
+    time: rel.time || '',
+    weight: rel.weight !== undefined && rel.weight !== null ? String(rel.weight) : '',
+    flow: rel.flow || ''
   };
 }
 
@@ -397,7 +401,9 @@ async function loadStructuredStateFromDB() {
         tags: Array.isArray(n.tags) ? n.tags : [],
         desc: n.desc || '',
         time: n.time || '',
-        tone: n.tone || ''
+        tone: n.tone || '',
+        role: n.role || '',
+        confidence: n.confidence || ''
       })),
       drawings: drawingRows.map(d => ({
         id: d.id,
@@ -421,7 +427,9 @@ async function loadStructuredStateFromDB() {
         label: r.label || '',
         color: r.color || 'blue',
         tags: Array.isArray(r.tags) ? r.tags : [],
-        time: r.time || ''
+        time: r.time || '',
+        weight: r.weight || '',
+        flow: r.flow || ''
       })),
       connections: connectionRows.map(c => ({
         source: c.source,
@@ -490,6 +498,8 @@ function buildDSLFromState() {
     if (note.desc) dsl += '  desc: "' + note.desc + '"\n';
     if (note.time) dsl += '  time: "' + note.time + '"\n';
     if (note.tone) dsl += '  tone: "' + note.tone + '"\n';
+    if (note.role) dsl += '  role: "' + note.role + '"\n';
+    if (note.confidence) dsl += '  confidence: "' + note.confidence + '"\n';
     dsl += '}\n\n';
   });
   drawings.forEach(dw => {
@@ -514,6 +524,10 @@ function buildDSLFromState() {
     if (rel.color) dsl += '  color: "' + rel.color + '"\n';
     if (rel.tags && rel.tags.length > 0) dsl += '  tags: "' + rel.tags.join(' ') + '"\n';
     if (rel.time) dsl += '  time: "' + rel.time + '"\n';
+    if (rel.weight !== undefined && rel.weight !== null && String(rel.weight) !== '') {
+      dsl += '  weight: ' + rel.weight + '\n';
+    }
+    if (rel.flow) dsl += '  flow: "' + rel.flow + '"\n';
     dsl += '}\n\n';
   });
   if (connections.length > 0) {

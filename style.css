@@ -830,6 +830,80 @@ body.light-theme .time-slider-container input[type="range"]::-webkit-slider-runn
   border: 1.5px solid rgba(59, 130, 246, 0.6) !important;
 }
 
+/* Phase K1: role / confidence（未知値は無視・opt-in） */
+.sticky-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.sticky-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 999px;
+  line-height: 1.2;
+  font-family: var(--font-display), sans-serif;
+  opacity: 0.92;
+}
+.sticky-badge.role-badge {
+  background: rgba(15, 23, 42, 0.12);
+  color: inherit;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+}
+body:not(.light-theme) .sticky-badge.role-badge {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.sticky-badge.conf-badge {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+.sticky-note.role-claim {
+  border-left: 4px solid #3b82f6 !important;
+}
+.sticky-note.role-evidence {
+  border-left: 4px solid #10b981 !important;
+}
+.sticky-note.role-caveat {
+  border-left: 4px solid #f59e0b !important;
+}
+.sticky-note.role-question {
+  border-left: 4px solid #8b5cf6 !important;
+}
+.sticky-note.conf-high {
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.22);
+}
+.sticky-note.conf-mid {
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
+}
+.sticky-note.conf-low {
+  opacity: 0.88;
+  border-style: dashed !important;
+}
+.sticky-note.conf-low .conf-badge {
+  background: rgba(148, 163, 184, 0.2);
+  border-color: rgba(148, 163, 184, 0.35);
+}
+.sticky-note.conf-high .conf-badge {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+/* Phase K2: relation flow animation */
+@keyframes aether-rel-flow {
+  to { stroke-dashoffset: -24; }
+}
+.connections-layer .rel-flow {
+  stroke-dasharray: 8 6;
+  animation: aether-rel-flow 0.9s linear infinite;
+}
+.connections-layer .rel-flow.dimmed {
+  animation: none;
+}
+
 /* Details Table Styling */
 .details-table {
   width: 100%;

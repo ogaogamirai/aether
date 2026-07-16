@@ -29,7 +29,9 @@ function parseAetherDSL(text) {
           tags: [],
           desc: '',
           time: '',
-          tone: ''
+          tone: '',
+          role: '',
+          confidence: ''
         };
       }
       continue;
@@ -69,7 +71,9 @@ function parseAetherDSL(text) {
           label: '',
           color: 'blue',
           tags: [],
-          time: ''
+          time: '',
+          weight: '',
+          flow: ''
         };
       }
       continue;
@@ -106,6 +110,10 @@ function parseAetherDSL(text) {
           currentSticky.time = val;
         } else if (prop === 'tone') {
           currentSticky.tone = val;
+        } else if (prop === 'role') {
+          currentSticky.role = val;
+        } else if (prop === 'confidence') {
+          currentSticky.confidence = val;
         }
       }
       continue;
@@ -165,6 +173,8 @@ function parseAetherDSL(text) {
         else if (prop === 'color') currentRelation.color = val;
         else if (prop === 'tags') currentRelation.tags = val.split(/\s+/);
         else if (prop === 'time') currentRelation.time = val;
+        else if (prop === 'weight') currentRelation.weight = val;
+        else if (prop === 'flow') currentRelation.flow = val;
       }
       continue;
     }
@@ -207,6 +217,12 @@ function serializeCanvasToDSL() {
     if (note.tone) {
       dsl += `  tone: "${note.tone}"\n`;
     }
+    if (note.role) {
+      dsl += `  role: "${note.role}"\n`;
+    }
+    if (note.confidence) {
+      dsl += `  confidence: "${note.confidence}"\n`;
+    }
     dsl += `}\n\n`;
   });
 
@@ -241,6 +257,12 @@ function serializeCanvasToDSL() {
     }
     if (rel.time) {
       dsl += `  time: "${rel.time}"\n`;
+    }
+    if (rel.weight !== undefined && rel.weight !== null && String(rel.weight) !== '') {
+      dsl += `  weight: ${rel.weight}\n`;
+    }
+    if (rel.flow) {
+      dsl += `  flow: "${rel.flow}"\n`;
     }
     dsl += `}\n\n`;
   });

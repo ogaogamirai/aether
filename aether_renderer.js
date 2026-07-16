@@ -86,6 +86,10 @@ function renderCanvas() {
     const el = document.createElement('div');
     el.className = `sticky-note ${note.color}`;
     if (note.tone) el.classList.add(note.tone);
+    const roleClass = normalizeStickyRole(note.role);
+    if (roleClass) el.classList.add('role-' + roleClass);
+    const confClass = normalizeConfidence(note.confidence);
+    if (confClass) el.classList.add('conf-' + confClass);
     el.style.left = `${note.x}px`;
     el.style.top = `${note.y}px`;
     el.id = `note-${note.id}`;
@@ -96,7 +100,15 @@ function renderCanvas() {
       if (!matches) el.classList.add('dimmed');
     }
 
+    const badges = [];
+    if (roleClass) badges.push('<span class="sticky-badge role-badge">' + roleClass + '</span>');
+    if (confClass) badges.push('<span class="sticky-badge conf-badge">' + confClass + '</span>');
+    const badgesHtml = badges.length
+      ? '<div class="sticky-badges">' + badges.join('') + '</div>'
+      : '';
+
     el.innerHTML = `
+      ${badgesHtml}
       <div class="sticky-content">${note.content}</div>
       <div class="sticky-footer">
         <span>ID: ${note.id}</span>
@@ -475,6 +487,45 @@ function drawPresetIcon(dw) {
   appendToSvg(group);
 }
 
+function normalizeStickyRole(role) {
+  const r = String(role || '').trim().toLowerCase();
+  if (!r) return '';
+  if (r === 'claim' || r === 'evidence' || r === 'caveat' || r === 'question') return r;
+  return '';
+}
+
+function normalizeConfidence(conf) {
+  if (conf === undefined || conf === null || conf === '') return '';
+  const s = String(conf).trim().toLowerCase();
+  if (s === 'high' || s === 'mid' || s === 'medium' || s === 'low') {
+    return s === 'medium' ? 'mid' : s;
+  }
+  const n = Number(s);
+  if (!isNaN(n)) {
+    if (n >= 0.67) return 'high';
+    if (n >= 0.34) return 'mid';
+    return 'low';
+  }
+  return '';
+}
+
+function relationStrokeWidth(rel, base) {
+  const b = typeof base === 'number' ? base : 2;
+  const w = Number(rel && rel.weight);
+  if (isNaN(w) || w <= 0) return b;
+  // weight 1..5 → 倍率 0.75..2.0（既存 type の base を尊重）
+  const clamped = Math.max(1, Math.min(5, w));
+  return Math.round((b * (0.5 + clamped * 0.3)) * 10) / 10;
+}
+
+function applyRelationFlow(el, rel) {
+  const flow = String((rel && rel.flow) || '').trim().toLowerCase();
+  if (!flow || flow === 'none' || flow === 'off') return;
+  if (flow === 'forward' || flow === 'true' || flow === '1' || flow === 'yes') {
+    el.classList.add('rel-flow');
+  }
+}
+
 // Draw semantic relation edges v3.0 (conflict, influence, similarity, default)
 function drawRelation(rel) {
   const source = notes.find(n => n.id === rel.from);
@@ -523,8 +574,9 @@ function drawRelation(rel) {
     path.setAttribute('d', d);
     path.setAttribute('stroke', colorHex);
     path.setAttribute('fill', 'none');
-    path.setAttribute('stroke-width', '2');
-    if (isDimmed) path.setAttribute('class', 'dimmed');
+    path.setAttribute('stroke-width', String(relationStrokeWidth(rel, 2)));
+    if (isDimmed) path.classList.add('dimmed');
+    applyRelationFlow(path, rel);
     appendToSvg(path);
 
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -563,9 +615,10 @@ function drawRelation(rel) {
     path.setAttribute('d', pathData);
     path.setAttribute('stroke', colorHex);
     path.setAttribute('fill', 'none');
-    path.setAttribute('stroke-width', '3.5');
+    path.setAttribute('stroke-width', String(relationStrokeWidth(rel, 3.5)));
     path.setAttribute('stroke-dasharray', '8 4');
-    if (isDimmed) path.setAttribute('class', 'dimmed');
+    if (isDimmed) path.classList.add('dimmed');
+    applyRelationFlow(path, rel);
     
     const markerId = `arrow-${rel.color}` || 'arrow-default';
     path.setAttribute('marker-end', `url(#${markerId})`);
@@ -594,8 +647,9 @@ function drawRelation(rel) {
     line1.setAttribute('x2', tx + nx * 4);
     line1.setAttribute('y2', ty + ny * 4);
     line1.setAttribute('stroke', colorHex);
-    line1.setAttribute('stroke-width', '1.5');
-    if (isDimmed) line1.setAttribute('class', 'dimmed');
+    line1.setAttribute('stroke-width', String(relationStrokeWidth(rel, 1.5)));
+    if (isDimmed) line1.classList.add('dimmed');
+    applyRelationFlow(line1, rel);
     appendToSvg(line1);
 
     const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -604,8 +658,9 @@ function drawRelation(rel) {
     line2.setAttribute('x2', tx - nx * 4);
     line2.setAttribute('y2', ty - ny * 4);
     line2.setAttribute('stroke', colorHex);
-    line2.setAttribute('stroke-width', '1.5');
-    if (isDimmed) line2.setAttribute('class', 'dimmed');
+    line2.setAttribute('stroke-width', String(relationStrokeWidth(rel, 1.5)));
+    if (isDimmed) line2.classList.add('dimmed');
+    applyRelationFlow(line2, rel);
     appendToSvg(line2);
 
     if (rel.label) {
@@ -628,8 +683,9 @@ function drawRelation(rel) {
     path.setAttribute('x2', tx);
     path.setAttribute('y2', ty);
     path.setAttribute('stroke', colorHex);
-    path.setAttribute('stroke-width', '2');
-    if (isDimmed) path.setAttribute('class', 'dimmed');
+    path.setAttribute('stroke-width', String(relationStrokeWidth(rel, 2)));
+    if (isDimmed) path.classList.add('dimmed');
+    applyRelationFlow(path, rel);
     const markerId = `arrow-${rel.color}` || 'arrow-default';
     path.setAttribute('marker-end', `url(#${markerId})`);
     appendToSvg(path);

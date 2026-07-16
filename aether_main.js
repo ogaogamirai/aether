@@ -724,6 +724,15 @@ function showNodeDetails(note) {
     ? note.tags.map(t => '<span class="details-tag-indicator">' + t + '</span>').join(' ')
     : '<span style="color: var(--text-secondary); font-style: italic;">タグなし</span>';
 
+  const metaBits = [
+    '付箋 ID: <strong>' + note.id + '</strong>',
+    'カラー: <strong>' + note.color + '</strong>'
+  ];
+  if (note.role) metaBits.push('role: <strong>' + note.role + '</strong>');
+  if (note.confidence !== undefined && note.confidence !== null && String(note.confidence) !== '') {
+    metaBits.push('confidence: <strong>' + note.confidence + '</strong>');
+  }
+
   const rawDesc = (note.desc || 'この項目に関する詳細説明はまだ登録されていません。右側のAether DSLタブから "desc" プロパティを記述して適用できます。').replace(/\\n/g, '\n');
   const withImages = parseMarkdownImage(rawDesc);
   const withTable = parseMarkdownTable(withImages);
@@ -732,9 +741,9 @@ function showNodeDetails(note) {
   detailsContainer.innerHTML =
     '<div class="details-card">' +
       '<div class="details-meta">' +
-        '<span>付箋 ID: <strong>' + note.id + '</strong></span>' +
-        '<span>|</span>' +
-        '<span>カラー: <strong>' + note.color + '</strong></span>' +
+        metaBits.map(function (b, i) {
+          return (i ? '<span>|</span>' : '') + '<span>' + b + '</span>';
+        }).join('') +
       '</div>' +
       '<div class="details-title">' + note.content + '</div>' +
       '<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;">' + tagsHtml + '</div>' +
@@ -1249,7 +1258,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.4 LIVE+phase-I (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.5 LIVE+role/conf/weight/flow (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();
