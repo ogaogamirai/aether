@@ -477,6 +477,13 @@ function setupCanvasInteractions() {
     if (e.deltaY < 0) window.scale = Math.min(window.scale + zoomFactor, 2.0);
     else window.scale = Math.max(window.scale - zoomFactor, 0.15);
     updateTransform();
+    // 倍率変更後はフォーカス付箋をグラフ中央へ（はみ出し可）
+    if (window.focusedNoteId) {
+      const n = (typeof notes !== 'undefined' ? notes : window.notes || []).find(function (x) {
+        return x.id === window.focusedNoteId;
+      });
+      if (n) centerFocusedNote(n);
+    }
   });
 
   canvasInteractionsReady = true;
@@ -505,7 +512,8 @@ function zoom(delta) {
   }
 }
 
-// フォーカス付箋を画面中央（横・縦）へパン
+// フォーカス付箋をグラフ領域の中央へパン（世界座標基準・はみ出し可）
+// getBoundingClientRect 依存だと画面外ノードや高倍率が崩れるため、note.x/y を正とする
 function centerFocusedNote(note) {
   if (!note) {
     if (!window.focusedNoteId) return false;
@@ -516,24 +524,38 @@ function centerFocusedNote(note) {
   if (!note) return false;
   const refs = getCanvasRefs();
   if (!refs.container || !refs.transformLayer) return false;
-  const el = document.getElementById('note-' + note.id);
-  if (!el) return false;
-  updateTransform();
-  const noteRect = el.getBoundingClientRect();
-  if (!noteRect.width || !noteRect.height) return false;
+
+  const halfW = (typeof NOTE_HALF_W === 'number') ? NOTE_HALF_W : 90;
+  const halfH = (typeof NOTE_HALF_H === 'number') ? NOTE_HALF_H : 70;
+  const worldCX = Number(note.x) + halfW;
+  const worldCY = Number(note.y) + halfH;
+  if (!isFinite(worldCX) || !isFinite(worldCY)) return false;
+
   const cr = refs.container.getBoundingClientRect();
   const desiredMidX = (cr.left + cr.right) / 2;
   const desiredMidY = typeof getVisibleCanvasMidViewportY === 'function'
     ? getVisibleCanvasMidViewportY(refs.container)
     : (cr.top + cr.bottom) / 2;
-  const noteCenterX = noteRect.left + noteRect.width / 2;
-  const noteCenterY = noteRect.top + noteRect.height / 2;
-  const dx = desiredMidX - noteCenterX;
-  const dy = desiredMidY - noteCenterY;
-  if (isFinite(dx) && Math.abs(dx) >= 0.5) window.panX += dx;
-  if (isFinite(dy) && Math.abs(dy) >= 0.5) window.panY += dy;
+  const s = window.scale || 1;
+  // viewport = containerOrigin + pan + world * scale  (transform-origin: 0 0)
+  window.panX = desiredMidX - cr.left - worldCX * s;
+  window.panY = desiredMidY - cr.top - worldCY * s;
   updateTransform();
   return true;
+}
+
+function scheduleCenterFocusedNote(note) {
+  if (!note) return;
+  if (window.__aetherFocusCenterRaf) {
+    cancelAnimationFrame(window.__aetherFocusCenterRaf);
+    window.__aetherFocusCenterRaf = null;
+  }
+  window.__aetherFocusCenterRaf = requestAnimationFrame(function () {
+    window.__aetherFocusCenterRaf = requestAnimationFrame(function () {
+      window.__aetherFocusCenterRaf = null;
+      centerFocusedNote(note);
+    });
+  });
 }
 
 function toggleLegend(forceOpen) {
@@ -825,10 +847,8 @@ function showNodeDetails(note) {
 
   switchTab('details');
 
-  // プレゼン中は選択変更のたびに縦中央へ（クリック/キーボード共通）
-  if (window.isPresentationMode) {
-    scheduleCenterNoteVertically(note);
-  }
+  // 選択変更時はフォーカス付箋をグラフ中央へ（倍率変更後も同じ経路・はみ出し可）
+  scheduleCenterFocusedNote(note);
 }
 
 // IndexedDB: aether_storage.js

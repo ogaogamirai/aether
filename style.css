@@ -304,21 +304,24 @@ body.light-theme .tag-chip.active {
 }
 
 .panel-header {
-  padding: 12px 16px 10px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
+  min-height: 40px;
 }
 
 .panel-title-block {
   min-width: 0;
+  flex: 0 1 auto;
 }
 
 .panel-header h1 {
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: 1.05rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   background: linear-gradient(to right, #60a5fa, #a78bfa);
@@ -326,13 +329,14 @@ body.light-theme .tag-chip.active {
   -webkit-text-fill-color: transparent;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  white-space: nowrap;
+  line-height: 1.1;
+  margin: 0;
 }
 
 .panel-header p {
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  margin-top: 2px;
+  display: none;
 }
 
 .tabs-header {
@@ -343,12 +347,12 @@ body.light-theme .tag-chip.active {
 
 .tab-btn {
   flex: 1;
-  padding: 12px;
+  padding: 8px 6px;
   background: none;
   border: none;
   color: var(--text-secondary);
   font-family: var(--font-display);
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -365,7 +369,7 @@ body.light-theme .tag-chip.active {
   flex: 1;
   display: none;
   flex-direction: column;
-  padding: 20px;
+  padding: 12px;
   overflow-y: auto;
 }
 
@@ -429,14 +433,42 @@ textarea:focus {
 }
 
 .btn {
-  padding: 10px 18px;
-  border-radius: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
   border: none;
   cursor: pointer;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.72rem;
   transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+.btn-compact {
+  padding: 5px 8px;
+  font-size: 0.7rem;
+  border-radius: 6px;
+}
+
+.dsl-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.dsl-actions-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 5px;
+}
+
+.btn-export-viewer {
+  width: 100%;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  font-weight: 700;
+  margin-top: 1px;
 }
 
 .btn-primary {
@@ -468,8 +500,12 @@ textarea:focus {
 .live-watch-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 2px;
+  gap: 6px;
+  margin-top: 0;
+}
+
+.live-watch-row .btn {
+  flex: 1;
 }
 
 .live-indicator {
@@ -579,23 +615,24 @@ body.aether-live .sticky-note {
 /* Panel Header Integrated Toolbar Styles */
 .panel-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-wrap: nowrap;
+  gap: 4px;
   align-items: center;
   justify-content: flex-end;
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .toolbar-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
-  border-radius: 6px;
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
+  border-radius: 5px;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
   flex: 0 0 auto;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -604,6 +641,16 @@ body.aether-live .sticky-note {
   white-space: nowrap;
   line-height: 1;
   padding: 0;
+}
+
+.scale-indicator {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  min-width: 30px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  flex: 0 0 auto;
 }
 
 .toolbar-btn:hover {

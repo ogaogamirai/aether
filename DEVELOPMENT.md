@@ -206,3 +206,12 @@ E3 で JS minify を全面無効化した結果、engine が太っていた。
 | L5 | 配布HTMLテンプレへ凡例要素を追加 / `?v=4.0.7` | `aether_export.js` / `index.html` |
 
 DBスキーマ変更なし。Board 側は `source` を properties JSON 経由で往復可。
+
+## Phase L.1 — プレゼン中央寄せ修正 + ヘッダ1行化（2026-07-18）
+
+| ID | 内容 | ファイル |
+|----|------|----------|
+| L1.1 | 倍率変更後もフォーカス付箋をグラフ中央へ（世界座標パン・はみ出し可） | `aether_main.js` |
+| L1.2 | ホイール／Ctrlズーム／キーボード選択で `centerFocusedNote` 共通化 | `aether_main.js` |
+| L1.3 | ヘッダを「Aether + 操作ボタン」1行化、字幕非表示 | `index.html` / `style.css` / `aether_export.js` |
+| L1.4 | DSL タブボタン縮小（btn-compact）・タブ余白削減 / `?v=4.0.8` | `index.html` / `style.css` |

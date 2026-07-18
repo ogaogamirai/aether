@@ -519,8 +519,7 @@ async function exportPortableViewer() {
       '    <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()">◀</button>',
       '    <div class="panel-header">',
       '      <div class="panel-title-block">',
-      '        <h1>🌌 Aether</h1>',
-      '        <p>ポータブル・ビューワー</p>',
+      '        <h1 title="ポータブル・ビューワー">🌌 Aether</h1>',
       '      </div>',
       '      <div class="panel-toolbar">',
       '        <button class="toolbar-btn" id="pres-mode-btn" onclick="togglePresentationMode()" title="プレゼンモード (P)">🎬</button>',
@@ -529,7 +528,7 @@ async function exportPortableViewer() {
       '        <button class="toolbar-btn" onclick="fitToView()" title="全体表示 (F)">⊡</button>',
       '        <button class="toolbar-btn" onclick="resetTransform()" title="リセット">⟲</button>',
       '        <button class="toolbar-btn" id="theme-btn" onclick="toggleTheme()" title="テーマ切り替え">🌙</button>',
-      '        <span id="scale-indicator" style="font-size: 0.75rem; color: var(--text-secondary); min-width: 35px; text-align: center;">100%</span>',
+      '        <span id="scale-indicator" class="scale-indicator">100%</span>',
       '      </div>',
       '    </div>',
       '    <div class="tabs-header">',
@@ -539,7 +538,7 @@ async function exportPortableViewer() {
       '    <div class="tab-content" id="tab-dsl">',
       '      <div class="dsl-editor-container">',
       '        <textarea class="dsl-textarea" id="dsl-input" placeholder="Aether DSL"></textarea>',
-      '        <button class="btn btn-primary" style="width: 100%;" onclick="applyDSL()">キャンバスに適用</button>',
+      '        <button class="btn btn-primary btn-compact" style="width: 100%;" onclick="applyDSL()">キャンバスに適用</button>',
       '      </div>',
       '    </div>',
       '    <div class="tab-content active" id="tab-details">',
@@ -596,4 +595,4 @@ async function exportPortableViewer() {
 }
 
 // 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
-window.__AETHER_EXPORT_BUILD__ = 'L1-legend-source-v4.0.7';
+window.__AETHER_EXPORT_BUILD__ = 'L1.1-focus-center-header-v4.0.8';
