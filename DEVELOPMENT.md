@@ -215,3 +215,20 @@ DBスキーマ変更なし。Board 側は `source` を properties JSON 経由で
 | L1.2 | ホイール／Ctrlズーム／キーボード選択で `centerFocusedNote` 共通化 | `aether_main.js` |
 | L1.3 | ヘッダを「Aether + 操作ボタン」1行化、字幕非表示 | `index.html` / `style.css` / `aether_export.js` |
 | L1.4 | DSL タブボタン縮小（btn-compact）・タブ余白削減 / `?v=4.0.8` | `index.html` / `style.css` |
+
+## Phase L.2 — DSL ツールバー順 + アイコン維持（2026-07-18）
+
+| ID | 内容 | ファイル |
+|----|------|----------|
+| L2.1 | 配置順: ↓適用 → ↑生成 → 📂開く → 💾保存 → 📤HTML →（隙間）→ 👁️監視 | `index.html` |
+| L2.2 | LIVE 時も監視ボタンをテキスト化しない（`■` / `👁️` + title） | `aether_main.js` |
+| L2.3 | `.dsl-toolbar-gap` / cache `?v=4.0.12` | `style.css` / `index.html` |
+
+- commit: `1e38bfe` → `origin/main` push 済
+
+## 運用ルール（Git / トークン）
+
+- **修正後は** `aether/` ルートで対象ソースのみ commit → **`git push origin main`**（GitHub 保存が完了条件）
+- DSL 作業ファイル・巨大 themes・scratch は既定で stage しない
+- Sサイズ UI でも長い JS は Ariadne `find` で行を絞る（CLI はトークン非消費）。HTML/CSS は grep 先
+- 詳細: `skills/ariadne/SKILL.md` §4.0 / `skills/delm-stable-process/SKILL.md` §10.4

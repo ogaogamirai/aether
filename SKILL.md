@@ -252,4 +252,4 @@ A -> B
 - [ ] ID はユニークか
 - [ ] LIVE 中なら自動反映を案内 / OFF なら 📂 または 👁️ を案内したか
 - [ ] メインチャットに巨大 DSL を貼っていないか
-- [ ] GitHub 反映が必要なら `aether` リポジトリへ commit/push したか
+- [ ] **コード/UI 修正後は** `aether` リポジトリで commit + `git push origin main` したか（完了条件）
