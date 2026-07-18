@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.11">
+  <link rel="stylesheet" href="style.css?v=4.0.12">
 </head>
 <body class="light-theme">
 
@@ -133,11 +133,12 @@
         <div class="dsl-actions">
           <div class="dsl-actions-toolbar" role="toolbar" aria-label="DSL操作">
             <button type="button" id="btn-apply-dsl" class="toolbar-btn" onclick="applyDSL()" title="DSLをキャンバスに適用">↓</button>
-            <button type="button" id="btn-import-dsl" class="toolbar-btn" onclick="triggerImportDSL()" title="ローカルのDSLファイルを読み込み">📂</button>
             <button type="button" id="btn-generate-dsl" class="toolbar-btn" onclick="generateDSLFromCanvas()" title="キャンバスからDSLを生成">↑</button>
+            <button type="button" id="btn-import-dsl" class="toolbar-btn" onclick="triggerImportDSL()" title="ローカルのDSLファイルを読み込み">📂</button>
             <button type="button" id="btn-export-dsl" class="toolbar-btn" onclick="exportDSLToFile()" title="現在のDSLをテキストファイルとして保存">💾</button>
-            <button type="button" id="live-watch-btn" class="toolbar-btn" onclick="toggleLiveFolderWatch()" title="フォルダ内のDSLを監視（LIVE中は閲覧のみ・ファイルが正本）">👁️</button>
             <button type="button" id="btn-export-viewer" class="toolbar-btn toolbar-btn-accent" onclick="exportPortableViewer()" title="他者と共有できる自己完結型インタラクティブHTMLを出力">📤</button>
+            <span class="dsl-toolbar-gap" aria-hidden="true"></span>
+            <button type="button" id="live-watch-btn" class="toolbar-btn" onclick="toggleLiveFolderWatch()" title="フォルダ内のDSLを監視（LIVE中は閲覧のみ・ファイルが正本）">👁️</button>
             <span id="live-indicator" class="live-indicator" title="LIVE: 監視ファイルが正本。キャンバスは閲覧のみ">○ IDLE</span>
           </div>
           <label class="live-filename-label" for="live-watch-filename" title="フォルダ直下の監視対象ファイル名">監視ファイル
@@ -183,10 +184,10 @@
     window.drawings = drawings;
     window.relations = relations;
   </script>
-  <script src="aether_parser.js?v=4.0.11"></script>
-  <script src="aether_renderer.js?v=4.0.11"></script>
-  <script src="aether_storage.js?v=4.0.11"></script>
-  <script src="aether_main.js?v=4.0.11"></script>
-  <script src="aether_export.js?v=4.0.11"></script>
+  <script src="aether_parser.js?v=4.0.12"></script>
+  <script src="aether_renderer.js?v=4.0.12"></script>
+  <script src="aether_storage.js?v=4.0.12"></script>
+  <script src="aether_main.js?v=4.0.12"></script>
+  <script src="aether_export.js?v=4.0.12"></script>
 </body>
 </html>

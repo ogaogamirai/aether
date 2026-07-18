@@ -1119,7 +1119,7 @@ function updateLiveWatchUi() {
   }
   const btn = document.getElementById('live-watch-btn');
   if (btn) {
-    btn.textContent = on ? '■ 監視停止' : '👁️ フォルダ監視';
+    btn.textContent = on ? '■' : '👁️';
     btn.title = on
       ? 'フォルダ監視を停止して通常モードに戻る'
       : 'フォルダ内のDSLを監視（LIVE中は閲覧のみ・ファイルが正本）';
