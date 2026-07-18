@@ -595,4 +595,4 @@ async function exportPortableViewer() {
 }
 
 // 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
-window.__AETHER_EXPORT_BUILD__ = 'L1.1-focus-center-header-v4.0.8';
+window.__AETHER_EXPORT_BUILD__ = 'L1.2-dsl-buttons-mini-v4.0.9';
