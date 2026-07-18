@@ -787,11 +787,12 @@ body.light-theme .details-desc {
 /* Guide panel (canvas bottom-left): shortcuts + legend */
 .legend-panel {
   position: absolute;
-  left: 14px;
-  bottom: 72px;
+  left: 8px;
+  bottom: 8px;
+  top: auto;
   z-index: 40;
   width: 248px;
-  max-height: min(520px, calc(100% - 140px));
+  max-height: min(42vh, calc(100% - 96px));
   overflow: auto;
   background: rgba(22, 26, 33, 0.55);
   backdrop-filter: blur(12px);
@@ -993,8 +994,9 @@ body.light-theme .legend-kbd {
 
 .legend-open-btn {
   position: absolute;
-  left: 14px;
-  bottom: 72px;
+  left: 8px;
+  bottom: 8px;
+  top: auto;
   z-index: 40;
   padding: 6px 10px;
   border-radius: 999px;
