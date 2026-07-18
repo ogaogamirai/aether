@@ -194,3 +194,15 @@ E3 で JS minify を全面無効化した結果、engine が太っていた。
 | K3c | `?v=4.0.6` | index |
 
 内部は既存 drawings ストアに格納（IDB スキーマ変更なし）。serialize は callout/path 構文で再出力。
+
+## Phase L — ブラッシュアップ（凡例 / source / 詳細密度 / ズーム）（2026-07-18）
+
+| ID | 内容 | ファイル |
+|----|------|----------|
+| L1 | 左下グラス凡例パネル（カラー / エッジ / トーン）+ トグル | `index.html` / `style.css` / `aether_main.js` |
+| L2 | sticky `source` パース・シリアライズ・詳細表示（URLリンク化） | `aether_parser.js` / `aether_main.js` |
+| L3 | サイドバーヘッダ縮小・toolbar 28→24px・details 余白詰め | `style.css` |
+| L4 | Ctrl+↑/↓ ズーム + フォーカス付箋中央追従 `centerFocusedNote` | `aether_main.js` |
+| L5 | 配布HTMLテンプレへ凡例要素を追加 / `?v=4.0.7` | `aether_export.js` / `index.html` |
+
+DBスキーマ変更なし。Board 側は `source` を properties JSON 経由で往復可。

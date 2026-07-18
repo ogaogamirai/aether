@@ -497,6 +497,73 @@ function updateTransform() {
 function zoom(delta) {
   window.scale = Math.max(0.15, Math.min(2.0, window.scale + delta));
   updateTransform();
+  if (window.focusedNoteId) {
+    const n = (typeof notes !== 'undefined' ? notes : window.notes || []).find(function (x) {
+      return x.id === window.focusedNoteId;
+    });
+    if (n) centerFocusedNote(n);
+  }
+}
+
+// フォーカス付箋を画面中央（横・縦）へパン
+function centerFocusedNote(note) {
+  if (!note) {
+    if (!window.focusedNoteId) return false;
+    note = (typeof notes !== 'undefined' ? notes : window.notes || []).find(function (x) {
+      return x.id === window.focusedNoteId;
+    });
+  }
+  if (!note) return false;
+  const refs = getCanvasRefs();
+  if (!refs.container || !refs.transformLayer) return false;
+  const el = document.getElementById('note-' + note.id);
+  if (!el) return false;
+  updateTransform();
+  const noteRect = el.getBoundingClientRect();
+  if (!noteRect.width || !noteRect.height) return false;
+  const cr = refs.container.getBoundingClientRect();
+  const desiredMidX = (cr.left + cr.right) / 2;
+  const desiredMidY = typeof getVisibleCanvasMidViewportY === 'function'
+    ? getVisibleCanvasMidViewportY(refs.container)
+    : (cr.top + cr.bottom) / 2;
+  const noteCenterX = noteRect.left + noteRect.width / 2;
+  const noteCenterY = noteRect.top + noteRect.height / 2;
+  const dx = desiredMidX - noteCenterX;
+  const dy = desiredMidY - noteCenterY;
+  if (isFinite(dx) && Math.abs(dx) >= 0.5) window.panX += dx;
+  if (isFinite(dy) && Math.abs(dy) >= 0.5) window.panY += dy;
+  updateTransform();
+  return true;
+}
+
+function toggleLegend(forceOpen) {
+  const panel = document.getElementById('legend-panel');
+  const openBtn = document.getElementById('legend-open-btn');
+  if (!panel) return;
+  let open;
+  if (typeof forceOpen === 'boolean') open = forceOpen;
+  else open = panel.classList.contains('collapsed');
+  if (open) {
+    panel.classList.remove('collapsed');
+    if (openBtn) openBtn.style.display = 'none';
+  } else {
+    panel.classList.add('collapsed');
+    if (openBtn) openBtn.style.display = '';
+  }
+}
+
+function formatSourceHtml(source) {
+  if (!source) return '';
+  const raw = String(source);
+  const escaped = raw
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+  if (/^https?:\/\//i.test(raw)) {
+    return '<a class="details-source-link" href="' + escaped + '" target="_blank" rel="noopener noreferrer">' + escaped + '</a>';
+  }
+  return escaped;
 }
 
 function resetTransform() {
@@ -733,6 +800,11 @@ function showNodeDetails(note) {
     metaBits.push('confidence: <strong>' + note.confidence + '</strong>');
   }
 
+  const sourceHtml = note.source ? formatSourceHtml(note.source) : '';
+  const sourceBlock = sourceHtml
+    ? '<div class="details-source"><span class="details-source-label">出典</span> ' + sourceHtml + '</div>'
+    : '';
+
   const rawDesc = (note.desc || 'この項目に関する詳細説明はまだ登録されていません。右側のAether DSLタブから "desc" プロパティを記述して適用できます。').replace(/\\n/g, '\n');
   const withImages = parseMarkdownImage(rawDesc);
   const withTable = parseMarkdownTable(withImages);
@@ -746,8 +818,9 @@ function showNodeDetails(note) {
         }).join('') +
       '</div>' +
       '<div class="details-title">' + note.content + '</div>' +
-      '<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px;">' + tagsHtml + '</div>' +
-      '<div class="details-desc" style="margin-top: 8px;">' + descText + '</div>' +
+      sourceBlock +
+      '<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px;">' + tagsHtml + '</div>' +
+      '<div class="details-desc">' + descText + '</div>' +
     '</div>';
 
   switchTab('details');
@@ -825,6 +898,14 @@ window.addEventListener('keydown', (e) => {
     if (isTypingTarget(e.target)) return;
     e.preventDefault();
     prevPresentationStep();
+    return;
+  }
+
+  // Ctrl + ArrowUp / ArrowDown: ズーム（フォーカス付箋へ中央追従）
+  if (e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+    if (isTypingTarget(e.target)) return;
+    e.preventDefault();
+    zoom(e.key === 'ArrowUp' ? 0.1 : -0.1);
     return;
   }
 

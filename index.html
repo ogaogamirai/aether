@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.6">
+  <link rel="stylesheet" href="style.css?v=4.0.7">
 </head>
 <body class="light-theme">
 
@@ -52,6 +52,38 @@
         <!-- Sticky notes dynamically added here -->
       </div>
     </div>
+
+    <!-- 凡例（Legend）パネル -->
+    <div id="legend-panel" class="legend-panel" aria-label="凡例">
+      <div class="legend-header">
+        <span class="legend-title">凡例</span>
+        <button type="button" class="legend-close-btn" onclick="toggleLegend(false)" title="凡例を閉じる">✖</button>
+      </div>
+      <div class="legend-body">
+        <div class="legend-section">
+          <div class="legend-section-title">ノードカラー</div>
+          <div class="legend-row"><span class="legend-swatch sticky-swatch yellow"></span><span>yellow</span></div>
+          <div class="legend-row"><span class="legend-swatch sticky-swatch blue"></span><span>blue</span></div>
+          <div class="legend-row"><span class="legend-swatch sticky-swatch green"></span><span>green</span></div>
+          <div class="legend-row"><span class="legend-swatch sticky-swatch pink"></span><span>pink</span></div>
+          <div class="legend-row"><span class="legend-swatch sticky-swatch purple"></span><span>purple</span></div>
+        </div>
+        <div class="legend-section">
+          <div class="legend-section-title">エッジの種類</div>
+          <div class="legend-row"><span class="legend-edge default"></span><span>default（実線矢印）</span></div>
+          <div class="legend-row"><span class="legend-edge influence"></span><span>influence（破線矢印）</span></div>
+          <div class="legend-row"><span class="legend-edge similarity"></span><span>similarity（二重線）</span></div>
+          <div class="legend-row"><span class="legend-edge conflict"></span><span>conflict（ジグザグ）</span></div>
+        </div>
+        <div class="legend-section">
+          <div class="legend-section-title">トーン（脈動）</div>
+          <div class="legend-row"><span class="legend-tone stable"></span><span>stable（静かな青）</span></div>
+          <div class="legend-row"><span class="legend-tone tension"></span><span>tension（緊迫の赤）</span></div>
+          <div class="legend-row"><span class="legend-tone excited"></span><span>excited（熱狂の橙）</span></div>
+        </div>
+      </div>
+    </div>
+    <button type="button" id="legend-open-btn" class="legend-open-btn" onclick="toggleLegend(true)" title="凡例を表示" style="display:none;">📋 凡例</button>
 
     <!-- 時系列スライダーUI -->
     <div class="time-slider-container" id="time-slider-container">
@@ -155,10 +187,10 @@
     window.drawings = drawings;
     window.relations = relations;
   </script>
-  <script src="aether_parser.js?v=4.0.6"></script>
-  <script src="aether_renderer.js?v=4.0.6"></script>
-  <script src="aether_storage.js?v=4.0.6"></script>
-  <script src="aether_main.js?v=4.0.6"></script>
-  <script src="aether_export.js?v=4.0.6"></script>
+  <script src="aether_parser.js?v=4.0.7"></script>
+  <script src="aether_renderer.js?v=4.0.7"></script>
+  <script src="aether_storage.js?v=4.0.7"></script>
+  <script src="aether_main.js?v=4.0.7"></script>
+  <script src="aether_export.js?v=4.0.7"></script>
 </body>
 </html>

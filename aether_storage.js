@@ -168,7 +168,8 @@ function normalizeNoteForStore(note) {
     time: note.time || '',
     tone: note.tone || '',
     role: note.role || '',
-    confidence: note.confidence || ''
+    confidence: note.confidence || '',
+    source: note.source || ''
   };
 }
 
@@ -403,7 +404,8 @@ async function loadStructuredStateFromDB() {
         time: n.time || '',
         tone: n.tone || '',
         role: n.role || '',
-        confidence: n.confidence || ''
+        confidence: n.confidence || '',
+        source: n.source || ''
       })),
       drawings: drawingRows.map(d => ({
         id: d.id,
@@ -500,6 +502,7 @@ function buildDSLFromState() {
     if (note.tone) dsl += '  tone: "' + note.tone + '"\n';
     if (note.role) dsl += '  role: "' + note.role + '"\n';
     if (note.confidence) dsl += '  confidence: "' + note.confidence + '"\n';
+    if (note.source) dsl += '  source: "' + note.source + '"\n';
     dsl += '}\n\n';
   });
   drawings.forEach(dw => {

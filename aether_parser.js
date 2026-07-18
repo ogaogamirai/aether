@@ -31,7 +31,8 @@ function parseAetherDSL(text) {
           time: '',
           tone: '',
           role: '',
-          confidence: ''
+          confidence: '',
+          source: ''
         };
       }
       continue;
@@ -160,6 +161,8 @@ function parseAetherDSL(text) {
           currentSticky.role = val;
         } else if (prop === 'confidence') {
           currentSticky.confidence = val;
+        } else if (prop === 'source') {
+          currentSticky.source = val;
         }
       }
       continue;
@@ -268,6 +271,9 @@ function serializeCanvasToDSL() {
     }
     if (note.confidence) {
       dsl += `  confidence: "${note.confidence}"\n`;
+    }
+    if (note.source) {
+      dsl += `  source: "${note.source}"\n`;
     }
     dsl += `}\n\n`;
   });

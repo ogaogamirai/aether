@@ -90,6 +90,7 @@ python test_roundtrip.py
 | board_id | 内容 |
 |---|---|
 | `succession_navi` | 皇位継承・深層価値合意ナビ |
+| `jp_origins` | 日本人の起源・検証ナビ（ゲノム／考古） |
 | `aether_board_dev` | Board システム開発メモ |
 
 ## 禁止・注意
