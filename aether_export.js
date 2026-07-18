@@ -538,7 +538,9 @@ async function exportPortableViewer() {
       '    <div class="tab-content" id="tab-dsl">',
       '      <div class="dsl-editor-container">',
       '        <textarea class="dsl-textarea" id="dsl-input" placeholder="Aether DSL"></textarea>',
-      '        <button class="btn btn-primary btn-compact" style="width: 100%;" onclick="applyDSL()" title="DSLをキャンバスに適用">↓ 適用</button>',
+      '        <div class="dsl-actions"><div class="dsl-actions-toolbar">',
+      '          <button type="button" class="toolbar-btn" onclick="applyDSL()" title="DSLをキャンバスに適用">↓</button>',
+      '        </div></div>',
       '      </div>',
       '    </div>',
       '    <div class="tab-content active" id="tab-details">',
@@ -595,4 +597,4 @@ async function exportPortableViewer() {
 }
 
 // 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
-window.__AETHER_EXPORT_BUILD__ = 'L1.3-dsl-btn-tooltip-v4.0.10';
+window.__AETHER_EXPORT_BUILD__ = 'L1.4-dsl-toolbar-icons-v4.0.11';
