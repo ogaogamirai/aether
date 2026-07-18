@@ -784,14 +784,14 @@ body.light-theme .details-desc {
   border-left-color: var(--accent-blue);
 }
 
-/* Legend panel (canvas bottom-left) */
+/* Guide panel (canvas bottom-left): shortcuts + legend */
 .legend-panel {
   position: absolute;
   left: 14px;
   bottom: 72px;
   z-index: 40;
-  width: 220px;
-  max-height: min(420px, calc(100% - 140px));
+  width: 248px;
+  max-height: min(520px, calc(100% - 140px));
   overflow: auto;
   background: rgba(22, 26, 33, 0.55);
   backdrop-filter: blur(12px);
@@ -877,6 +877,46 @@ body.light-theme .legend-panel {
   font-size: 0.72rem;
   color: var(--text-primary);
   margin: 3px 0;
+}
+
+.legend-row.legend-shortcut {
+  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.legend-row.legend-shortcut > span:last-child {
+  margin-left: 4px;
+  color: var(--text-secondary);
+}
+
+.legend-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35em;
+  height: 1.35em;
+  padding: 0 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
+}
+
+body.light-theme .legend-kbd {
+  background: rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
+}
+
+.legend-plus {
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  margin: 0 1px;
 }
 
 .legend-swatch {

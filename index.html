@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.12">
+  <link rel="stylesheet" href="style.css?v=4.0.13">
 </head>
 <body class="light-theme">
 
@@ -53,13 +53,22 @@
       </div>
     </div>
 
-    <!-- 凡例（Legend）パネル -->
-    <div id="legend-panel" class="legend-panel" aria-label="凡例">
+    <!-- ガイド（凡例 + ショートカット）パネル -->
+    <div id="legend-panel" class="legend-panel" aria-label="ガイド（凡例とショートカット）">
       <div class="legend-header">
-        <span class="legend-title">凡例</span>
-        <button type="button" class="legend-close-btn" onclick="toggleLegend(false)" title="凡例を閉じる">✖</button>
+        <span class="legend-title">ガイド</span>
+        <button type="button" class="legend-close-btn" onclick="toggleLegend(false)" title="ガイドを閉じる">✖</button>
       </div>
       <div class="legend-body">
+        <div class="legend-section">
+          <div class="legend-section-title">ショートカット</div>
+          <div class="legend-row legend-shortcut"><kbd class="legend-kbd">F</kbd><span>全体表示</span></div>
+          <div class="legend-row legend-shortcut"><kbd class="legend-kbd">P</kbd><span>プレゼン ON/OFF</span></div>
+          <div class="legend-row legend-shortcut"><kbd class="legend-kbd">Ctrl</kbd><span class="legend-plus">+</span><kbd class="legend-kbd">←</kbd><kbd class="legend-kbd">→</kbd><span>プレゼン step 前後</span></div>
+          <div class="legend-row legend-shortcut"><kbd class="legend-kbd">Ctrl</kbd><span class="legend-plus">+</span><kbd class="legend-kbd">↑</kbd><kbd class="legend-kbd">↓</kbd><span>ズーム</span></div>
+          <div class="legend-row legend-shortcut"><kbd class="legend-kbd">↑</kbd><kbd class="legend-kbd">↓</kbd><kbd class="legend-kbd">←</kbd><kbd class="legend-kbd">→</kbd><span>選択付箋を移動</span></div>
+          <div class="legend-row legend-shortcut"><kbd class="legend-kbd">Esc</kbd><span>プレゼン終了 / 選択解除</span></div>
+        </div>
         <div class="legend-section">
           <div class="legend-section-title">ノードカラー</div>
           <div class="legend-row"><span class="legend-swatch sticky-swatch yellow"></span><span>yellow</span></div>
@@ -83,7 +92,7 @@
         </div>
       </div>
     </div>
-    <button type="button" id="legend-open-btn" class="legend-open-btn" onclick="toggleLegend(true)" title="凡例を表示" style="display:none;">📋 凡例</button>
+    <button type="button" id="legend-open-btn" class="legend-open-btn" onclick="toggleLegend(true)" title="ガイドを表示" style="display:none;">📋 ガイド</button>
 
     <!-- 時系列スライダーUI -->
     <div class="time-slider-container" id="time-slider-container">
@@ -184,10 +193,10 @@
     window.drawings = drawings;
     window.relations = relations;
   </script>
-  <script src="aether_parser.js?v=4.0.12"></script>
-  <script src="aether_renderer.js?v=4.0.12"></script>
-  <script src="aether_storage.js?v=4.0.12"></script>
-  <script src="aether_main.js?v=4.0.12"></script>
-  <script src="aether_export.js?v=4.0.12"></script>
+  <script src="aether_parser.js?v=4.0.13"></script>
+  <script src="aether_renderer.js?v=4.0.13"></script>
+  <script src="aether_storage.js?v=4.0.13"></script>
+  <script src="aether_main.js?v=4.0.13"></script>
+  <script src="aether_export.js?v=4.0.13"></script>
 </body>
 </html>

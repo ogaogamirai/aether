@@ -226,6 +226,14 @@ DBスキーマ変更なし。Board 側は `source` を properties JSON 経由で
 
 - commit: `1e38bfe` → `origin/main` push 済
 
+## Phase L.3 — ガイドパネル（ショートカット併記）（2026-07-18）
+
+| ID | 内容 | ファイル |
+|----|------|----------|
+| L3.1 | パネル名「凡例」→「ガイド」 | `index.html` / `aether_export.js` |
+| L3.2 | ショートカット節: F / P / Ctrl+←→ / Ctrl+↑↓ / 矢印 / Esc | 同上 |
+| L3.3 | kbd スタイル・幅・高さ調整 / `?v=4.0.13` | `style.css` / `index.html` |
+
 ## 運用ルール（Git / トークン）
 
 - **修正後は** `aether/` ルートで対象ソースのみ commit → **`git push origin main`**（GitHub 保存が完了条件）
