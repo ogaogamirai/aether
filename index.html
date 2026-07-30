@@ -12,9 +12,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.14">
+  <link rel="stylesheet" href="style.css?v=4.0.15">
 </head>
 <body class="light-theme">
+
+  <div id="view-mode-bar" class="view-mode-bar" role="toolbar" aria-label="表示切替">
+    <span class="view-mode-label">表示</span>
+    <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode('auto')" title="画面幅に応じて自動切替">自動</button>
+    <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode('canvas')" title="2Dキャンバス表示">PC</button>
+    <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode('list')" title="カード型リスト表示">リスト</button>
+  </div>
+
+  <div id="mobile-list-view" class="mobile-list-view" aria-label="モバイルリストビュー">
+    <div id="mobile-list-scroll" class="mobile-list-scroll"></div>
+  </div>
 
   <!-- Infinite Canvas -->
   <div class="whiteboard-container" id="canvas-container">

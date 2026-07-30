@@ -420,6 +420,7 @@ async function exportPortableViewer() {
       '    if (input) input.value = initialDSL;',
       '    if (typeof applyDSL !== "function") throw new Error("applyDSL missing after bundle eval");',
       '    applyDSL();',
+      '    if (typeof initResponsiveView === "function") initResponsiveView();',
       '    var ncount = (typeof notes !== "undefined" && notes && notes.length) || (window.notes && window.notes.length) || 0;',
       '    var domCount = document.querySelectorAll(".sticky-note").length;',
       '    setTimeout(function () {',
@@ -454,6 +455,15 @@ async function exportPortableViewer() {
       '  <style id="aether-embedded-css">' + styleContent + '</style>',
       '</head>',
       '<body class="light-theme">',
+      '  <div id="view-mode-bar" class="view-mode-bar" role="toolbar" aria-label="表示切替">',
+      '    <span class="view-mode-label">表示</span>',
+      '    <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode(\'auto\')" title="画面幅に応じて自動切替">自動</button>',
+      '    <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode(\'canvas\')" title="2Dキャンバス表示">PC</button>',
+      '    <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode(\'list\')" title="カード型リスト表示">リスト</button>',
+      '  </div>',
+      '  <div id="mobile-list-view" class="mobile-list-view" aria-label="モバイルリストビュー">',
+      '    <div id="mobile-list-scroll" class="mobile-list-scroll"></div>',
+      '  </div>',
       '  <div class="whiteboard-container" id="canvas-container">',
       '    <div class="tags-filter-bar" id="tags-filter-bar"></div>',
       '    <div class="canvas-transform" id="canvas-transform">',
@@ -606,4 +616,4 @@ async function exportPortableViewer() {
 }
 
 // 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
-window.__AETHER_EXPORT_BUILD__ = 'L1.4-dsl-toolbar-icons-v4.0.11';
+window.__AETHER_EXPORT_BUILD__ = 'L2.0-mobile-list-view-v4.0.15';

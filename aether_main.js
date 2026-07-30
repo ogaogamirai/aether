@@ -114,6 +114,9 @@ function applyDSL(options) {
       if (!isAetherLiveMode()) saveCanvasState();
     });
   }
+
+  if (typeof renderMobileListView === 'function') renderMobileListView();
+  if (typeof applyViewModeLayout === 'function') applyViewModeLayout();
 }
 
 function updateTimeSlider(times) {
@@ -160,9 +163,15 @@ function handleTimeSlider(value) {
   renderCanvas();
   updatePresentationStepName();
 
+  if (typeof renderMobileListView === 'function') renderMobileListView();
+
   if (window.isPresentationMode) {
     setTimeout(() => {
-      focusPresentationStepView();
+      if (typeof getEffectiveViewMode === 'function' && getEffectiveViewMode() === 'list') {
+        if (typeof focusPresentationMobileStep === 'function') focusPresentationMobileStep();
+      } else {
+        focusPresentationStepView();
+      }
     }, 50);
   }
 }
@@ -184,7 +193,15 @@ function togglePresentationMode(forceState) {
       slider.value = defaultIdx;
     }
     handleTimeSlider(defaultIdx);
-    showToast('プレゼンテーションモードを開始しました (Ctrl+← / Ctrl+→ で移動)', 'success');
+    const presHint = (typeof getEffectiveViewMode === 'function' && getEffectiveViewMode() === 'list')
+      ? '下部またはスワイプで移動'
+      : 'Ctrl+← / Ctrl+→ で移動';
+    showToast('プレゼンテーションモードを開始しました (' + presHint + ')', 'success');
+    if (typeof getEffectiveViewMode === 'function' && getEffectiveViewMode() === 'list') {
+      setTimeout(() => {
+        if (typeof focusPresentationMobileStep === 'function') focusPresentationMobileStep();
+      }, 80);
+    }
   } else {
     if (controller) controller.style.display = 'none';
     if (btn) btn.classList.remove('active');
@@ -847,6 +864,8 @@ function showNodeDetails(note) {
 
   switchTab('details');
 
+  if (typeof focusMobileListCard === 'function') focusMobileListCard(note.id, false);
+
   // 選択変更時はフォーカス付箋をグラフ中央へ（倍率変更後も同じ経路・はみ出し可）
   scheduleCenterFocusedNote(note);
 }
@@ -976,6 +995,240 @@ function toggleTheme() {
   const isLight = body.classList.contains('light-theme');
   if (themeBtn) themeBtn.textContent = isLight ? '🌙' : '☀️';
   if (typeof drawAllShapes === 'function') drawAllShapes();
+}
+
+// --- Responsive / mobile list view (export snapshot + live UI) ---
+var AETHER_VIEW_MODE_KEY = 'aether_view_mode';
+var AETHER_VIEW_BREAKPOINT = 768;
+
+function isNarrowViewport() {
+  return window.innerWidth < AETHER_VIEW_BREAKPOINT;
+}
+
+function getViewModePreference() {
+  try {
+    var stored = localStorage.getItem(AETHER_VIEW_MODE_KEY);
+    if (stored === 'canvas' || stored === 'list' || stored === 'auto') return stored;
+  } catch (err) { /* file:// private mode */ }
+  return 'auto';
+}
+
+function setViewMode(mode) {
+  var next = (mode === 'canvas' || mode === 'list' || mode === 'auto') ? mode : 'auto';
+  try { localStorage.setItem(AETHER_VIEW_MODE_KEY, next); } catch (err) { /* ignore */ }
+  applyViewModeLayout();
+}
+
+function getEffectiveViewMode() {
+  var pref = getViewModePreference();
+  if (pref === 'canvas' || pref === 'list') return pref;
+  return isNarrowViewport() ? 'list' : 'canvas';
+}
+
+function noteVisibleInCurrentContext(note) {
+  if (!note) return false;
+  if (window.isPresentationMode && typeof isTimeVisible === 'function') {
+    return isTimeVisible(note.time);
+  }
+  return true;
+}
+
+function getNotesSortedForMobileList() {
+  var source = (typeof notes !== 'undefined' && notes) ? notes : (window.notes || []);
+  var timeOrder = window.timeSteps || [];
+  function timeIndex(t) {
+    if (!t) return 0;
+    var i = timeOrder.indexOf(t);
+    return i >= 0 ? i : timeOrder.length;
+  }
+  return source.map(function (n, i) { return { note: n, dslOrder: i }; })
+    .sort(function (a, b) {
+      var ta = timeIndex(a.note.time);
+      var tb = timeIndex(b.note.time);
+      if (ta !== tb) return ta - tb;
+      return a.dslOrder - b.dslOrder;
+    })
+    .map(function (x) { return x.note; });
+}
+
+function getNoteRelationChips(noteId) {
+  var rels = (typeof relations !== 'undefined' && relations) ? relations : (window.relations || []);
+  var allNotes = (typeof notes !== 'undefined' && notes) ? notes : (window.notes || []);
+  var chips = [];
+  rels.forEach(function (r) {
+    if (r.from === noteId) {
+      var target = allNotes.find(function (n) { return n.id === r.to; });
+      chips.push({ label: target ? target.content : r.to, type: r.type || 'default' });
+    }
+    if (r.to === noteId) {
+      var source = allNotes.find(function (n) { return n.id === r.from; });
+      chips.push({ label: source ? ('← ' + source.content) : ('← ' + r.from), type: r.type || 'default' });
+    }
+  });
+  return chips;
+}
+
+function formatNoteDescHtml(note) {
+  var rawDesc = (note.desc || '詳細説明は未登録です。').replace(/\\n/g, '\n');
+  var withImages = parseMarkdownImage(rawDesc);
+  var withTable = parseMarkdownTable(withImages);
+  return parseKaTeX(withTable);
+}
+
+function updateViewModeButtons() {
+  var pref = getViewModePreference();
+  document.querySelectorAll('.view-mode-btn').forEach(function (btn) {
+    var mode = btn.getAttribute('data-view-mode');
+    btn.classList.toggle('active', mode === pref);
+  });
+}
+
+function applyViewModeLayout() {
+  var effective = getEffectiveViewMode();
+  document.body.classList.remove('view-pref-auto', 'view-pref-canvas', 'view-pref-list', 'view-effective-canvas', 'view-effective-list');
+  document.body.classList.add('view-pref-' + getViewModePreference());
+  document.body.classList.add('view-effective-' + effective);
+  updateViewModeButtons();
+
+  if (effective === 'list') {
+    renderMobileListView();
+    var panel = document.getElementById('control-panel');
+    if (panel && isNarrowViewport() && !panel.classList.contains('collapsed')) {
+      panel.classList.add('collapsed');
+      var sidebarBtn = document.getElementById('sidebar-toggle-btn');
+      if (sidebarBtn) {
+        sidebarBtn.textContent = '▶';
+        sidebarBtn.title = 'サイドバーを開く';
+      }
+    }
+  }
+}
+
+function focusMobileListCard(noteId, scrollIntoView) {
+  if (scrollIntoView === undefined) scrollIntoView = true;
+  var root = document.getElementById('mobile-list-view');
+  if (!root) return;
+  root.querySelectorAll('.mobile-list-card').forEach(function (card) {
+    card.classList.toggle('focused', card.getAttribute('data-note-id') === noteId);
+  });
+  var card = root.querySelector('.mobile-list-card[data-note-id="' + noteId + '"]');
+  if (!card) return;
+  var header = card.querySelector('.mobile-list-card-header');
+  var body = card.querySelector('.mobile-list-card-body');
+  if (header) header.setAttribute('aria-expanded', 'true');
+  if (body) body.hidden = false;
+  if (scrollIntoView) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function focusPresentationMobileStep() {
+  var visible = getNotesSortedForMobileList().filter(noteVisibleInCurrentContext);
+  var target = visible[0] || getFirstNoteForCurrentStep();
+  if (target) focusMobileListCard(target.id, true);
+}
+
+function toggleMobileListCard(noteId) {
+  var root = document.getElementById('mobile-list-view');
+  if (!root) return;
+  var card = root.querySelector('.mobile-list-card[data-note-id="' + noteId + '"]');
+  if (!card) return;
+  var body = card.querySelector('.mobile-list-card-body');
+  var header = card.querySelector('.mobile-list-card-header');
+  if (!body || !header) return;
+  var willOpen = body.hidden;
+  body.hidden = !willOpen;
+  header.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  if (willOpen) {
+    window.focusedNoteId = noteId;
+    root.querySelectorAll('.mobile-list-card').forEach(function (el) {
+      el.classList.toggle('focused', el.getAttribute('data-note-id') === noteId);
+    });
+    var canvasNote = document.getElementById('note-' + noteId);
+    if (canvasNote) {
+      root.querySelectorAll('#notes-container .sticky-note').forEach(function (el) {
+        el.classList.remove('focused');
+      });
+      canvasNote.classList.add('focused');
+    }
+  }
+}
+
+function renderMobileListView() {
+  var root = document.getElementById('mobile-list-view');
+  var scroll = document.getElementById('mobile-list-scroll');
+  if (!root || !scroll) return;
+
+  var sorted = getNotesSortedForMobileList().filter(noteVisibleInCurrentContext);
+  if (!sorted.length) {
+    scroll.innerHTML =
+      '<div class="mobile-list-empty">' +
+        '<span class="mobile-list-empty-icon">📋</span>' +
+        '<p>表示できる付箋がありません。</p>' +
+      '</div>';
+    return;
+  }
+
+  var html = sorted.map(function (note) {
+    var tagsHtml = (note.tags && note.tags.length)
+      ? note.tags.map(function (t) { return '<span class="details-tag-indicator">' + t + '</span>'; }).join(' ')
+      : '';
+    var timeHtml = note.time ? '<span class="mobile-list-time">' + note.time + '</span>' : '';
+    var chips = getNoteRelationChips(note.id);
+    var relHtml = chips.length
+      ? '<div class="mobile-list-relations">' + chips.map(function (c) {
+          return '<span class="mobile-list-rel-chip rel-' + c.type + '">' + c.label + '</span>';
+        }).join('') + '</div>'
+      : '';
+    var descHtml = formatNoteDescHtml(note);
+    var isFocused = window.focusedNoteId === note.id;
+    return (
+      '<article class="mobile-list-card sticky-swatch ' + note.color + (isFocused ? ' focused' : '') + '" data-note-id="' + note.id + '">' +
+        '<button type="button" class="mobile-list-card-header" aria-expanded="' + (isFocused ? 'true' : 'false') + '" onclick="toggleMobileListCard(\'' + note.id + '\')">' +
+          '<span class="mobile-list-card-title">' + note.content + '</span>' +
+          '<span class="mobile-list-card-meta">' + timeHtml + tagsHtml + '</span>' +
+          '<span class="mobile-list-card-chevron" aria-hidden="true">▾</span>' +
+        '</button>' +
+        '<div class="mobile-list-card-body"' + (isFocused ? '' : ' hidden') + '>' +
+          relHtml +
+          '<div class="mobile-list-desc details-desc">' + descHtml + '</div>' +
+        '</div>' +
+      '</article>'
+    );
+  }).join('');
+
+  scroll.innerHTML = html;
+}
+
+function setupMobileListSwipe() {
+  var el = document.getElementById('mobile-list-scroll');
+  if (!el || el._aetherSwipeBound) return;
+  el._aetherSwipeBound = true;
+  var startX = 0;
+  el.addEventListener('touchstart', function (e) {
+    startX = e.changedTouches[0].screenX;
+  }, { passive: true });
+  el.addEventListener('touchend', function (e) {
+    if (!window.isPresentationMode) return;
+    var dx = e.changedTouches[0].screenX - startX;
+    if (Math.abs(dx) < 56) return;
+    if (dx < 0) nextPresentationStep();
+    else prevPresentationStep();
+  }, { passive: true });
+}
+
+var _aetherResizeTimer = null;
+function initResponsiveView() {
+  var bar = document.getElementById('view-mode-bar');
+  if (!bar) return;
+  setupMobileListSwipe();
+  applyViewModeLayout();
+  if (bar._aetherViewBound) return;
+  bar._aetherViewBound = true;
+  window.addEventListener('resize', function () {
+    clearTimeout(_aetherResizeTimer);
+    _aetherResizeTimer = setTimeout(applyViewModeLayout, 120);
+  });
 }
 
 function toggleSidebar() {
@@ -1359,10 +1612,11 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.6 LIVE+callout/path (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.12 mobile-list-view (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();
+  if (typeof initResponsiveView === 'function') initResponsiveView();
 
   const urlParams = new URLSearchParams(window.location.search);
   const dslUrl = urlParams.get('dsl');
