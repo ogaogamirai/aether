@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.20">
+  <link rel="stylesheet" href="style.css?v=4.0.21">
 </head>
 <body class="light-theme">
 
@@ -22,6 +22,8 @@
     <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode('list')" title="テキスト一覧モード（グラフ非表示）">一覧</button>
     <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode('canvas')" title="2Dキャンバス表示">キャンバス</button>
   </div>
+
+  <nav id="mobile-node-strip" class="mobile-node-strip" aria-label="付箋切替" hidden></nav>
 
   <div id="mobile-list-view" class="mobile-list-view" aria-label="モバイルリストビュー">
     <div id="mobile-overview-panel" class="mobile-overview-panel"></div>
@@ -43,11 +45,18 @@
     </footer>
   </div>
 
-  <nav id="mobile-node-strip" class="mobile-node-strip" aria-label="付箋切替" hidden></nav>
-
   <!-- Infinite Canvas -->
   <div class="whiteboard-container" id="canvas-container">
-    <div class="tags-filter-bar" id="tags-filter-bar"></div>
+    <div class="canvas-tags-chrome" id="canvas-tags-chrome">
+      <div class="tags-filter-bar" id="tags-filter-bar"></div>
+      <div class="tags-bar-toggle-wrap" id="tags-bar-toggle-wrap" hidden>
+        <label class="tags-visibility-toggle" title="タグフィルター表示のオン/オフ">
+          <input type="checkbox" id="tags-bar-visible-toggle" checked onchange="setTagsBarVisible(this.checked)">
+          <span class="tags-toggle-track" aria-hidden="true"><span class="tags-toggle-thumb"></span></span>
+          <span class="tags-toggle-label">タグ</span>
+        </label>
+      </div>
+    </div>
     <div class="canvas-transform" id="canvas-transform">
       <svg class="connections-layer" id="svg-layer">
         <!-- Define markers for arrows -->

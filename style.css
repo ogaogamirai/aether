@@ -180,16 +180,106 @@ body.light-theme .whiteboard-container.drop-active {
 }
 
 /* Floating Tags Filter Bar */
-.tags-filter-bar {
+.canvas-tags-chrome {
   position: absolute;
-  top: 24px;
-  left: 24px;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  z-index: 999;
+  pointer-events: none;
+}
+
+.canvas-tags-chrome > * {
+  pointer-events: auto;
+}
+
+.tags-filter-bar {
+  position: static;
+  top: auto;
+  left: auto;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  max-width: calc(100% - 468px);
-  z-index: 999;
+  flex: 1 1 auto;
+  max-width: calc(100% - 88px);
+  z-index: 1;
   pointer-events: auto;
+}
+
+.tags-filter-bar.tags-bar-hidden {
+  display: none !important;
+}
+
+.tags-bar-toggle-wrap {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.tags-visibility-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 8px 4px 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+body.light-theme .tags-visibility-toggle {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.tags-visibility-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.tags-toggle-track {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.45);
+  transition: background 0.2s ease;
+}
+
+.tags-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.tags-visibility-toggle input:checked + .tags-toggle-track {
+  background: var(--accent-blue);
+}
+
+.tags-visibility-toggle input:checked + .tags-toggle-track .tags-toggle-thumb {
+  transform: translateX(16px);
+}
+
+.tags-toggle-label {
+  letter-spacing: 0.02em;
 }
 
 .tag-chip {
@@ -2020,9 +2110,9 @@ body.mobile-canvas-detail.mobile-detail-open #mobile-list-view {
 
 /* キャンバス上の詳細: 下半分ドロワー（グラフは上に残る） */
 body.mobile-canvas-detail .mobile-detail-sheet {
-  inset: auto 0 var(--mobile-strip-height, 56px) 0;
+  inset: auto 0 0 0;
   height: min(58vh, 520px);
-  max-height: calc(100vh - var(--mobile-strip-height, 56px) - var(--view-bar-height, 44px) - 24px);
+  max-height: calc(100vh - var(--view-bar-height, 44px) - var(--mobile-strip-height, 48px) - 24px);
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.35);
 }
@@ -2033,20 +2123,21 @@ body.mobile-canvas-detail .mobile-detail-backdrop {
 
 .mobile-node-strip {
   display: none;
-  position: fixed;
+  position: sticky;
+  top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  z-index: 1250;
+  z-index: 1350;
   gap: 8px;
-  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  padding: 8px 10px;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   background: rgba(15, 23, 42, 0.96);
-  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  flex-shrink: 0;
 }
 
 body.light-theme .mobile-node-strip {
@@ -2134,16 +2225,24 @@ body.view-effective-list .control-panel {
 
 /* 狭い画面でキャンバス表示を選んだ場合 */
 @media (max-width: 768px) {
-  body.view-mobile-ui.view-effective-canvas {
+body.view-mobile-ui.view-effective-canvas {
     flex-direction: column;
   }
 
+  body.view-mobile-ui.view-effective-canvas .mobile-node-strip {
+    order: 1;
+  }
+
+  body.view-mobile-ui.view-effective-canvas #view-mode-bar {
+    order: 0;
+  }
+
   body.view-mobile-ui.view-effective-canvas .whiteboard-container {
+    order: 2;
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
     touch-action: none;
-    padding-bottom: var(--mobile-strip-height, 56px);
   }
 
   body.view-mobile-ui.view-effective-canvas .control-panel {
@@ -2186,6 +2285,20 @@ body.view-effective-list .control-panel {
     text-align: center;
     order: -1;
     margin-bottom: 4px;
+  }
+
+  .canvas-tags-chrome {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+  }
+
+  .tags-filter-bar {
+    max-width: calc(100% - 76px);
+  }
+
+  .tags-visibility-toggle {
+    min-height: 36px;
   }
 }
 

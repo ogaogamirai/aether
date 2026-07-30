@@ -123,6 +123,14 @@ function renderCanvas() {
 
     el.addEventListener('mousedown', (e) => {
       e.stopPropagation();
+      clickStartX = e.clientX;
+      clickStartY = e.clientY;
+      // スマホキャンバス: 付箋ドラッグは無効（ノード切替は上部ストリップで行う）
+      if (typeof isMobileCanvasMode === 'function' && isMobileCanvasMode()) {
+        isDraggingNote = false;
+        el.style.cursor = 'pointer';
+        return;
+      }
       // LIVE中は閲覧のみ: ドラッグ開始せず、mouseup で詳細表示
       if (typeof isAetherLiveMode === 'function' && isAetherLiveMode()) {
         isDraggingNote = false;
@@ -211,6 +219,16 @@ function renderCanvas() {
         showNodeDetails(note);
       }
     }, { passive: true });
+
+    el.addEventListener('mouseup', (e) => {
+      if (typeof isMobileCanvasMode !== 'function' || !isMobileCanvasMode()) return;
+      e.stopPropagation();
+      const dx = e.clientX - clickStartX;
+      const dy = e.clientY - clickStartY;
+      if (Math.sqrt(dx * dx + dy * dy) < 8) {
+        showNodeDetails(note);
+      }
+    });
 
     notesContainer.appendChild(el);
   });
@@ -884,7 +902,10 @@ function drawRelation(rel) {
 function updateTagsFilterBar(tags) {
   const bar = document.getElementById('tags-filter-bar');
   bar.innerHTML = '';
-  if (tags.length === 0) return;
+  if (tags.length === 0) {
+    if (typeof applyTagsBarVisibility === 'function') applyTagsBarVisibility();
+    return;
+  }
 
   // 「すべて」チップを追加
   const allChip = document.createElement('div');
@@ -900,6 +921,8 @@ function updateTagsFilterBar(tags) {
     chip.onclick = () => filterByTag(tag);
     bar.appendChild(chip);
   });
+
+  if (typeof applyTagsBarVisibility === 'function') applyTagsBarVisibility();
 }
 
 // タグによるフィルタリング実行

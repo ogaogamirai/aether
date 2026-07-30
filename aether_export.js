@@ -461,6 +461,7 @@ async function exportPortableViewer() {
       '    <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode(\'list\')" title="テキスト一覧モード（グラフ非表示）">一覧</button>',
       '    <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode(\'canvas\')" title="2Dキャンバス表示">キャンバス</button>',
       '  </div>',
+      '  <nav id="mobile-node-strip" class="mobile-node-strip" aria-label="付箋切替" hidden></nav>',
       '  <div id="mobile-list-view" class="mobile-list-view" aria-label="モバイルリストビュー">',
       '    <div id="mobile-overview-panel" class="mobile-overview-panel"></div>',
       '    <div id="mobile-list-scroll" class="mobile-list-scroll"></div>',
@@ -479,9 +480,17 @@ async function exportPortableViewer() {
       '      <button type="button" class="mobile-nav-btn mobile-nav-btn-primary" onclick="mobileDetailNavigate(1)">次の付箋 ▶</button>',
       '    </footer>',
       '  </div>',
-      '  <nav id="mobile-node-strip" class="mobile-node-strip" aria-label="付箋切替" hidden></nav>',
       '  <div class="whiteboard-container" id="canvas-container">',
-      '    <div class="tags-filter-bar" id="tags-filter-bar"></div>',
+      '    <div class="canvas-tags-chrome" id="canvas-tags-chrome">',
+      '      <div class="tags-filter-bar" id="tags-filter-bar"></div>',
+      '      <div class="tags-bar-toggle-wrap" id="tags-bar-toggle-wrap" hidden>',
+      '        <label class="tags-visibility-toggle" title="タグフィルター表示のオン/オフ">',
+      '          <input type="checkbox" id="tags-bar-visible-toggle" checked onchange="setTagsBarVisible(this.checked)">',
+      '          <span class="tags-toggle-track" aria-hidden="true"><span class="tags-toggle-thumb"></span></span>',
+      '          <span class="tags-toggle-label">タグ</span>',
+      '        </label>',
+      '      </div>',
+      '    </div>',
       '    <div class="canvas-transform" id="canvas-transform">',
       '      <svg class="connections-layer" id="svg-layer">',
       '        <defs>',
@@ -632,4 +641,4 @@ async function exportPortableViewer() {
 }
 
 // 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
-window.__AETHER_EXPORT_BUILD__ = 'L2.5-mobile-canvas-first-v4.0.20';
+window.__AETHER_EXPORT_BUILD__ = 'L2.6-mobile-strip-top-tags-v4.0.21';

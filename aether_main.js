@@ -244,14 +244,8 @@ function getVisibleCanvasMidViewportY(container) {
   let topObstacle = cr.top;
   let bottomObstacle = cr.bottom;
 
-  const tags = document.getElementById('tags-filter-bar');
-  if (tags && tags.offsetParent !== null && tags.children.length > 0) {
-    topObstacle = Math.max(topObstacle, tags.getBoundingClientRect().bottom + 8);
-  }
-  const slider = document.getElementById('time-slider-container');
-  if (slider && slider.offsetParent !== null && getComputedStyle(slider).display !== 'none') {
-    topObstacle = Math.max(topObstacle, slider.getBoundingClientRect().bottom + 8);
-  }
+  topObstacle = Math.max(topObstacle, getCanvasTopObstacleViewportY());
+
   const presController = document.getElementById('presentation-controller');
   if (presController && getComputedStyle(presController).display !== 'none') {
     const top = presController.getBoundingClientRect().top - 8;
@@ -262,6 +256,39 @@ function getVisibleCanvasMidViewportY(container) {
     return (cr.top + cr.bottom) / 2;
   }
   return (topObstacle + bottomObstacle) / 2;
+}
+
+// スマホ: フォーカス付箋を見える領域の上寄り（約28%）へ — グラフ全体の中央寄せとは別挙動
+function getMobileFocusViewportY(container) {
+  if (!container) return window.innerHeight * 0.28;
+  const cr = container.getBoundingClientRect();
+  let topObstacle = Math.max(cr.top, getCanvasTopObstacleViewportY());
+  let bottomObstacle = cr.bottom;
+
+  const presController = document.getElementById('presentation-controller');
+  if (presController && getComputedStyle(presController).display !== 'none') {
+    const top = presController.getBoundingClientRect().top - 8;
+    if (isFinite(top)) bottomObstacle = Math.min(bottomObstacle, top);
+  }
+  if (bottomObstacle <= topObstacle + 1) return (cr.top + cr.bottom) * 0.28;
+  return topObstacle + (bottomObstacle - topObstacle) * 0.28;
+}
+
+function getCanvasTopObstacleViewportY() {
+  let top = 0;
+  const viewBar = document.getElementById('view-mode-bar');
+  if (viewBar && viewBar.offsetParent !== null && getComputedStyle(viewBar).display !== 'none') {
+    top = Math.max(top, viewBar.getBoundingClientRect().bottom + 4);
+  }
+  const strip = document.getElementById('mobile-node-strip');
+  if (strip && !strip.hidden && strip.offsetParent !== null) {
+    top = Math.max(top, strip.getBoundingClientRect().bottom + 6);
+  }
+  const tagsChrome = document.getElementById('canvas-tags-chrome');
+  if (tagsChrome && tagsChrome.offsetParent !== null && getComputedStyle(tagsChrome).display !== 'none') {
+    top = Math.max(top, tagsChrome.getBoundingClientRect().bottom + 6);
+  }
+  return top;
 }
 
 // 実測ベース: 倍率・横位置は維持し、選択付箋の中心を見える領域の上下中央へ
@@ -592,11 +619,11 @@ function centerFocusedNote(note) {
 
   const cr = refs.container.getBoundingClientRect();
   const desiredMidX = (cr.left + cr.right) / 2;
-  const desiredMidY = typeof getVisibleCanvasMidViewportY === 'function'
-    ? getVisibleCanvasMidViewportY(refs.container)
-    : (cr.top + cr.bottom) / 2;
+  const mobileCanvas = typeof isMobileCanvasMode === 'function' && isMobileCanvasMode();
+  const desiredMidY = mobileCanvas
+    ? getMobileFocusViewportY(refs.container)
+    : getVisibleCanvasMidViewportY(refs.container);
   const s = window.scale || 1;
-  // viewport = containerOrigin + pan + world * scale  (transform-origin: 0 0)
   window.panX = desiredMidX - cr.left - worldCX * s;
   window.panY = desiredMidY - cr.top - worldCY * s;
   updateTransform();
@@ -664,10 +691,22 @@ function getFitChromePadding() {
 
   const cr = refs.container.getBoundingClientRect();
 
-  const tags = document.getElementById('tags-filter-bar');
-  if (tags && tags.offsetParent !== null && tags.children.length > 0) {
-    const r = tags.getBoundingClientRect();
-    pad.top = Math.max(pad.top, Math.ceil(r.bottom - cr.top) + 16);
+  const tagsChrome = document.getElementById('canvas-tags-chrome');
+  if (tagsChrome && tagsChrome.offsetParent !== null && getComputedStyle(tagsChrome).display !== 'none') {
+    const r = tagsChrome.getBoundingClientRect();
+    pad.top = Math.max(pad.top, Math.ceil(r.bottom - cr.top) + 12);
+  }
+
+  const strip = document.getElementById('mobile-node-strip');
+  if (strip && !strip.hidden && strip.offsetParent !== null) {
+    const r = strip.getBoundingClientRect();
+    pad.top = Math.max(pad.top, Math.ceil(r.bottom - cr.top) + 8);
+  }
+
+  const viewBar = document.getElementById('view-mode-bar');
+  if (viewBar && viewBar.offsetParent !== null && getComputedStyle(viewBar).display !== 'none') {
+    const r = viewBar.getBoundingClientRect();
+    pad.top = Math.max(pad.top, Math.ceil(r.bottom - cr.top) + 4);
   }
 
   const slider = document.getElementById('time-slider-container');
@@ -767,7 +806,12 @@ function fitToView() {
   window.scale = Math.max(0.15, Math.min(2.0, fitScale * 0.98));
 
   window.panX = chrome.left + (viewW - contentW * window.scale) / 2 - minX * window.scale;
-  window.panY = chrome.top + (viewH - contentH * window.scale) / 2 - minY * window.scale;
+  var topAlign = typeof isMobileCanvasMode === 'function' && isMobileCanvasMode();
+  if (topAlign) {
+    window.panY = chrome.top + 8 - minY * window.scale;
+  } else {
+    window.panY = chrome.top + (viewH - contentH * window.scale) / 2 - minY * window.scale;
+  }
   updateTransform();
 }
 
@@ -1055,6 +1099,36 @@ function toggleTheme() {
   const isLight = body.classList.contains('light-theme');
   if (themeBtn) themeBtn.textContent = isLight ? '🌙' : '☀️';
   if (typeof drawAllShapes === 'function') drawAllShapes();
+}
+
+// --- Tags filter bar visibility toggle ---
+var AETHER_TAGS_BAR_KEY = 'aether_tags_bar_visible';
+
+function getTagsBarVisiblePreference() {
+  try {
+    var stored = localStorage.getItem(AETHER_TAGS_BAR_KEY);
+    if (stored === '0' || stored === 'false') return false;
+  } catch (err) { /* ignore */ }
+  return true;
+}
+
+function setTagsBarVisible(visible) {
+  try { localStorage.setItem(AETHER_TAGS_BAR_KEY, visible ? '1' : '0'); } catch (err) { /* ignore */ }
+  applyTagsBarVisibility();
+  if (typeof fitToView === 'function' && !window.isPresentationMode) {
+    setTimeout(function () { fitToView(); }, 60);
+  }
+}
+
+function applyTagsBarVisibility() {
+  var show = getTagsBarVisiblePreference();
+  var bar = document.getElementById('tags-filter-bar');
+  var wrap = document.getElementById('tags-bar-toggle-wrap');
+  var toggle = document.getElementById('tags-bar-visible-toggle');
+  var hasTags = bar && bar.children.length > 0;
+  if (bar) bar.classList.toggle('tags-bar-hidden', !show);
+  if (toggle) toggle.checked = show;
+  if (wrap) wrap.hidden = !hasTags;
 }
 
 // --- Responsive / mobile list view v2 (overview + browse + detail sheet) ---
@@ -1621,6 +1695,7 @@ var _aetherResizeTimer = null;
 function initResponsiveView() {
   var bar = document.getElementById('view-mode-bar');
   if (!bar) return;
+  applyTagsBarVisibility();
   bindMobileMiniMapClicks();
   setupMobileListSwipe();
   setupMobileDetailSwipe();
@@ -2014,7 +2089,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.20 mobile-canvas-first (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.21 mobile-strip-top-tags-toggle (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();
