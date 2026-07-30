@@ -49,18 +49,14 @@ body {
   font-family: var(--font-body);
   height: 100vh;
   overflow: hidden;
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  grid-template-rows: auto 1fr;
-  grid-template-areas:
-    "viewbar viewbar"
-    "canvas panel";
+  display: flex;
+  flex-direction: row;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Infinite Canvas (Whiteboard) */
 .whiteboard-container {
-  grid-area: canvas;
+  flex: 1;
   height: 100%;
   position: relative;
   overflow: hidden;
@@ -258,7 +254,6 @@ body.light-theme .tag-chip.active {
 
 /* Right Control Panel */
 .control-panel {
-  grid-area: panel;
   width: 420px;
   height: 100%;
   background: var(--bg-card);
@@ -1424,7 +1419,7 @@ body.light-theme .pres-btn {
 }
 
 #view-mode-bar {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
@@ -1435,6 +1430,22 @@ body.light-theme .pres-btn {
   -webkit-backdrop-filter: blur(16px);
   z-index: 1100;
   flex-shrink: 0;
+}
+
+#mobile-list-view {
+  display: none;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-dark);
+  overflow: hidden;
+}
+
+/* PC本体: モバイル専用UIは非表示（JS未実行時も安全） */
+body:not(.view-effective-list) #view-mode-bar,
+body:not(.view-effective-list) #mobile-list-view,
+body:not(.view-effective-list) #mobile-detail-backdrop,
+body:not(.view-effective-list) #mobile-detail-sheet {
+  display: none !important;
 }
 
 .view-mode-label {
@@ -1474,14 +1485,6 @@ body.light-theme .view-mode-btn {
   color: #fff;
   border-color: var(--accent-blue);
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
-}
-
-#mobile-list-view {
-  display: none;
-  flex-direction: column;
-  min-height: 0;
-  background: var(--bg-dark);
-  overflow: hidden;
 }
 
 .mobile-overview-panel {
@@ -2002,18 +2005,20 @@ body.mobile-detail-open #mobile-list-view {
   font-size: 0.74rem;
 }
 
-#view-mode-bar { grid-area: viewbar; }
-#mobile-list-view { grid-area: canvas; }
-
+/* スマホ表示モードのみ: 縦積みレイアウト */
 body.view-effective-list {
-  display: flex;
   flex-direction: column;
 }
 
+body.view-effective-list #view-mode-bar {
+  display: flex !important;
+}
+
 body.view-effective-list #mobile-list-view {
-  display: flex;
+  display: flex !important;
   flex: 1;
   min-height: 0;
+  width: 100%;
 }
 
 body.view-effective-list .whiteboard-container,
@@ -2021,33 +2026,38 @@ body.view-effective-list .control-panel {
   display: none !important;
 }
 
-/* Narrow canvas fallback (manual PC mode on phone) */
+/* 狭い画面でキャンバス表示を選んだ場合 */
 @media (max-width: 768px) {
   body.view-effective-canvas {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 58vh 42vh;
-    grid-template-areas:
-      "viewbar"
-      "canvas"
-      "panel";
+    flex-direction: column;
+  }
+
+  body.view-effective-canvas #view-mode-bar {
+    display: flex !important;
+    flex-shrink: 0;
+    width: 100%;
+  }
+
+  body.view-effective-canvas .whiteboard-container {
+    flex: 1 1 58%;
+    min-height: 0;
+    width: 100%;
+    touch-action: none;
   }
 
   body.view-effective-canvas .control-panel {
+    flex: 0 0 42%;
     width: 100%;
+    height: auto;
     border-left: none;
     border-top: 1px solid var(--border-color);
   }
 
   body.view-effective-canvas .control-panel.collapsed {
-    height: 0;
+    flex: 0 0 0;
     min-height: 0;
     overflow: hidden;
     border-top: none;
-  }
-
-  body.view-effective-canvas .whiteboard-container {
-    min-height: 0;
-    touch-action: none;
   }
 
   #presentation-controller {

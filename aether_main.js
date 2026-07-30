@@ -1189,6 +1189,8 @@ function applyViewModeLayout() {
     viewBar.hidden = (effective === 'canvas' && !isNarrowViewport());
   }
 
+  document.body.classList.toggle('view-mobile-ui', effective === 'list' || isNarrowViewport());
+
   if (effective === 'list') {
     renderMobileListView();
     var panel = document.getElementById('control-panel');
@@ -1910,7 +1912,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.17 mobile-generic-copy (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.18 pc-layout-fix (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();

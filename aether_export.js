@@ -631,4 +631,4 @@ async function exportPortableViewer() {
 }
 
 // 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
-window.__AETHER_EXPORT_BUILD__ = 'L2.2-mobile-generic-copy-v4.0.17';
+window.__AETHER_EXPORT_BUILD__ = 'L2.3-pc-layout-fix-v4.0.18';
