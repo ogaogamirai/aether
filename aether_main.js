@@ -193,9 +193,11 @@ function togglePresentationMode(forceState) {
       slider.value = defaultIdx;
     }
     handleTimeSlider(defaultIdx);
-    const presHint = (typeof getEffectiveViewMode === 'function' && getEffectiveViewMode() === 'list')
-      ? '下部またはスワイプで移動'
-      : 'Ctrl+← / Ctrl+→ で移動';
+    const presHint = (typeof isMobileCanvasMode === 'function' && isMobileCanvasMode())
+      ? '上部 🎬 で OFF'
+      : ((typeof getEffectiveViewMode === 'function' && getEffectiveViewMode() === 'list')
+        ? '下部またはスワイプで移動'
+        : 'Ctrl+← / Ctrl+→ で移動');
     showToast('プレゼンテーションモードを開始しました (' + presHint + ')', 'success');
     if (typeof getEffectiveViewMode === 'function' && getEffectiveViewMode() === 'list') {
       setTimeout(() => {
@@ -206,10 +208,13 @@ function togglePresentationMode(forceState) {
     if (controller) controller.style.display = 'none';
     if (btn) btn.classList.remove('active');
     showToast('プレゼンテーションモードを終了しました', 'success');
-    setTimeout(() => {
+    setTimeout(function () {
       fitToView();
     }, 100);
   }
+  if (typeof updateMobilePresToggle === 'function') updateMobilePresToggle();
+  if (typeof renderMobileNodeStrip === 'function') renderMobileNodeStrip();
+  if (typeof renderMobileListView === 'function') renderMobileListView();
 }
 
 function updatePresentationStepName() {
@@ -1534,10 +1539,16 @@ function updateMobileDetailCloseLabel() {
     : '✕ 一覧へ戻る';
 }
 
+function updateMobilePresToggle() {
+  var btn = document.getElementById('mobile-pres-toggle-btn');
+  if (!btn) return;
+  var on = !!window.isPresentationMode;
+  btn.classList.toggle('active', on);
+  btn.textContent = on ? '🎬 ON' : '🎬';
+  btn.title = on ? 'プレゼンモード OFF' : 'プレゼンモード ON';
+}
+
 function getMobileDetailNavigatePool() {
-  if (window.isPresentationMode && getEffectiveViewMode() === 'list') {
-    return getMobileVisibleNotes();
-  }
   return getNotesSortedForMobileList();
 }
 
@@ -1594,7 +1605,7 @@ function openMobileDetail(noteId, options) {
   var sheet = document.getElementById('mobile-detail-sheet');
   var backdrop = document.getElementById('mobile-detail-backdrop');
   if (sheet) sheet.hidden = false;
-  if (backdrop) backdrop.hidden = false;
+  if (backdrop) backdrop.hidden = drawerMode;
 
   renderMobileDetailContent(note);
   updateMobileDetailPosition(noteId);
@@ -1612,10 +1623,6 @@ function openMobileDetail(noteId, options) {
     document.querySelectorAll('#notes-container .sticky-note').forEach(function (el) { el.classList.remove('focused'); });
     canvasNote.classList.add('focused');
   }
-
-  if (drawerMode && typeof scheduleCenterFocusedNote === 'function') {
-    scheduleCenterFocusedNote(note);
-  }
 }
 
 function closeMobileDetail() {
@@ -1627,6 +1634,9 @@ function closeMobileDetail() {
   if (backdrop) backdrop.hidden = true;
   renderMobileBottomNav();
   renderMobileNodeStrip();
+  if (isMobileCanvasMode() && typeof fitToView === 'function') {
+    setTimeout(function () { fitToView(); }, 60);
+  }
 }
 
 function mobileDetailNavigate(delta) {
@@ -1711,6 +1721,7 @@ function initResponsiveView() {
   var bar = document.getElementById('view-mode-bar');
   if (!bar) return;
   applyTagsBarVisibility();
+  updateMobilePresToggle();
   bindMobileMiniMapClicks();
   setupMobileListSwipe();
   setupMobileDetailSwipe();
@@ -2104,7 +2115,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.22 mobile-detail-compact-tags-float (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.23 mobile-top-detail-pres-toggle (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();

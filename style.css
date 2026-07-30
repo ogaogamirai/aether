@@ -1528,8 +1528,8 @@ body.light-theme .pres-btn {
 #view-mode-bar {
   display: none;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   min-height: var(--view-bar-height);
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
@@ -1537,6 +1537,25 @@ body.light-theme .pres-btn {
   -webkit-backdrop-filter: blur(16px);
   z-index: 1400;
   flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.view-mode-btn-pres {
+  margin-left: auto;
+  min-width: 52px;
+  padding: 6px 10px;
+}
+
+.view-mode-btn-pres.active {
+  background: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: #fff;
+}
+
+@media (min-width: 769px) {
+  #mobile-pres-toggle-btn {
+    display: none !important;
+  }
 }
 
 #mobile-list-view {
@@ -2182,30 +2201,58 @@ body.mobile-canvas-detail.mobile-detail-open #mobile-list-view {
   visibility: visible;
 }
 
-/* キャンバス上の詳細: 内容に合わせた高さ（空白を作らない） */
-body.mobile-canvas-detail .mobile-detail-sheet {
-  inset: auto 0 0 0;
+/* キャンバス詳細: ストリップ直下のインラインパネル（隙間なし） */
+body.view-mobile-ui.view-effective-canvas.mobile-canvas-detail.mobile-detail-open {
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+body.view-mobile-ui.view-effective-canvas.mobile-canvas-detail.mobile-detail-open .mobile-detail-backdrop {
+  display: none !important;
+}
+
+body.view-mobile-ui.view-effective-canvas.mobile-canvas-detail.mobile-detail-open .mobile-detail-sheet {
+  position: relative;
+  inset: auto;
+  flex: 1 1 auto;
+  min-height: 0;
   height: auto;
-  max-height: min(68vh, calc(100vh - var(--view-bar-height, 44px) - var(--mobile-strip-height, 48px) - 20px));
-  border-radius: 16px 16px 0 0;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.35);
+  max-height: none;
+  display: flex !important;
+  flex-direction: column;
+  border-radius: 0;
+  box-shadow: none;
+  border-bottom: 1px solid var(--border-color);
+  z-index: 1;
 }
 
-body.mobile-canvas-detail .mobile-detail-body {
-  flex: 0 1 auto;
-  max-height: min(46vh, calc(100vh - var(--view-bar-height, 44px) - var(--mobile-strip-height, 48px) - 180px));
+body.view-mobile-ui.view-effective-canvas.mobile-canvas-detail.mobile-detail-open .mobile-detail-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
 }
 
-body.mobile-canvas-detail .mobile-detail-footer {
-  padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px));
+body.view-mobile-ui.view-effective-canvas.mobile-canvas-detail.mobile-detail-open .whiteboard-container,
+body.view-mobile-ui.view-effective-canvas.mobile-canvas-detail.mobile-detail-open .control-panel {
+  display: none !important;
 }
 
-body.mobile-canvas-detail .mobile-nav-btn {
-  min-height: 42px;
+body.view-mobile-ui.view-effective-canvas.mobile-canvas-detail.mobile-detail-open #presentation-controller {
+  display: none !important;
 }
 
-body.mobile-canvas-detail .mobile-detail-backdrop {
-  background: rgba(2, 6, 23, 0.28);
+/* 一覧モード詳細: 従来どおり全画面オーバーレイ */
+body.mobile-detail-open:not(.mobile-canvas-detail) .mobile-detail-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 1310;
+}
+
+body.mobile-detail-open:not(.mobile-canvas-detail) .mobile-detail-backdrop {
+  display: block;
 }
 
 .mobile-node-strip {
@@ -2312,20 +2359,26 @@ body.view-effective-list .control-panel {
 
 /* 狭い画面でキャンバス表示を選んだ場合 */
 @media (max-width: 768px) {
-body.view-mobile-ui.view-effective-canvas {
+  body.view-mobile-ui.view-effective-canvas {
     flex-direction: column;
-  }
-
-  body.view-mobile-ui.view-effective-canvas .mobile-node-strip {
-    order: 1;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   body.view-mobile-ui.view-effective-canvas #view-mode-bar {
     order: 0;
   }
 
-  body.view-mobile-ui.view-effective-canvas .whiteboard-container {
+  body.view-mobile-ui.view-effective-canvas .mobile-node-strip {
+    order: 1;
+  }
+
+  body.view-mobile-ui.view-effective-canvas #mobile-detail-sheet {
     order: 2;
+  }
+
+  body.view-mobile-ui.view-effective-canvas .whiteboard-container {
+    order: 3;
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
@@ -2333,6 +2386,7 @@ body.view-mobile-ui.view-effective-canvas {
   }
 
   body.view-mobile-ui.view-effective-canvas .control-panel {
+    order: 4;
     flex: 0 0 36%;
     width: 100%;
     height: auto;

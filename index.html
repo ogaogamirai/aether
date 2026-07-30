@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.22">
+  <link rel="stylesheet" href="style.css?v=4.0.23">
 </head>
 <body class="light-theme">
 
@@ -21,6 +21,7 @@
     <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode('auto')" title="キャンバス（グラフ）表示。狭い画面でも配置が見える">自動</button>
     <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode('list')" title="テキスト一覧モード（グラフ非表示）">一覧</button>
     <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode('canvas')" title="2Dキャンバス表示">キャンバス</button>
+    <button type="button" id="mobile-pres-toggle-btn" class="view-mode-btn view-mode-btn-pres" onclick="togglePresentationMode()" title="プレゼンモード ON/OFF">🎬</button>
   </div>
 
   <div class="tags-bar-toggle-float" id="tags-bar-toggle-wrap" hidden>
@@ -32,12 +33,6 @@
   </div>
 
   <nav id="mobile-node-strip" class="mobile-node-strip" aria-label="付箋切替" hidden></nav>
-
-  <div id="mobile-list-view" class="mobile-list-view" aria-label="モバイルリストビュー">
-    <div id="mobile-overview-panel" class="mobile-overview-panel"></div>
-    <div id="mobile-list-scroll" class="mobile-list-scroll"></div>
-    <nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="モバイルナビ"></nav>
-  </div>
 
   <div id="mobile-detail-backdrop" class="mobile-detail-backdrop" hidden onclick="closeMobileDetail()"></div>
   <div id="mobile-detail-sheet" class="mobile-detail-sheet" hidden role="dialog" aria-modal="true" aria-labelledby="mobile-detail-title">
@@ -53,6 +48,12 @@
       <button type="button" class="mobile-nav-btn" onclick="mobileDetailNavigate(-1)">◀ 前の付箋</button>
       <button type="button" class="mobile-nav-btn mobile-nav-btn-primary" onclick="mobileDetailNavigate(1)">次の付箋 ▶</button>
     </footer>
+  </div>
+
+  <div id="mobile-list-view" class="mobile-list-view" aria-label="モバイルリストビュー">
+    <div id="mobile-overview-panel" class="mobile-overview-panel"></div>
+    <div id="mobile-list-scroll" class="mobile-list-scroll"></div>
+    <nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="モバイルナビ"></nav>
   </div>
 
   <!-- Infinite Canvas -->
