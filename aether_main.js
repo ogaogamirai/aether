@@ -284,9 +284,16 @@ function getCanvasTopObstacleViewportY() {
   if (strip && !strip.hidden && strip.offsetParent !== null) {
     top = Math.max(top, strip.getBoundingClientRect().bottom + 6);
   }
+  const tagToggle = document.getElementById('tags-bar-toggle-wrap');
+  if (tagToggle && !tagToggle.hidden && tagToggle.offsetParent !== null) {
+    top = Math.max(top, tagToggle.getBoundingClientRect().bottom + 4);
+  }
   const tagsChrome = document.getElementById('canvas-tags-chrome');
   if (tagsChrome && tagsChrome.offsetParent !== null && getComputedStyle(tagsChrome).display !== 'none') {
-    top = Math.max(top, tagsChrome.getBoundingClientRect().bottom + 6);
+    const bar = document.getElementById('tags-filter-bar');
+    if (bar && !bar.classList.contains('tags-bar-hidden') && bar.children.length > 0) {
+      top = Math.max(top, tagsChrome.getBoundingClientRect().bottom + 6);
+    }
   }
   return top;
 }
@@ -1126,9 +1133,10 @@ function applyTagsBarVisibility() {
   var wrap = document.getElementById('tags-bar-toggle-wrap');
   var toggle = document.getElementById('tags-bar-visible-toggle');
   var hasTags = bar && bar.children.length > 0;
+  var listMode = typeof getEffectiveViewMode === 'function' && getEffectiveViewMode() === 'list';
   if (bar) bar.classList.toggle('tags-bar-hidden', !show);
   if (toggle) toggle.checked = show;
-  if (wrap) wrap.hidden = !hasTags;
+  if (wrap) wrap.hidden = !hasTags || listMode;
 }
 
 // --- Responsive / mobile list view v2 (overview + browse + detail sheet) ---
@@ -1275,6 +1283,7 @@ function applyViewModeLayout() {
   document.body.classList.add('view-effective-' + effective);
   if (isNarrowViewport()) document.body.classList.add('view-mobile-ui');
   updateViewModeButtons();
+  applyTagsBarVisibility();
 
   var viewBar = document.getElementById('view-mode-bar');
   if (viewBar) viewBar.hidden = false;
@@ -1475,26 +1484,32 @@ function renderMobileDetailContent(note) {
   var titleEl = document.getElementById('mobile-detail-title');
   if (!body || !note) return;
 
-  var tagsHtml = (note.tags && note.tags.length)
-    ? note.tags.map(function (t) { return '<span class="details-tag-indicator">' + escapeMobileHtml(t) + '</span>'; }).join(' ')
-    : '<span class="mobile-detail-muted">タグなし</span>';
+  var tagsInline = (note.tags && note.tags.length)
+    ? note.tags.map(function (t) {
+        return '<span class="details-tag-indicator mobile-detail-tag-chip">' + escapeMobileHtml(t) + '</span>';
+      }).join('')
+    : '';
   var chips = getNoteRelationChips(note.id);
   var relHtml = chips.length
-    ? '<div class="mobile-detail-section"><div class="mobile-detail-section-label">関連付箋</div><div class="mobile-list-relations">' + chips.map(function (c) {
-        return '<button type="button" class="mobile-list-rel-chip rel-' + c.type + '" onclick="openMobileDetail(\'' + c.targetId + '\')">' + escapeMobileHtml(c.label) + '</button>';
-      }).join('') + '</div></div>'
+    ? '<div class="mobile-detail-rel-row">' +
+        '<span class="mobile-detail-kicker">関連</span>' +
+        '<div class="mobile-list-relations">' + chips.map(function (c) {
+          return '<button type="button" class="mobile-list-rel-chip rel-' + c.type + '" onclick="openMobileDetail(\'' + c.targetId + '\')">' + escapeMobileHtml(c.label) + '</button>';
+        }).join('') + '</div></div>'
     : '';
 
   if (titleEl) titleEl.textContent = note.content;
   body.innerHTML =
-    '<div class="mobile-detail-meta">' +
-      '<span class="mobile-detail-badge ' + note.color + '">' + escapeMobileHtml(note.color) + '</span>' +
-      (note.time ? '<span class="mobile-list-time">' + escapeMobileHtml(note.time) + '</span>' : '') +
-      '<span class="mobile-detail-id">#' + escapeMobileHtml(note.id) + '</span>' +
-    '</div>' +
-    '<div class="mobile-detail-section"><div class="mobile-detail-section-label">タグ</div><div class="mobile-detail-tags">' + tagsHtml + '</div></div>' +
-    relHtml +
-    '<div class="mobile-detail-section"><div class="mobile-detail-section-label">本文</div><div class="mobile-list-desc details-desc">' + formatNoteDescHtml(note) + '</div></div>';
+    '<div class="mobile-detail-compact">' +
+      '<div class="mobile-detail-meta mobile-detail-meta-compact">' +
+        '<span class="mobile-detail-badge ' + note.color + '">' + escapeMobileHtml(note.color) + '</span>' +
+        (note.time ? '<span class="mobile-list-time">' + escapeMobileHtml(note.time) + '</span>' : '') +
+        (tagsInline ? '<span class="mobile-detail-tags-inline">' + tagsInline + '</span>' : '') +
+        '<span class="mobile-detail-id">#' + escapeMobileHtml(note.id) + '</span>' +
+      '</div>' +
+      relHtml +
+      '<div class="mobile-detail-desc-block details-desc">' + formatNoteDescHtml(note) + '</div>' +
+    '</div>';
 }
 
 function updateMobileDetailPosition(noteId) {
@@ -2089,7 +2104,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.21 mobile-strip-top-tags-toggle (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.22 mobile-detail-compact-tags-float (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();

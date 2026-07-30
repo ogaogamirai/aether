@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.21">
+  <link rel="stylesheet" href="style.css?v=4.0.22">
 </head>
 <body class="light-theme">
 
@@ -21,6 +21,14 @@
     <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode('auto')" title="キャンバス（グラフ）表示。狭い画面でも配置が見える">自動</button>
     <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode('list')" title="テキスト一覧モード（グラフ非表示）">一覧</button>
     <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode('canvas')" title="2Dキャンバス表示">キャンバス</button>
+  </div>
+
+  <div class="tags-bar-toggle-float" id="tags-bar-toggle-wrap" hidden>
+    <label class="tags-visibility-toggle" title="グラフ上のタグフィルター表示">
+      <input type="checkbox" id="tags-bar-visible-toggle" checked onchange="setTagsBarVisible(this.checked)">
+      <span class="tags-toggle-track" aria-hidden="true"><span class="tags-toggle-thumb"></span></span>
+      <span class="tags-toggle-label">タグ</span>
+    </label>
   </div>
 
   <nav id="mobile-node-strip" class="mobile-node-strip" aria-label="付箋切替" hidden></nav>
@@ -34,8 +42,10 @@
   <div id="mobile-detail-backdrop" class="mobile-detail-backdrop" hidden onclick="closeMobileDetail()"></div>
   <div id="mobile-detail-sheet" class="mobile-detail-sheet" hidden role="dialog" aria-modal="true" aria-labelledby="mobile-detail-title">
     <header class="mobile-detail-header">
-      <button type="button" class="mobile-detail-close" onclick="closeMobileDetail()">✕ 一覧へ戻る</button>
-      <span id="mobile-detail-position" class="mobile-detail-position">1 / 1</span>
+      <div class="mobile-detail-header-row">
+        <button type="button" class="mobile-detail-close" onclick="closeMobileDetail()">✕ グラフに戻る</button>
+        <span id="mobile-detail-position" class="mobile-detail-position">1 / 1</span>
+      </div>
       <h2 id="mobile-detail-title" class="mobile-detail-title"></h2>
     </header>
     <div id="mobile-detail-body" class="mobile-detail-body"></div>
@@ -49,13 +59,6 @@
   <div class="whiteboard-container" id="canvas-container">
     <div class="canvas-tags-chrome" id="canvas-tags-chrome">
       <div class="tags-filter-bar" id="tags-filter-bar"></div>
-      <div class="tags-bar-toggle-wrap" id="tags-bar-toggle-wrap" hidden>
-        <label class="tags-visibility-toggle" title="タグフィルター表示のオン/オフ">
-          <input type="checkbox" id="tags-bar-visible-toggle" checked onchange="setTagsBarVisible(this.checked)">
-          <span class="tags-toggle-track" aria-hidden="true"><span class="tags-toggle-thumb"></span></span>
-          <span class="tags-toggle-label">タグ</span>
-        </label>
-      </div>
     </div>
     <div class="canvas-transform" id="canvas-transform">
       <svg class="connections-layer" id="svg-layer">
