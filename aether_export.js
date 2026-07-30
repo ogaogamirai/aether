@@ -475,7 +475,8 @@ async function exportPortableViewer() {
       '    <header class="mobile-detail-header">',
       '      <div class="mobile-detail-header-row">',
       '        <button type="button" class="mobile-detail-close" onclick="closeMobileDetail()">✕ グラフに戻る</button>',
-      '        <span id="mobile-detail-position" class="mobile-detail-position">1 / 1</span>',
+      '        <select id="mobile-detail-jump" class="mobile-detail-jump" aria-label="付箋を番号で選択" onchange="mobileJumpToNoteId(this.value)"></select>',
+      '        <span id="mobile-detail-position" class="mobile-detail-position" hidden aria-hidden="true">1 / 1</span>',
       '      </div>',
       '      <h2 id="mobile-detail-title" class="mobile-detail-title"></h2>',
       '    </header>',
@@ -644,4 +645,4 @@ async function exportPortableViewer() {
 }
 
 // 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
-window.__AETHER_EXPORT_BUILD__ = 'L2.8-mobile-top-detail-pres-v4.0.23';
+window.__AETHER_EXPORT_BUILD__ = 'L2.9-mobile-nav-all-notes-v4.0.24';

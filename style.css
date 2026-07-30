@@ -2043,6 +2043,20 @@ body.light-theme .mobile-detail-sheet {
   white-space: nowrap;
 }
 
+.mobile-detail-jump {
+  flex: 0 1 auto;
+  max-width: min(62vw, 280px);
+  min-height: 36px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-blue);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+}
+
 .mobile-detail-title {
   font-family: var(--font-display);
   font-size: 1.05rem;

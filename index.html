@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.23">
+  <link rel="stylesheet" href="style.css?v=4.0.24">
 </head>
 <body class="light-theme">
 
@@ -39,7 +39,8 @@
     <header class="mobile-detail-header">
       <div class="mobile-detail-header-row">
         <button type="button" class="mobile-detail-close" onclick="closeMobileDetail()">✕ グラフに戻る</button>
-        <span id="mobile-detail-position" class="mobile-detail-position">1 / 1</span>
+        <select id="mobile-detail-jump" class="mobile-detail-jump" aria-label="付箋を番号で選択" onchange="mobileJumpToNoteId(this.value)"></select>
+        <span id="mobile-detail-position" class="mobile-detail-position" hidden aria-hidden="true">1 / 1</span>
       </div>
       <h2 id="mobile-detail-title" class="mobile-detail-title"></h2>
     </header>

@@ -1204,7 +1204,7 @@ function getNotesSortedForMobileList() {
     var i = timeOrder.indexOf(t);
     return i >= 0 ? i : timeOrder.length;
   }
-  return source.map(function (n, i) { return { note: n, dslOrder: i }; })
+  var sorted = source.map(function (n, i) { return { note: n, dslOrder: i }; })
     .sort(function (a, b) {
       var ta = timeIndex(a.note.time);
       var tb = timeIndex(b.note.time);
@@ -1212,6 +1212,68 @@ function getNotesSortedForMobileList() {
       return a.dslOrder - b.dslOrder;
     })
     .map(function (x) { return x.note; });
+  var seen = {};
+  return sorted.filter(function (n) {
+    if (!n || n.id === undefined || n.id === null || n.id === '') return false;
+    var key = String(n.id);
+    if (seen[key]) return false;
+    seen[key] = true;
+    return true;
+  });
+}
+
+function findMobileNoteById(noteId) {
+  if (noteId === undefined || noteId === null || noteId === '') return null;
+  var key = String(noteId);
+  return getNotesSortedForMobileList().find(function (n) { return String(n.id) === key; }) || null;
+}
+
+function ensureMobileNoteTimeVisible(note) {
+  if (!note || !note.time) return;
+  if (typeof isTimeVisible === 'function' && isTimeVisible(note.time)) return;
+  var steps = window.timeSteps || [];
+  var idx = steps.indexOf(note.time);
+  if (idx >= 0) {
+    mobileJumpToStep(idx);
+    return;
+  }
+  var slider = document.getElementById('time-slider');
+  if (slider && steps.length) {
+    slider.value = 0;
+    handleTimeSlider(0);
+  }
+}
+
+function scrollMobileStripToNote(noteId) {
+  var strip = document.getElementById('mobile-node-strip');
+  if (!strip || noteId === undefined || noteId === null) return;
+  var key = String(noteId);
+  var chip = null;
+  strip.querySelectorAll('.mobile-strip-chip').forEach(function (el) {
+    if (!chip && String(el.getAttribute('data-note-id')) === key) chip = el;
+  });
+  if (chip && chip.scrollIntoView) {
+    chip.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function renderMobileDetailJumpSelect(noteId) {
+  var sel = document.getElementById('mobile-detail-jump');
+  if (!sel) return;
+  var pool = getMobileDetailNavigatePool();
+  sel.innerHTML = pool.map(function (n, i) {
+    var title = String(n.content || n.id);
+    if (title.length > 36) title = title.slice(0, 36) + '…';
+    var label = (i + 1) + ' / ' + pool.length + ' — ' + title;
+    return '<option value="' + escapeMobileHtml(String(n.id)) + '">' + escapeMobileHtml(label) + '</option>';
+  }).join('');
+  sel.value = String(noteId);
+}
+
+function mobileJumpToNoteId(noteId) {
+  if (!noteId) return;
+  var drawerMode = document.body.classList.contains('mobile-canvas-detail');
+  openMobileDetail(noteId, { drawer: drawerMode });
 }
 
 function getMobileVisibleNotes() {
@@ -1499,7 +1561,7 @@ function renderMobileDetailContent(note) {
     ? '<div class="mobile-detail-rel-row">' +
         '<span class="mobile-detail-kicker">関連</span>' +
         '<div class="mobile-list-relations">' + chips.map(function (c) {
-          return '<button type="button" class="mobile-list-rel-chip rel-' + c.type + '" onclick="openMobileDetail(\'' + c.targetId + '\')">' + escapeMobileHtml(c.label) + '</button>';
+          return '<button type="button" class="mobile-list-rel-chip rel-' + c.type + '" data-note-id="' + escapeMobileHtml(String(c.targetId)) + '">' + escapeMobileHtml(c.label) + '</button>';
         }).join('') + '</div></div>'
     : '';
 
@@ -1519,16 +1581,13 @@ function renderMobileDetailContent(note) {
 
 function updateMobileDetailPosition(noteId) {
   var posEl = document.getElementById('mobile-detail-position');
-  if (!posEl) return;
   var pool = getMobileDetailNavigatePool();
-  var idx = pool.findIndex(function (n) { return n.id === noteId; });
-  if (idx >= 0) {
-    posEl.textContent = '付箋 ' + (idx + 1) + ' / ' + pool.length;
-    return;
+  var idx = pool.findIndex(function (n) { return String(n.id) === String(noteId); });
+  if (posEl) {
+    if (idx >= 0) posEl.textContent = '付箋 ' + (idx + 1) + ' / ' + pool.length;
+    else posEl.textContent = '付箋 ? / ' + pool.length;
   }
-  var all = getNotesSortedForMobileList();
-  idx = all.findIndex(function (n) { return n.id === noteId; });
-  posEl.textContent = '付箋 ' + (idx >= 0 ? (idx + 1) : '?') + ' / ' + all.length;
+  renderMobileDetailJumpSelect(noteId);
 }
 
 function updateMobileDetailCloseLabel() {
@@ -1569,9 +1628,9 @@ function renderMobileNodeStrip() {
   strip.hidden = false;
   strip.innerHTML = allNotes.map(function (note, i) {
     var hidden = !noteVisibleInCurrentContext(note);
-    var active = window.focusedNoteId === note.id ? ' active' : '';
+    var active = String(window.focusedNoteId) === String(note.id) ? ' active' : '';
     var dim = hidden ? ' dimmed' : '';
-    return '<button type="button" class="mobile-strip-chip' + active + dim + '" data-note-id="' + note.id + '" onclick="focusMobileStripNote(\'' + note.id + '\')" title="' + escapeMobileHtml(note.content) + '">' +
+    return '<button type="button" class="mobile-strip-chip' + active + dim + '" data-note-id="' + escapeMobileHtml(String(note.id)) + '" title="' + escapeMobileHtml(note.content) + '">' +
       '<span class="mobile-strip-num">' + (i + 1) + '</span>' +
       '<span class="mobile-strip-stripe ' + note.color + '"></span>' +
       '<span class="mobile-strip-label">' + escapeMobileHtml(note.content) + '</span>' +
@@ -1579,25 +1638,33 @@ function renderMobileNodeStrip() {
   }).join('');
 }
 
-function focusMobileStripNote(noteId) {
-  var note = getNotesSortedForMobileList().find(function (n) { return n.id === noteId; });
-  if (!note) return;
-  showNodeDetails(note);
+function bindMobileStripClicks() {
   var strip = document.getElementById('mobile-node-strip');
-  var chip = strip && strip.querySelector('.mobile-strip-chip[data-note-id="' + noteId + '"]');
-  if (chip && chip.scrollIntoView) {
-    chip.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
-  }
+  if (!strip || strip._stripClickBound) return;
+  strip._stripClickBound = true;
+  strip.addEventListener('click', function (e) {
+    var chip = e.target.closest('.mobile-strip-chip');
+    if (!chip) return;
+    var id = chip.getAttribute('data-note-id');
+    if (id) focusMobileStripNote(id);
+  });
+}
+
+function focusMobileStripNote(noteId) {
+  var drawerMode = isMobileCanvasMode();
+  openMobileDetail(noteId, { drawer: drawerMode });
 }
 
 function openMobileDetail(noteId, options) {
   options = options || {};
   var drawerMode = !!options.drawer || isMobileCanvasMode();
   if (!drawerMode && getEffectiveViewMode() !== 'list') return;
-  var note = getNotesSortedForMobileList().find(function (n) { return n.id === noteId; });
+  var note = findMobileNoteById(noteId);
   if (!note) return;
 
-  window.focusedNoteId = noteId;
+  ensureMobileNoteTimeVisible(note);
+
+  window.focusedNoteId = String(note.id);
   window.mobileDetailOpen = true;
   document.body.classList.add('mobile-detail-open');
   document.body.classList.toggle('mobile-canvas-detail', drawerMode);
@@ -1608,9 +1675,10 @@ function openMobileDetail(noteId, options) {
   if (backdrop) backdrop.hidden = drawerMode;
 
   renderMobileDetailContent(note);
-  updateMobileDetailPosition(noteId);
+  updateMobileDetailPosition(note.id);
   updateMobileDetailCloseLabel();
   renderMobileNodeStrip();
+  scrollMobileStripToNote(note.id);
 
   if (!drawerMode) {
     renderMobileBrowseList();
@@ -1642,7 +1710,7 @@ function closeMobileDetail() {
 function mobileDetailNavigate(delta) {
   var pool = getMobileDetailNavigatePool();
   if (!pool.length) return;
-  var idx = pool.findIndex(function (n) { return n.id === window.focusedNoteId; });
+  var idx = pool.findIndex(function (n) { return String(n.id) === String(window.focusedNoteId); });
   if (idx < 0) idx = 0;
   var next = (idx + delta + pool.length) % pool.length;
   var drawerMode = document.body.classList.contains('mobile-canvas-detail');
@@ -1687,6 +1755,15 @@ function setupMobileDetailSwipe() {
   var body = document.getElementById('mobile-detail-body');
   if (!body || body._aetherSwipeBound) return;
   body._aetherSwipeBound = true;
+  body.addEventListener('click', function (e) {
+    var rel = e.target.closest('.mobile-list-rel-chip[data-note-id]');
+    if (!rel) return;
+    var id = rel.getAttribute('data-note-id');
+    if (id) {
+      var drawerMode = document.body.classList.contains('mobile-canvas-detail');
+      openMobileDetail(id, { drawer: drawerMode });
+    }
+  });
   var startX = 0;
   body.addEventListener('touchstart', function (e) {
     startX = e.changedTouches[0].screenX;
@@ -1723,6 +1800,7 @@ function initResponsiveView() {
   applyTagsBarVisibility();
   updateMobilePresToggle();
   bindMobileMiniMapClicks();
+  bindMobileStripClicks();
   setupMobileListSwipe();
   setupMobileDetailSwipe();
   applyViewModeLayout();
@@ -2115,7 +2193,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.23 mobile-top-detail-pres-toggle (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.24 mobile-nav-all-notes (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();
