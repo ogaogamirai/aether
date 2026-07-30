@@ -1115,9 +1115,28 @@ function getMobileVisibleNotes() {
   return getNotesSortedForMobileList().filter(noteVisibleInCurrentContext);
 }
 
-function getMobileBoardTitle() {
-  var list = getNotesSortedForMobileList();
-  return (list[0] && list[0].content) ? list[0].content : 'Aether Board';
+function getMobileRelationCount() {
+  return ((typeof relations !== 'undefined' && relations) ? relations : (window.relations || [])).length;
+}
+
+function renderMobileStatChips(allCount, visibleCount, relCount) {
+  var chips =
+    '<span class="mobile-stat-chip" title="このボードに含まれる付箋（sticky）の件数">' +
+      '<span class="mobile-stat-label">付箋</span><span class="mobile-stat-value">' + allCount + '</span>' +
+    '</span>';
+  if (relCount > 0) {
+    chips +=
+      '<span class="mobile-stat-chip" title="付箋どうしを結ぶ線（relation）の本数">' +
+        '<span class="mobile-stat-label">つながり</span><span class="mobile-stat-value">' + relCount + '</span>' +
+      '</span>';
+  }
+  if (visibleCount !== allCount) {
+    chips +=
+      '<span class="mobile-stat-chip" title="いま選んでいる時系列ステップで表示中の件数">' +
+        '<span class="mobile-stat-label">表示中</span><span class="mobile-stat-value">' + visibleCount + '</span>' +
+      '</span>';
+  }
+  return '<div class="mobile-stat-row" aria-label="ボードの件数">' + chips + '</div>';
 }
 
 function getNoteRelationChips(noteId) {
@@ -1165,6 +1184,11 @@ function applyViewModeLayout() {
   document.body.classList.add('view-effective-' + effective);
   updateViewModeButtons();
 
+  var viewBar = document.getElementById('view-mode-bar');
+  if (viewBar) {
+    viewBar.hidden = (effective === 'canvas' && !isNarrowViewport());
+  }
+
   if (effective === 'list') {
     renderMobileListView();
     var panel = document.getElementById('control-panel');
@@ -1208,7 +1232,9 @@ function renderMobileMiniMap(notesList) {
       '<text x="' + tx(n.x) + '" y="' + (ty(n.y) + 3) + '" text-anchor="middle" class="mobile-minimap-label">' + (i + 1) + '</text>' +
     '</g>';
   }).join('');
-  return '<div class="mobile-minimap-wrap"><svg viewBox="0 0 ' + svgW + ' ' + svgH + '" class="mobile-minimap" aria-label="全体マップ">' + lines + dots + '</svg></div>';
+  return '<div class="mobile-minimap-wrap">' +
+    '<div class="mobile-section-caption">配置マップ <span class="mobile-caption-hint">— 丸をタップすると詳細</span></div>' +
+    '<svg viewBox="0 0 ' + svgW + ' ' + svgH + '" class="mobile-minimap" aria-label="付箋の配置マップ">' + lines + dots + '</svg></div>';
 }
 
 function bindMobileMiniMapClicks() {
@@ -1236,15 +1262,31 @@ function renderMobileOverviewPanel() {
   if (!panel) return;
   var allNotes = getNotesSortedForMobileList();
   var visible = getMobileVisibleNotes();
-  var relCount = ((typeof relations !== 'undefined' && relations) ? relations : (window.relations || [])).length;
+  var relCount = getMobileRelationCount();
   var stepName = window.activeTime || 'すべて';
   var stepIdx = window.timeSteps.indexOf(stepName);
   if (stepIdx < 0) stepIdx = 0;
+  var hasTimeSteps = (window.timeSteps || []).length > 1;
 
-  var stepChips = (window.timeSteps || []).map(function (step, idx) {
-    var active = idx === stepIdx ? ' active' : '';
-    return '<button type="button" class="mobile-step-chip' + active + '" onclick="mobileJumpToStep(' + idx + ')">' + escapeMobileHtml(step) + '</button>';
-  }).join('');
+  if (!allNotes.length) {
+    panel.innerHTML =
+      '<div class="mobile-overview-head">' +
+        '<h2 class="mobile-overview-title">スマホ表示</h2>' +
+        '<p class="mobile-overview-lead">付箋がまだありません。PC表示（キャンバス）で DSL を読み込むか、配布 HTML にデータが含まれているか確認してください。</p>' +
+      '</div>';
+    return;
+  }
+
+  var stepBlock = '';
+  if (hasTimeSteps) {
+    var stepChips = window.timeSteps.map(function (step, idx) {
+      var active = idx === stepIdx ? ' active' : '';
+      return '<button type="button" class="mobile-step-chip' + active + '" onclick="mobileJumpToStep(' + idx + ')">' + escapeMobileHtml(step) + '</button>';
+    }).join('');
+    stepBlock =
+      '<div class="mobile-section-caption">時系列ステップ <span class="mobile-caption-hint">— プレゼン順の切り替え</span></div>' +
+      '<div class="mobile-step-bar" role="tablist" aria-label="時系列ステップ">' + stepChips + '</div>';
+  }
 
   var indexRows = allNotes.map(function (note, i) {
     var hidden = !noteVisibleInCurrentContext(note);
@@ -1259,14 +1301,14 @@ function renderMobileOverviewPanel() {
 
   panel.innerHTML =
     '<div class="mobile-overview-head">' +
-      '<div class="mobile-overview-kicker">全体像</div>' +
-      '<h2 class="mobile-overview-title">' + escapeMobileHtml(getMobileBoardTitle()) + '</h2>' +
-      '<p class="mobile-overview-stats">' + allNotes.length + ' 付箋 · ' + relCount + ' 関係 · 表示中 ' + visible.length + ' · ステップ「' + escapeMobileHtml(stepName) + '」</p>' +
+      '<h2 class="mobile-overview-title">スマホ表示</h2>' +
+      '<p class="mobile-overview-lead">いま読み込んでいるボードの内容です。件数はデータごとに変わります。</p>' +
+      renderMobileStatChips(allNotes.length, visible.length, relCount) +
     '</div>' +
     renderMobileMiniMap(allNotes) +
-    '<div class="mobile-step-bar" role="tablist" aria-label="ステップ">' + stepChips + '</div>' +
-    '<details class="mobile-index-panel" open>' +
-      '<summary class="mobile-index-summary">付箋一覧（番号順）</summary>' +
+    stepBlock +
+    '<details class="mobile-index-panel">' +
+      '<summary class="mobile-index-summary">全付箋を番号順に見る（' + allNotes.length + '件）</summary>' +
       '<div class="mobile-index-list">' + indexRows + '</div>' +
     '</details>';
 }
@@ -1279,12 +1321,12 @@ function renderMobileBrowseList() {
 
   if (!visible.length) {
     scroll.innerHTML =
-      '<div class="mobile-list-section-label">このステップの付箋</div>' +
-      '<div class="mobile-list-empty"><span class="mobile-list-empty-icon">📋</span><p>このステップに表示できる付箋がありません。<br>上のステップチップを切り替えてください。</p></div>';
+      '<div class="mobile-list-section-label">いま表示中の付箋</div>' +
+      '<div class="mobile-list-empty"><span class="mobile-list-empty-icon">📋</span><p>このステップでは表示する付箋がありません。<br>上の「時系列ステップ」を切り替えてください。</p></div>';
     return;
   }
 
-  var html = '<div class="mobile-list-section-label">このステップの付箋 — タップで詳細</div>';
+  var html = '<div class="mobile-list-section-label">いま表示中の付箋（' + visible.length + '件）— タップで詳細</div>';
   html += visible.map(function (note) {
     var globalIdx = allNotes.findIndex(function (n) { return n.id === note.id; }) + 1;
     var active = window.focusedNoteId === note.id ? ' active' : '';
@@ -1314,10 +1356,11 @@ function renderMobileBottomNav() {
   var stepName = window.activeTime || 'すべて';
   var presLabel = window.isPresentationMode ? 'プレゼン ON' : 'プレゼン';
   var presClass = window.isPresentationMode ? ' active' : '';
+  var stepLabel = stepName === 'すべて' ? '全ステップ' : stepName;
   nav.innerHTML =
     '<button type="button" class="mobile-bottom-btn' + presClass + '" onclick="togglePresentationMode()">🎬 ' + presLabel + '</button>' +
-    '<span class="mobile-bottom-step">' + escapeMobileHtml(stepName) + '</span>' +
-    '<button type="button" class="mobile-bottom-btn" onclick="document.getElementById(\'mobile-overview-panel\').scrollIntoView({behavior:\'smooth\'})">🗺 全体</button>';
+    '<span class="mobile-bottom-step">' + escapeMobileHtml(stepLabel) + '</span>' +
+    '<button type="button" class="mobile-bottom-btn" onclick="document.getElementById(\'mobile-overview-panel\').scrollIntoView({behavior:\'smooth\'})">🗺 マップ</button>';
 }
 
 function renderMobileDetailContent(note) {
@@ -1355,9 +1398,9 @@ function updateMobileDetailPosition(noteId) {
   if (idx < 0) {
     var all = getNotesSortedForMobileList();
     idx = all.findIndex(function (n) { return n.id === noteId; });
-    posEl.textContent = (idx >= 0 ? (idx + 1) : '?') + ' / ' + all.length + '（全体）';
+    posEl.textContent = '付箋 ' + (idx >= 0 ? (idx + 1) : '?') + ' / ' + all.length;
   } else {
-    posEl.textContent = (idx + 1) + ' / ' + visible.length;
+    posEl.textContent = '付箋 ' + (idx + 1) + ' / ' + visible.length;
   }
 }
 
@@ -1867,7 +1910,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.16 mobile-ux-overhaul (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.17 mobile-generic-copy (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();

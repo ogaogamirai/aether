@@ -455,11 +455,11 @@ async function exportPortableViewer() {
       '  <style id="aether-embedded-css">' + styleContent + '</style>',
       '</head>',
       '<body class="light-theme">',
-      '  <div id="view-mode-bar" class="view-mode-bar" role="toolbar" aria-label="表示切替">',
-      '    <span class="view-mode-label">表示</span>',
-      '    <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode(\'auto\')" title="画面幅に応じて自動切替">自動</button>',
-      '    <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode(\'canvas\')" title="2Dキャンバス表示">PC</button>',
-      '    <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode(\'list\')" title="カード型リスト表示">リスト</button>',
+      '  <div id="view-mode-bar" class="view-mode-bar" role="toolbar" aria-label="スマホ表示切替">',
+      '    <span class="view-mode-label">スマホ</span>',
+      '    <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode(\'auto\')" title="狭い画面ではスマホ表示、広い画面ではPC表示">自動</button>',
+      '    <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode(\'list\')" title="一覧・詳細のスマホ向け表示">読みやすい</button>',
+      '    <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode(\'canvas\')" title="2Dキャンバス（PC向け）">キャンバス</button>',
       '  </div>',
       '  <div id="mobile-list-view" class="mobile-list-view" aria-label="モバイルリストビュー">',
       '    <div id="mobile-overview-panel" class="mobile-overview-panel"></div>',
@@ -631,4 +631,4 @@ async function exportPortableViewer() {
 }
 
 // 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
-window.__AETHER_EXPORT_BUILD__ = 'L2.1-mobile-ux-overhaul-v4.0.16';
+window.__AETHER_EXPORT_BUILD__ = 'L2.2-mobile-generic-copy-v4.0.17';
