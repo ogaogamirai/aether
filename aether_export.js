@@ -457,9 +457,9 @@ async function exportPortableViewer() {
       '<body class="light-theme">',
       '  <div id="view-mode-bar" class="view-mode-bar" role="toolbar" aria-label="スマホ表示切替">',
       '    <span class="view-mode-label">スマホ</span>',
-      '    <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode(\'auto\')" title="狭い画面ではスマホ表示、広い画面ではPC表示">自動</button>',
-      '    <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode(\'list\')" title="一覧・詳細のスマホ向け表示">読みやすい</button>',
-      '    <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode(\'canvas\')" title="2Dキャンバス（PC向け）">キャンバス</button>',
+      '    <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode(\'auto\')" title="キャンバス（グラフ）表示。狭い画面でも配置が見える">自動</button>',
+      '    <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode(\'list\')" title="テキスト一覧モード（グラフ非表示）">一覧</button>',
+      '    <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode(\'canvas\')" title="2Dキャンバス表示">キャンバス</button>',
       '  </div>',
       '  <div id="mobile-list-view" class="mobile-list-view" aria-label="モバイルリストビュー">',
       '    <div id="mobile-overview-panel" class="mobile-overview-panel"></div>',
@@ -479,6 +479,7 @@ async function exportPortableViewer() {
       '      <button type="button" class="mobile-nav-btn mobile-nav-btn-primary" onclick="mobileDetailNavigate(1)">次の付箋 ▶</button>',
       '    </footer>',
       '  </div>',
+      '  <nav id="mobile-node-strip" class="mobile-node-strip" aria-label="付箋切替" hidden></nav>',
       '  <div class="whiteboard-container" id="canvas-container">',
       '    <div class="tags-filter-bar" id="tags-filter-bar"></div>',
       '    <div class="canvas-transform" id="canvas-transform">',
@@ -631,4 +632,4 @@ async function exportPortableViewer() {
 }
 
 // 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
-window.__AETHER_EXPORT_BUILD__ = 'L2.4-mobile-toggle-fix-v4.0.19';
+window.__AETHER_EXPORT_BUILD__ = 'L2.5-mobile-canvas-first-v4.0.20';

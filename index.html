@@ -12,15 +12,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.19">
+  <link rel="stylesheet" href="style.css?v=4.0.20">
 </head>
 <body class="light-theme">
 
   <div id="view-mode-bar" class="view-mode-bar" role="toolbar" aria-label="スマホ表示切替">
     <span class="view-mode-label">スマホ</span>
-    <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode('auto')" title="狭い画面ではスマホ表示、広い画面ではPC表示">自動</button>
-    <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode('list')" title="一覧・詳細のスマホ向け表示">読みやすい</button>
-    <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode('canvas')" title="2Dキャンバス（PC向け）">キャンバス</button>
+    <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode('auto')" title="キャンバス（グラフ）表示。狭い画面でも配置が見える">自動</button>
+    <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode('list')" title="テキスト一覧モード（グラフ非表示）">一覧</button>
+    <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode('canvas')" title="2Dキャンバス表示">キャンバス</button>
   </div>
 
   <div id="mobile-list-view" class="mobile-list-view" aria-label="モバイルリストビュー">
@@ -42,6 +42,8 @@
       <button type="button" class="mobile-nav-btn mobile-nav-btn-primary" onclick="mobileDetailNavigate(1)">次の付箋 ▶</button>
     </footer>
   </div>
+
+  <nav id="mobile-node-strip" class="mobile-node-strip" aria-label="付箋切替" hidden></nav>
 
   <!-- Infinite Canvas -->
   <div class="whiteboard-container" id="canvas-container">

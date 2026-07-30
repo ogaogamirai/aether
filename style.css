@@ -2014,6 +2014,98 @@ body.mobile-detail-open #mobile-list-view {
   visibility: hidden;
 }
 
+body.mobile-canvas-detail.mobile-detail-open #mobile-list-view {
+  visibility: visible;
+}
+
+/* キャンバス上の詳細: 下半分ドロワー（グラフは上に残る） */
+body.mobile-canvas-detail .mobile-detail-sheet {
+  inset: auto 0 var(--mobile-strip-height, 56px) 0;
+  height: min(58vh, 520px);
+  max-height: calc(100vh - var(--mobile-strip-height, 56px) - var(--view-bar-height, 44px) - 24px);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.35);
+}
+
+body.mobile-canvas-detail .mobile-detail-backdrop {
+  background: rgba(2, 6, 23, 0.28);
+}
+
+.mobile-node-strip {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1250;
+  gap: 8px;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: rgba(15, 23, 42, 0.96);
+  border-top: 1px solid var(--border-color);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+body.light-theme .mobile-node-strip {
+  background: rgba(248, 250, 252, 0.96);
+}
+
+body.view-mobile-ui.view-effective-canvas .mobile-node-strip {
+  display: flex;
+}
+
+.mobile-strip-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 180px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+}
+
+.mobile-strip-chip.active {
+  border-color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.mobile-strip-chip.dimmed {
+  opacity: 0.45;
+}
+
+.mobile-strip-num {
+  font-weight: 800;
+  font-size: 0.72rem;
+  color: var(--accent-blue);
+}
+
+.mobile-strip-stripe {
+  width: 4px;
+  height: 18px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.mobile-strip-stripe.yellow { background: #eab308; }
+.mobile-strip-stripe.blue { background: #3b82f6; }
+.mobile-strip-stripe.green { background: #10b981; }
+.mobile-strip-stripe.pink { background: #ec4899; }
+.mobile-strip-stripe.purple { background: #8b5cf6; }
+
+.mobile-strip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .mobile-list-time {
   padding: 4px 10px;
   border-radius: 999px;
@@ -2051,6 +2143,7 @@ body.view-effective-list .control-panel {
     min-height: 0;
     width: 100%;
     touch-action: none;
+    padding-bottom: var(--mobile-strip-height, 56px);
   }
 
   body.view-mobile-ui.view-effective-canvas .control-panel {

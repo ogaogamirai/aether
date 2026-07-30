@@ -907,7 +907,17 @@ function showNodeDetails(note) {
   switchTab('details');
 
   if (typeof getEffectiveViewMode === 'function' && getEffectiveViewMode() === 'list') {
-    if (typeof openMobileDetail === 'function') openMobileDetail(note.id);
+    if (window.mobileDetailOpen && window.focusedNoteId === note.id && typeof closeMobileDetail === 'function') {
+      closeMobileDetail();
+    } else if (typeof openMobileDetail === 'function') {
+      openMobileDetail(note.id);
+    }
+  } else if (typeof isMobileCanvasMode === 'function' && isMobileCanvasMode()) {
+    if (window.mobileDetailOpen && window.focusedNoteId === note.id && typeof closeMobileDetail === 'function') {
+      closeMobileDetail();
+    } else if (typeof openMobileDetail === 'function') {
+      openMobileDetail(note.id, { drawer: true });
+    }
   } else if (typeof focusMobileListCard === 'function') {
     focusMobileListCard(note.id, false);
   }
@@ -1075,7 +1085,12 @@ function getEffectiveViewMode() {
   var pref = getViewModePreference();
   if (pref === 'canvas') return 'canvas';
   if (pref === 'list') return 'list';
-  return isNarrowViewport() ? 'list' : 'canvas';
+  // 自動: 狭い画面でもキャンバス（グラフ）を基本表示。一覧は明示選択時のみ。
+  return 'canvas';
+}
+
+function isMobileCanvasMode() {
+  return isNarrowViewport() && getEffectiveViewMode() === 'canvas';
 }
 
 function escapeMobileHtml(text) {
@@ -1207,6 +1222,16 @@ function applyViewModeLayout() {
     if (window.mobileDetailOpen) closeMobileDetail();
     var mobileRoot = document.getElementById('mobile-list-view');
     if (mobileRoot) mobileRoot.hidden = true;
+    var panel = document.getElementById('control-panel');
+    if (panel && isNarrowViewport() && !panel.classList.contains('collapsed')) {
+      panel.classList.add('collapsed');
+      var sidebarBtn = document.getElementById('sidebar-toggle-btn');
+      if (sidebarBtn) {
+        sidebarBtn.textContent = '▶';
+        sidebarBtn.title = 'サイドバーを開く';
+      }
+    }
+    renderMobileNodeStrip();
     if (typeof fitToView === 'function') {
       setTimeout(function () { fitToView(); }, 80);
     }
@@ -1309,8 +1334,8 @@ function renderMobileOverviewPanel() {
 
   panel.innerHTML =
     '<div class="mobile-overview-head">' +
-      '<h2 class="mobile-overview-title">スマホ表示</h2>' +
-      '<p class="mobile-overview-lead">いま読み込んでいるボードの内容です。件数はデータごとに変わります。</p>' +
+      '<h2 class="mobile-overview-title">一覧モード</h2>' +
+      '<p class="mobile-overview-lead">グラフは非表示です。テキスト中心で読むとき用。「キャンバス」に戻ると配置マップが見えます。</p>' +
       renderMobileStatChips(allNotes.length, visible.length, relCount) +
     '</div>' +
     renderMobileMiniMap(allNotes) +
@@ -1334,7 +1359,7 @@ function renderMobileBrowseList() {
     return;
   }
 
-  var html = '<div class="mobile-list-section-label">いま表示中の付箋（' + visible.length + '件）— タップで詳細</div>';
+  var html = '<div class="mobile-list-section-label">いま表示中の付箋（' + visible.length + '件）— タップで詳細。全' + allNotes.length + '件は上の「全付箋を番号順に見る」から</div>';
   html += visible.map(function (note) {
     var globalIdx = allNotes.findIndex(function (n) { return n.id === note.id; }) + 1;
     var active = window.focusedNoteId === note.id ? ' active' : '';
@@ -1367,7 +1392,7 @@ function renderMobileBottomNav() {
   var stepLabel = stepName === 'すべて' ? '全ステップ' : stepName;
   nav.innerHTML =
     '<button type="button" class="mobile-bottom-btn' + presClass + '" onclick="togglePresentationMode()">🎬 ' + presLabel + '</button>' +
-    '<button type="button" class="mobile-bottom-btn mobile-bottom-btn-accent" onclick="setViewMode(\'canvas\')" title="2Dキャンバス表示に切り替え">🗺 キャンバス</button>' +
+    '<button type="button" class="mobile-bottom-btn mobile-bottom-btn-accent" onclick="setViewMode(\'canvas\')" title="2Dキャンバス（グラフ）表示">🗺 グラフ</button>' +
     '<span class="mobile-bottom-step">' + escapeMobileHtml(stepLabel) + '</span>';
 }
 
@@ -1401,25 +1426,81 @@ function renderMobileDetailContent(note) {
 function updateMobileDetailPosition(noteId) {
   var posEl = document.getElementById('mobile-detail-position');
   if (!posEl) return;
-  var visible = getMobileVisibleNotes();
-  var idx = visible.findIndex(function (n) { return n.id === noteId; });
-  if (idx < 0) {
-    var all = getNotesSortedForMobileList();
-    idx = all.findIndex(function (n) { return n.id === noteId; });
-    posEl.textContent = '付箋 ' + (idx >= 0 ? (idx + 1) : '?') + ' / ' + all.length;
-  } else {
-    posEl.textContent = '付箋 ' + (idx + 1) + ' / ' + visible.length;
+  var pool = getMobileDetailNavigatePool();
+  var idx = pool.findIndex(function (n) { return n.id === noteId; });
+  if (idx >= 0) {
+    posEl.textContent = '付箋 ' + (idx + 1) + ' / ' + pool.length;
+    return;
+  }
+  var all = getNotesSortedForMobileList();
+  idx = all.findIndex(function (n) { return n.id === noteId; });
+  posEl.textContent = '付箋 ' + (idx >= 0 ? (idx + 1) : '?') + ' / ' + all.length;
+}
+
+function updateMobileDetailCloseLabel() {
+  var btn = document.querySelector('.mobile-detail-close');
+  if (!btn) return;
+  btn.textContent = document.body.classList.contains('mobile-canvas-detail')
+    ? '✕ グラフに戻る'
+    : '✕ 一覧へ戻る';
+}
+
+function getMobileDetailNavigatePool() {
+  if (window.isPresentationMode && getEffectiveViewMode() === 'list') {
+    return getMobileVisibleNotes();
+  }
+  return getNotesSortedForMobileList();
+}
+
+function renderMobileNodeStrip() {
+  var strip = document.getElementById('mobile-node-strip');
+  if (!strip) return;
+  if (!isMobileCanvasMode()) {
+    strip.hidden = true;
+    strip.innerHTML = '';
+    return;
+  }
+  var allNotes = getNotesSortedForMobileList();
+  if (!allNotes.length) {
+    strip.hidden = true;
+    strip.innerHTML = '';
+    return;
+  }
+  strip.hidden = false;
+  strip.innerHTML = allNotes.map(function (note, i) {
+    var hidden = !noteVisibleInCurrentContext(note);
+    var active = window.focusedNoteId === note.id ? ' active' : '';
+    var dim = hidden ? ' dimmed' : '';
+    return '<button type="button" class="mobile-strip-chip' + active + dim + '" data-note-id="' + note.id + '" onclick="focusMobileStripNote(\'' + note.id + '\')" title="' + escapeMobileHtml(note.content) + '">' +
+      '<span class="mobile-strip-num">' + (i + 1) + '</span>' +
+      '<span class="mobile-strip-stripe ' + note.color + '"></span>' +
+      '<span class="mobile-strip-label">' + escapeMobileHtml(note.content) + '</span>' +
+    '</button>';
+  }).join('');
+}
+
+function focusMobileStripNote(noteId) {
+  var note = getNotesSortedForMobileList().find(function (n) { return n.id === noteId; });
+  if (!note) return;
+  showNodeDetails(note);
+  var strip = document.getElementById('mobile-node-strip');
+  var chip = strip && strip.querySelector('.mobile-strip-chip[data-note-id="' + noteId + '"]');
+  if (chip && chip.scrollIntoView) {
+    chip.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
   }
 }
 
-function openMobileDetail(noteId) {
-  if (getEffectiveViewMode() !== 'list') return;
+function openMobileDetail(noteId, options) {
+  options = options || {};
+  var drawerMode = !!options.drawer || isMobileCanvasMode();
+  if (!drawerMode && getEffectiveViewMode() !== 'list') return;
   var note = getNotesSortedForMobileList().find(function (n) { return n.id === noteId; });
   if (!note) return;
 
   window.focusedNoteId = noteId;
   window.mobileDetailOpen = true;
   document.body.classList.add('mobile-detail-open');
+  document.body.classList.toggle('mobile-canvas-detail', drawerMode);
 
   var sheet = document.getElementById('mobile-detail-sheet');
   var backdrop = document.getElementById('mobile-detail-backdrop');
@@ -1428,34 +1509,45 @@ function openMobileDetail(noteId) {
 
   renderMobileDetailContent(note);
   updateMobileDetailPosition(noteId);
-  renderMobileBrowseList();
-  renderMobileOverviewPanel();
-  renderMobileBottomNav();
+  updateMobileDetailCloseLabel();
+  renderMobileNodeStrip();
+
+  if (!drawerMode) {
+    renderMobileBrowseList();
+    renderMobileOverviewPanel();
+    renderMobileBottomNav();
+  }
 
   var canvasNote = document.getElementById('note-' + noteId);
   if (canvasNote) {
     document.querySelectorAll('#notes-container .sticky-note').forEach(function (el) { el.classList.remove('focused'); });
     canvasNote.classList.add('focused');
   }
+
+  if (drawerMode && typeof scheduleCenterFocusedNote === 'function') {
+    scheduleCenterFocusedNote(note);
+  }
 }
 
 function closeMobileDetail() {
   window.mobileDetailOpen = false;
-  document.body.classList.remove('mobile-detail-open');
+  document.body.classList.remove('mobile-detail-open', 'mobile-canvas-detail');
   var sheet = document.getElementById('mobile-detail-sheet');
   var backdrop = document.getElementById('mobile-detail-backdrop');
   if (sheet) sheet.hidden = true;
   if (backdrop) backdrop.hidden = true;
   renderMobileBottomNav();
+  renderMobileNodeStrip();
 }
 
 function mobileDetailNavigate(delta) {
-  var visible = getMobileVisibleNotes();
-  if (!visible.length) return;
-  var idx = visible.findIndex(function (n) { return n.id === window.focusedNoteId; });
+  var pool = getMobileDetailNavigatePool();
+  if (!pool.length) return;
+  var idx = pool.findIndex(function (n) { return n.id === window.focusedNoteId; });
   if (idx < 0) idx = 0;
-  var next = (idx + delta + visible.length) % visible.length;
-  openMobileDetail(visible[next].id);
+  var next = (idx + delta + pool.length) % pool.length;
+  var drawerMode = document.body.classList.contains('mobile-canvas-detail');
+  openMobileDetail(pool[next].id, { drawer: drawerMode });
 }
 
 function focusMobileListCard(noteId, scrollIntoView) {
@@ -1473,10 +1565,14 @@ function toggleMobileListCard(noteId) {
 }
 
 function renderMobileListView() {
-  if (getEffectiveViewMode() !== 'list') return;
+  if (getEffectiveViewMode() !== 'list') {
+    renderMobileNodeStrip();
+    return;
+  }
   renderMobileOverviewPanel();
   renderMobileBrowseList();
   renderMobileBottomNav();
+  renderMobileNodeStrip();
   if (window.mobileDetailOpen && window.focusedNoteId) {
     var note = getNotesSortedForMobileList().find(function (n) { return n.id === window.focusedNoteId; });
     if (note) {
@@ -1918,7 +2014,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.19 mobile-toggle-fix (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.20 mobile-canvas-first (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();

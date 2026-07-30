@@ -192,6 +192,26 @@ function renderCanvas() {
       }
     });
 
+    let touchStartX = 0;
+    let touchStartY = 0;
+    el.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+      if (e.touches.length !== 1) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      isDraggingNote = false;
+    }, { passive: true });
+
+    el.addEventListener('touchend', (e) => {
+      e.stopPropagation();
+      if (e.changedTouches.length !== 1) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.sqrt(dx * dx + dy * dy) < 12) {
+        showNodeDetails(note);
+      }
+    }, { passive: true });
+
     notesContainer.appendChild(el);
   });
 
