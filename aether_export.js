@@ -462,7 +462,22 @@ async function exportPortableViewer() {
       '    <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode(\'list\')" title="カード型リスト表示">リスト</button>',
       '  </div>',
       '  <div id="mobile-list-view" class="mobile-list-view" aria-label="モバイルリストビュー">',
+      '    <div id="mobile-overview-panel" class="mobile-overview-panel"></div>',
       '    <div id="mobile-list-scroll" class="mobile-list-scroll"></div>',
+      '    <nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="モバイルナビ"></nav>',
+      '  </div>',
+      '  <div id="mobile-detail-backdrop" class="mobile-detail-backdrop" hidden onclick="closeMobileDetail()"></div>',
+      '  <div id="mobile-detail-sheet" class="mobile-detail-sheet" hidden role="dialog" aria-modal="true" aria-labelledby="mobile-detail-title">',
+      '    <header class="mobile-detail-header">',
+      '      <button type="button" class="mobile-detail-close" onclick="closeMobileDetail()">✕ 一覧へ戻る</button>',
+      '      <span id="mobile-detail-position" class="mobile-detail-position">1 / 1</span>',
+      '      <h2 id="mobile-detail-title" class="mobile-detail-title"></h2>',
+      '    </header>',
+      '    <div id="mobile-detail-body" class="mobile-detail-body"></div>',
+      '    <footer class="mobile-detail-footer">',
+      '      <button type="button" class="mobile-nav-btn" onclick="mobileDetailNavigate(-1)">◀ 前の付箋</button>',
+      '      <button type="button" class="mobile-nav-btn mobile-nav-btn-primary" onclick="mobileDetailNavigate(1)">次の付箋 ▶</button>',
+      '    </footer>',
       '  </div>',
       '  <div class="whiteboard-container" id="canvas-container">',
       '    <div class="tags-filter-bar" id="tags-filter-bar"></div>',
@@ -616,4 +631,4 @@ async function exportPortableViewer() {
 }
 
 // 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
-window.__AETHER_EXPORT_BUILD__ = 'L2.0-mobile-list-view-v4.0.15';
+window.__AETHER_EXPORT_BUILD__ = 'L2.1-mobile-ux-overhaul-v4.0.16';

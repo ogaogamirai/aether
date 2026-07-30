@@ -503,6 +503,48 @@ function setupCanvasInteractions() {
     }
   });
 
+  let touchPanning = false;
+  let touchStartDist = 0;
+  let touchStartScale = window.scale;
+
+  containerEl.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      touchPanning = true;
+      window.isDragging = true;
+      window.startX = e.touches[0].clientX - window.panX;
+      window.startY = e.touches[0].clientY - window.panY;
+    } else if (e.touches.length === 2) {
+      touchPanning = false;
+      window.isDragging = false;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      touchStartDist = Math.hypot(dx, dy);
+      touchStartScale = window.scale;
+    }
+  }, { passive: true });
+
+  containerEl.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1 && touchPanning) {
+      e.preventDefault();
+      window.panX = e.touches[0].clientX - window.startX;
+      window.panY = e.touches[0].clientY - window.startY;
+      updateTransform();
+    } else if (e.touches.length === 2 && touchStartDist > 0) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      window.scale = Math.min(2.0, Math.max(0.15, touchStartScale * (dist / touchStartDist)));
+      updateTransform();
+    }
+  }, { passive: false });
+
+  containerEl.addEventListener('touchend', () => {
+    touchPanning = false;
+    window.isDragging = false;
+    touchStartDist = 0;
+  });
+
   canvasInteractionsReady = true;
   return true;
 }
@@ -864,7 +906,11 @@ function showNodeDetails(note) {
 
   switchTab('details');
 
-  if (typeof focusMobileListCard === 'function') focusMobileListCard(note.id, false);
+  if (typeof getEffectiveViewMode === 'function' && getEffectiveViewMode() === 'list') {
+    if (typeof openMobileDetail === 'function') openMobileDetail(note.id);
+  } else if (typeof focusMobileListCard === 'function') {
+    focusMobileListCard(note.id, false);
+  }
 
   // 選択変更時はフォーカス付箋をグラフ中央へ（倍率変更後も同じ経路・はみ出し可）
   scheduleCenterFocusedNote(note);
@@ -882,6 +928,10 @@ function isTypingTarget(el) {
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    if (window.mobileDetailOpen && typeof closeMobileDetail === 'function') {
+      closeMobileDetail();
+      return;
+    }
     if (window.isPresentationMode) {
       togglePresentationMode(false);
     }
@@ -997,9 +1047,10 @@ function toggleTheme() {
   if (typeof drawAllShapes === 'function') drawAllShapes();
 }
 
-// --- Responsive / mobile list view (export snapshot + live UI) ---
+// --- Responsive / mobile list view v2 (overview + browse + detail sheet) ---
 var AETHER_VIEW_MODE_KEY = 'aether_view_mode';
 var AETHER_VIEW_BREAKPOINT = 768;
+window.mobileDetailOpen = false;
 
 function isNarrowViewport() {
   return window.innerWidth < AETHER_VIEW_BREAKPOINT;
@@ -1016,6 +1067,7 @@ function getViewModePreference() {
 function setViewMode(mode) {
   var next = (mode === 'canvas' || mode === 'list' || mode === 'auto') ? mode : 'auto';
   try { localStorage.setItem(AETHER_VIEW_MODE_KEY, next); } catch (err) { /* ignore */ }
+  if (next !== 'list' && window.mobileDetailOpen) closeMobileDetail();
   applyViewModeLayout();
 }
 
@@ -1023,6 +1075,14 @@ function getEffectiveViewMode() {
   var pref = getViewModePreference();
   if (pref === 'canvas' || pref === 'list') return pref;
   return isNarrowViewport() ? 'list' : 'canvas';
+}
+
+function escapeMobileHtml(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function noteVisibleInCurrentContext(note) {
@@ -1051,6 +1111,15 @@ function getNotesSortedForMobileList() {
     .map(function (x) { return x.note; });
 }
 
+function getMobileVisibleNotes() {
+  return getNotesSortedForMobileList().filter(noteVisibleInCurrentContext);
+}
+
+function getMobileBoardTitle() {
+  var list = getNotesSortedForMobileList();
+  return (list[0] && list[0].content) ? list[0].content : 'Aether Board';
+}
+
 function getNoteRelationChips(noteId) {
   var rels = (typeof relations !== 'undefined' && relations) ? relations : (window.relations || []);
   var allNotes = (typeof notes !== 'undefined' && notes) ? notes : (window.notes || []);
@@ -1058,11 +1127,11 @@ function getNoteRelationChips(noteId) {
   rels.forEach(function (r) {
     if (r.from === noteId) {
       var target = allNotes.find(function (n) { return n.id === r.to; });
-      chips.push({ label: target ? target.content : r.to, type: r.type || 'default' });
+      chips.push({ label: target ? target.content : r.to, type: r.type || 'default', targetId: r.to });
     }
     if (r.to === noteId) {
       var source = allNotes.find(function (n) { return n.id === r.from; });
-      chips.push({ label: source ? ('← ' + source.content) : ('← ' + r.from), type: r.type || 'default' });
+      chips.push({ label: source ? source.content : r.from, type: r.type || 'default', targetId: r.from });
     }
   });
   return chips;
@@ -1073,6 +1142,12 @@ function formatNoteDescHtml(note) {
   var withImages = parseMarkdownImage(rawDesc);
   var withTable = parseMarkdownTable(withImages);
   return parseKaTeX(withTable);
+}
+
+function getNotePreviewText(note) {
+  var raw = (note.desc || '').replace(/\\n/g, '\n').replace(/\s+/g, ' ').trim();
+  if (!raw) return 'タップして詳細を読む';
+  return raw.length > 72 ? raw.slice(0, 72) + '…' : raw;
 }
 
 function updateViewModeButtons() {
@@ -1101,103 +1176,281 @@ function applyViewModeLayout() {
         sidebarBtn.title = 'サイドバーを開く';
       }
     }
+  } else if (window.mobileDetailOpen) {
+    closeMobileDetail();
   }
+}
+
+function renderMobileMiniMap(notesList) {
+  if (!notesList.length) return '';
+  var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  notesList.forEach(function (n) {
+    minX = Math.min(minX, n.x); minY = Math.min(minY, n.y);
+    maxX = Math.max(maxX, n.x); maxY = Math.max(maxY, n.y);
+  });
+  var pad = 30;
+  var w = Math.max(maxX - minX + pad * 2, 1);
+  var h = Math.max(maxY - minY + pad * 2, 1);
+  var svgW = 320, svgH = 150;
+  function tx(x) { return ((x - minX + pad) / w) * (svgW - 24) + 12; }
+  function ty(y) { return ((y - minY + pad) / h) * (svgH - 24) + 12; }
+  var rels = (typeof relations !== 'undefined' && relations) ? relations : (window.relations || []);
+  var lines = rels.map(function (r) {
+    var a = notesList.find(function (n) { return n.id === r.from; });
+    var b = notesList.find(function (n) { return n.id === r.to; });
+    if (!a || !b) return '';
+    return '<line x1="' + tx(a.x) + '" y1="' + ty(a.y) + '" x2="' + tx(b.x) + '" y2="' + ty(b.y) + '" class="mobile-minimap-line"/>';
+  }).join('');
+  var dots = notesList.map(function (n, i) {
+    var focused = window.focusedNoteId === n.id;
+    return '<g class="mobile-minimap-node' + (focused ? ' active' : '') + '" data-note-id="' + n.id + '" role="button" tabindex="0" aria-label="' + escapeMobileHtml(n.content) + '">' +
+      '<circle cx="' + tx(n.x) + '" cy="' + ty(n.y) + '" r="' + (focused ? 8 : 6) + '" class="mobile-minimap-dot ' + n.color + '"/>' +
+      '<text x="' + tx(n.x) + '" y="' + (ty(n.y) + 3) + '" text-anchor="middle" class="mobile-minimap-label">' + (i + 1) + '</text>' +
+    '</g>';
+  }).join('');
+  return '<div class="mobile-minimap-wrap"><svg viewBox="0 0 ' + svgW + ' ' + svgH + '" class="mobile-minimap" aria-label="全体マップ">' + lines + dots + '</svg></div>';
+}
+
+function bindMobileMiniMapClicks() {
+  var wrap = document.getElementById('mobile-overview-panel');
+  if (!wrap || wrap._minimapBound) return;
+  wrap._minimapBound = true;
+  wrap.addEventListener('click', function (e) {
+    var node = e.target.closest('.mobile-minimap-node');
+    if (!node) return;
+    var id = node.getAttribute('data-note-id');
+    if (id) openMobileDetail(id);
+  });
+}
+
+function mobileJumpToStep(idx) {
+  var slider = document.getElementById('time-slider');
+  if (!slider || !window.timeSteps.length) return;
+  var next = Math.max(0, Math.min(window.timeSteps.length - 1, idx));
+  slider.value = next;
+  handleTimeSlider(next);
+}
+
+function renderMobileOverviewPanel() {
+  var panel = document.getElementById('mobile-overview-panel');
+  if (!panel) return;
+  var allNotes = getNotesSortedForMobileList();
+  var visible = getMobileVisibleNotes();
+  var relCount = ((typeof relations !== 'undefined' && relations) ? relations : (window.relations || [])).length;
+  var stepName = window.activeTime || 'すべて';
+  var stepIdx = window.timeSteps.indexOf(stepName);
+  if (stepIdx < 0) stepIdx = 0;
+
+  var stepChips = (window.timeSteps || []).map(function (step, idx) {
+    var active = idx === stepIdx ? ' active' : '';
+    return '<button type="button" class="mobile-step-chip' + active + '" onclick="mobileJumpToStep(' + idx + ')">' + escapeMobileHtml(step) + '</button>';
+  }).join('');
+
+  var indexRows = allNotes.map(function (note, i) {
+    var hidden = !noteVisibleInCurrentContext(note);
+    var active = window.focusedNoteId === note.id ? ' active' : '';
+    var dim = hidden ? ' dimmed' : '';
+    return '<button type="button" class="mobile-index-row' + active + dim + '" onclick="openMobileDetail(\'' + note.id + '\')">' +
+      '<span class="mobile-index-num">' + (i + 1) + '</span>' +
+      '<span class="mobile-index-stripe ' + note.color + '"></span>' +
+      '<span class="mobile-index-title">' + escapeMobileHtml(note.content) + '</span>' +
+    '</button>';
+  }).join('');
+
+  panel.innerHTML =
+    '<div class="mobile-overview-head">' +
+      '<div class="mobile-overview-kicker">全体像</div>' +
+      '<h2 class="mobile-overview-title">' + escapeMobileHtml(getMobileBoardTitle()) + '</h2>' +
+      '<p class="mobile-overview-stats">' + allNotes.length + ' 付箋 · ' + relCount + ' 関係 · 表示中 ' + visible.length + ' · ステップ「' + escapeMobileHtml(stepName) + '」</p>' +
+    '</div>' +
+    renderMobileMiniMap(allNotes) +
+    '<div class="mobile-step-bar" role="tablist" aria-label="ステップ">' + stepChips + '</div>' +
+    '<details class="mobile-index-panel" open>' +
+      '<summary class="mobile-index-summary">付箋一覧（番号順）</summary>' +
+      '<div class="mobile-index-list">' + indexRows + '</div>' +
+    '</details>';
+}
+
+function renderMobileBrowseList() {
+  var scroll = document.getElementById('mobile-list-scroll');
+  if (!scroll) return;
+  var visible = getMobileVisibleNotes();
+  var allNotes = getNotesSortedForMobileList();
+
+  if (!visible.length) {
+    scroll.innerHTML =
+      '<div class="mobile-list-section-label">このステップの付箋</div>' +
+      '<div class="mobile-list-empty"><span class="mobile-list-empty-icon">📋</span><p>このステップに表示できる付箋がありません。<br>上のステップチップを切り替えてください。</p></div>';
+    return;
+  }
+
+  var html = '<div class="mobile-list-section-label">このステップの付箋 — タップで詳細</div>';
+  html += visible.map(function (note) {
+    var globalIdx = allNotes.findIndex(function (n) { return n.id === note.id; }) + 1;
+    var active = window.focusedNoteId === note.id ? ' active' : '';
+    return '<button type="button" class="mobile-browse-row' + active + '" onclick="openMobileDetail(\'' + note.id + '\')">' +
+      '<span class="mobile-browse-num">' + globalIdx + '</span>' +
+      '<span class="mobile-browse-stripe ' + note.color + '"></span>' +
+      '<span class="mobile-browse-text">' +
+        '<span class="mobile-browse-title">' + escapeMobileHtml(note.content) + '</span>' +
+        '<span class="mobile-browse-preview">' + escapeMobileHtml(getNotePreviewText(note)) + '</span>' +
+      '</span>' +
+      '<span class="mobile-browse-arrow" aria-hidden="true">›</span>' +
+    '</button>';
+  }).join('');
+
+  scroll.innerHTML = html;
+}
+
+function renderMobileBottomNav() {
+  var nav = document.getElementById('mobile-bottom-nav');
+  if (!nav) return;
+  if (window.mobileDetailOpen) {
+    nav.innerHTML = '';
+    nav.hidden = true;
+    return;
+  }
+  nav.hidden = false;
+  var stepName = window.activeTime || 'すべて';
+  var presLabel = window.isPresentationMode ? 'プレゼン ON' : 'プレゼン';
+  var presClass = window.isPresentationMode ? ' active' : '';
+  nav.innerHTML =
+    '<button type="button" class="mobile-bottom-btn' + presClass + '" onclick="togglePresentationMode()">🎬 ' + presLabel + '</button>' +
+    '<span class="mobile-bottom-step">' + escapeMobileHtml(stepName) + '</span>' +
+    '<button type="button" class="mobile-bottom-btn" onclick="document.getElementById(\'mobile-overview-panel\').scrollIntoView({behavior:\'smooth\'})">🗺 全体</button>';
+}
+
+function renderMobileDetailContent(note) {
+  var body = document.getElementById('mobile-detail-body');
+  var titleEl = document.getElementById('mobile-detail-title');
+  if (!body || !note) return;
+
+  var tagsHtml = (note.tags && note.tags.length)
+    ? note.tags.map(function (t) { return '<span class="details-tag-indicator">' + escapeMobileHtml(t) + '</span>'; }).join(' ')
+    : '<span class="mobile-detail-muted">タグなし</span>';
+  var chips = getNoteRelationChips(note.id);
+  var relHtml = chips.length
+    ? '<div class="mobile-detail-section"><div class="mobile-detail-section-label">関連付箋</div><div class="mobile-list-relations">' + chips.map(function (c) {
+        return '<button type="button" class="mobile-list-rel-chip rel-' + c.type + '" onclick="openMobileDetail(\'' + c.targetId + '\')">' + escapeMobileHtml(c.label) + '</button>';
+      }).join('') + '</div></div>'
+    : '';
+
+  if (titleEl) titleEl.textContent = note.content;
+  body.innerHTML =
+    '<div class="mobile-detail-meta">' +
+      '<span class="mobile-detail-badge ' + note.color + '">' + escapeMobileHtml(note.color) + '</span>' +
+      (note.time ? '<span class="mobile-list-time">' + escapeMobileHtml(note.time) + '</span>' : '') +
+      '<span class="mobile-detail-id">#' + escapeMobileHtml(note.id) + '</span>' +
+    '</div>' +
+    '<div class="mobile-detail-section"><div class="mobile-detail-section-label">タグ</div><div class="mobile-detail-tags">' + tagsHtml + '</div></div>' +
+    relHtml +
+    '<div class="mobile-detail-section"><div class="mobile-detail-section-label">本文</div><div class="mobile-list-desc details-desc">' + formatNoteDescHtml(note) + '</div></div>';
+}
+
+function updateMobileDetailPosition(noteId) {
+  var posEl = document.getElementById('mobile-detail-position');
+  if (!posEl) return;
+  var visible = getMobileVisibleNotes();
+  var idx = visible.findIndex(function (n) { return n.id === noteId; });
+  if (idx < 0) {
+    var all = getNotesSortedForMobileList();
+    idx = all.findIndex(function (n) { return n.id === noteId; });
+    posEl.textContent = (idx >= 0 ? (idx + 1) : '?') + ' / ' + all.length + '（全体）';
+  } else {
+    posEl.textContent = (idx + 1) + ' / ' + visible.length;
+  }
+}
+
+function openMobileDetail(noteId) {
+  if (getEffectiveViewMode() !== 'list') return;
+  var note = getNotesSortedForMobileList().find(function (n) { return n.id === noteId; });
+  if (!note) return;
+
+  window.focusedNoteId = noteId;
+  window.mobileDetailOpen = true;
+  document.body.classList.add('mobile-detail-open');
+
+  var sheet = document.getElementById('mobile-detail-sheet');
+  var backdrop = document.getElementById('mobile-detail-backdrop');
+  if (sheet) sheet.hidden = false;
+  if (backdrop) backdrop.hidden = false;
+
+  renderMobileDetailContent(note);
+  updateMobileDetailPosition(noteId);
+  renderMobileBrowseList();
+  renderMobileOverviewPanel();
+  renderMobileBottomNav();
+
+  var canvasNote = document.getElementById('note-' + noteId);
+  if (canvasNote) {
+    document.querySelectorAll('#notes-container .sticky-note').forEach(function (el) { el.classList.remove('focused'); });
+    canvasNote.classList.add('focused');
+  }
+}
+
+function closeMobileDetail() {
+  window.mobileDetailOpen = false;
+  document.body.classList.remove('mobile-detail-open');
+  var sheet = document.getElementById('mobile-detail-sheet');
+  var backdrop = document.getElementById('mobile-detail-backdrop');
+  if (sheet) sheet.hidden = true;
+  if (backdrop) backdrop.hidden = true;
+  renderMobileBottomNav();
+}
+
+function mobileDetailNavigate(delta) {
+  var visible = getMobileVisibleNotes();
+  if (!visible.length) return;
+  var idx = visible.findIndex(function (n) { return n.id === window.focusedNoteId; });
+  if (idx < 0) idx = 0;
+  var next = (idx + delta + visible.length) % visible.length;
+  openMobileDetail(visible[next].id);
 }
 
 function focusMobileListCard(noteId, scrollIntoView) {
-  if (scrollIntoView === undefined) scrollIntoView = true;
-  var root = document.getElementById('mobile-list-view');
-  if (!root) return;
-  root.querySelectorAll('.mobile-list-card').forEach(function (card) {
-    card.classList.toggle('focused', card.getAttribute('data-note-id') === noteId);
-  });
-  var card = root.querySelector('.mobile-list-card[data-note-id="' + noteId + '"]');
-  if (!card) return;
-  var header = card.querySelector('.mobile-list-card-header');
-  var body = card.querySelector('.mobile-list-card-body');
-  if (header) header.setAttribute('aria-expanded', 'true');
-  if (body) body.hidden = false;
-  if (scrollIntoView) {
-    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
+  openMobileDetail(noteId);
 }
 
 function focusPresentationMobileStep() {
-  var visible = getNotesSortedForMobileList().filter(noteVisibleInCurrentContext);
+  var visible = getMobileVisibleNotes();
   var target = visible[0] || getFirstNoteForCurrentStep();
-  if (target) focusMobileListCard(target.id, true);
+  if (target) openMobileDetail(target.id);
 }
 
 function toggleMobileListCard(noteId) {
-  var root = document.getElementById('mobile-list-view');
-  if (!root) return;
-  var card = root.querySelector('.mobile-list-card[data-note-id="' + noteId + '"]');
-  if (!card) return;
-  var body = card.querySelector('.mobile-list-card-body');
-  var header = card.querySelector('.mobile-list-card-header');
-  if (!body || !header) return;
-  var willOpen = body.hidden;
-  body.hidden = !willOpen;
-  header.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-  if (willOpen) {
-    window.focusedNoteId = noteId;
-    root.querySelectorAll('.mobile-list-card').forEach(function (el) {
-      el.classList.toggle('focused', el.getAttribute('data-note-id') === noteId);
-    });
-    var canvasNote = document.getElementById('note-' + noteId);
-    if (canvasNote) {
-      root.querySelectorAll('#notes-container .sticky-note').forEach(function (el) {
-        el.classList.remove('focused');
-      });
-      canvasNote.classList.add('focused');
+  openMobileDetail(noteId);
+}
+
+function renderMobileListView() {
+  if (getEffectiveViewMode() !== 'list') return;
+  renderMobileOverviewPanel();
+  renderMobileBrowseList();
+  renderMobileBottomNav();
+  if (window.mobileDetailOpen && window.focusedNoteId) {
+    var note = getNotesSortedForMobileList().find(function (n) { return n.id === window.focusedNoteId; });
+    if (note) {
+      renderMobileDetailContent(note);
+      updateMobileDetailPosition(note.id);
+    } else {
+      closeMobileDetail();
     }
   }
 }
 
-function renderMobileListView() {
-  var root = document.getElementById('mobile-list-view');
-  var scroll = document.getElementById('mobile-list-scroll');
-  if (!root || !scroll) return;
-
-  var sorted = getNotesSortedForMobileList().filter(noteVisibleInCurrentContext);
-  if (!sorted.length) {
-    scroll.innerHTML =
-      '<div class="mobile-list-empty">' +
-        '<span class="mobile-list-empty-icon">📋</span>' +
-        '<p>表示できる付箋がありません。</p>' +
-      '</div>';
-    return;
-  }
-
-  var html = sorted.map(function (note) {
-    var tagsHtml = (note.tags && note.tags.length)
-      ? note.tags.map(function (t) { return '<span class="details-tag-indicator">' + t + '</span>'; }).join(' ')
-      : '';
-    var timeHtml = note.time ? '<span class="mobile-list-time">' + note.time + '</span>' : '';
-    var chips = getNoteRelationChips(note.id);
-    var relHtml = chips.length
-      ? '<div class="mobile-list-relations">' + chips.map(function (c) {
-          return '<span class="mobile-list-rel-chip rel-' + c.type + '">' + c.label + '</span>';
-        }).join('') + '</div>'
-      : '';
-    var descHtml = formatNoteDescHtml(note);
-    var isFocused = window.focusedNoteId === note.id;
-    return (
-      '<article class="mobile-list-card sticky-swatch ' + note.color + (isFocused ? ' focused' : '') + '" data-note-id="' + note.id + '">' +
-        '<button type="button" class="mobile-list-card-header" aria-expanded="' + (isFocused ? 'true' : 'false') + '" onclick="toggleMobileListCard(\'' + note.id + '\')">' +
-          '<span class="mobile-list-card-title">' + note.content + '</span>' +
-          '<span class="mobile-list-card-meta">' + timeHtml + tagsHtml + '</span>' +
-          '<span class="mobile-list-card-chevron" aria-hidden="true">▾</span>' +
-        '</button>' +
-        '<div class="mobile-list-card-body"' + (isFocused ? '' : ' hidden') + '>' +
-          relHtml +
-          '<div class="mobile-list-desc details-desc">' + descHtml + '</div>' +
-        '</div>' +
-      '</article>'
-    );
-  }).join('');
-
-  scroll.innerHTML = html;
+function setupMobileDetailSwipe() {
+  var body = document.getElementById('mobile-detail-body');
+  if (!body || body._aetherSwipeBound) return;
+  body._aetherSwipeBound = true;
+  var startX = 0;
+  body.addEventListener('touchstart', function (e) {
+    startX = e.changedTouches[0].screenX;
+  }, { passive: true });
+  body.addEventListener('touchend', function (e) {
+    var dx = e.changedTouches[0].screenX - startX;
+    if (Math.abs(dx) < 56) return;
+    if (dx < 0) mobileDetailNavigate(1);
+    else mobileDetailNavigate(-1);
+  }, { passive: true });
 }
 
 function setupMobileListSwipe() {
@@ -1209,7 +1462,7 @@ function setupMobileListSwipe() {
     startX = e.changedTouches[0].screenX;
   }, { passive: true });
   el.addEventListener('touchend', function (e) {
-    if (!window.isPresentationMode) return;
+    if (!window.isPresentationMode || window.mobileDetailOpen) return;
     var dx = e.changedTouches[0].screenX - startX;
     if (Math.abs(dx) < 56) return;
     if (dx < 0) nextPresentationStep();
@@ -1221,7 +1474,9 @@ var _aetherResizeTimer = null;
 function initResponsiveView() {
   var bar = document.getElementById('view-mode-bar');
   if (!bar) return;
+  bindMobileMiniMapClicks();
   setupMobileListSwipe();
+  setupMobileDetailSwipe();
   applyViewModeLayout();
   if (bar._aetherViewBound) return;
   bar._aetherViewBound = true;
@@ -1612,7 +1867,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.12 mobile-list-view (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.16 mobile-ux-overhaul (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();

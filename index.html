@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.15">
+  <link rel="stylesheet" href="style.css?v=4.0.16">
 </head>
 <body class="light-theme">
 
@@ -24,7 +24,23 @@
   </div>
 
   <div id="mobile-list-view" class="mobile-list-view" aria-label="モバイルリストビュー">
+    <div id="mobile-overview-panel" class="mobile-overview-panel"></div>
     <div id="mobile-list-scroll" class="mobile-list-scroll"></div>
+    <nav id="mobile-bottom-nav" class="mobile-bottom-nav" aria-label="モバイルナビ"></nav>
+  </div>
+
+  <div id="mobile-detail-backdrop" class="mobile-detail-backdrop" hidden onclick="closeMobileDetail()"></div>
+  <div id="mobile-detail-sheet" class="mobile-detail-sheet" hidden role="dialog" aria-modal="true" aria-labelledby="mobile-detail-title">
+    <header class="mobile-detail-header">
+      <button type="button" class="mobile-detail-close" onclick="closeMobileDetail()">✕ 一覧へ戻る</button>
+      <span id="mobile-detail-position" class="mobile-detail-position">1 / 1</span>
+      <h2 id="mobile-detail-title" class="mobile-detail-title"></h2>
+    </header>
+    <div id="mobile-detail-body" class="mobile-detail-body"></div>
+    <footer class="mobile-detail-footer">
+      <button type="button" class="mobile-nav-btn" onclick="mobileDetailNavigate(-1)">◀ 前の付箋</button>
+      <button type="button" class="mobile-nav-btn mobile-nav-btn-primary" onclick="mobileDetailNavigate(1)">次の付箋 ▶</button>
+    </footer>
   </div>
 
   <!-- Infinite Canvas -->
