@@ -1428,7 +1428,7 @@ body.light-theme .pres-btn {
   border-bottom: 1px solid var(--border-color);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  z-index: 1100;
+  z-index: 1400;
   flex-shrink: 0;
 }
 
@@ -1440,12 +1440,24 @@ body.light-theme .pres-btn {
   overflow: hidden;
 }
 
-/* PC本体: モバイル専用UIは非表示（JS未実行時も安全） */
-body:not(.view-effective-list) #view-mode-bar,
-body:not(.view-effective-list) #mobile-list-view,
-body:not(.view-effective-list) #mobile-detail-backdrop,
-body:not(.view-effective-list) #mobile-detail-sheet {
-  display: none !important;
+/* PC広画面 + キャンバス: モバイルUIは完全非表示 */
+@media (min-width: 769px) {
+  body.view-effective-canvas #view-mode-bar,
+  body.view-effective-canvas #mobile-list-view,
+  body.view-effective-canvas #mobile-detail-backdrop,
+  body.view-effective-canvas #mobile-detail-sheet,
+  body.view-effective-canvas .mobile-bottom-nav {
+    display: none !important;
+  }
+}
+
+/* スマホ幅 or 読みやすいモード: 切替バーを常に表示 */
+body.view-mobile-ui #view-mode-bar,
+body.view-effective-list #view-mode-bar {
+  display: flex !important;
+  position: sticky;
+  top: 0;
+  width: 100%;
 }
 
 .view-mode-label {
@@ -1825,6 +1837,13 @@ body.light-theme .mobile-bottom-nav {
   color: #fff;
 }
 
+.mobile-bottom-btn-accent {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #10b981;
+  font-weight: 700;
+}
+
 .mobile-bottom-step {
   flex: 1;
   text-align: center;
@@ -1991,7 +2010,6 @@ body.light-theme .mobile-detail-sheet {
   line-height: 1.65;
 }
 
-body.mobile-detail-open #view-mode-bar,
 body.mobile-detail-open #mobile-list-view {
   visibility: hidden;
 }
@@ -2010,10 +2028,6 @@ body.view-effective-list {
   flex-direction: column;
 }
 
-body.view-effective-list #view-mode-bar {
-  display: flex !important;
-}
-
 body.view-effective-list #mobile-list-view {
   display: flex !important;
   flex: 1;
@@ -2028,32 +2042,26 @@ body.view-effective-list .control-panel {
 
 /* 狭い画面でキャンバス表示を選んだ場合 */
 @media (max-width: 768px) {
-  body.view-effective-canvas {
+  body.view-mobile-ui.view-effective-canvas {
     flex-direction: column;
   }
 
-  body.view-effective-canvas #view-mode-bar {
-    display: flex !important;
-    flex-shrink: 0;
-    width: 100%;
-  }
-
-  body.view-effective-canvas .whiteboard-container {
-    flex: 1 1 58%;
+  body.view-mobile-ui.view-effective-canvas .whiteboard-container {
+    flex: 1 1 auto;
     min-height: 0;
     width: 100%;
     touch-action: none;
   }
 
-  body.view-effective-canvas .control-panel {
-    flex: 0 0 42%;
+  body.view-mobile-ui.view-effective-canvas .control-panel {
+    flex: 0 0 36%;
     width: 100%;
     height: auto;
     border-left: none;
     border-top: 1px solid var(--border-color);
   }
 
-  body.view-effective-canvas .control-panel.collapsed {
+  body.view-mobile-ui.view-effective-canvas .control-panel.collapsed {
     flex: 0 0 0;
     min-height: 0;
     overflow: hidden;
@@ -2092,10 +2100,6 @@ body.view-effective-list .control-panel {
   body.view-effective-list .whiteboard-container,
   body.view-effective-list .control-panel {
     display: none !important;
-  }
-
-  body.view-effective-canvas #view-mode-bar {
-    display: none;
   }
 
   .mobile-bottom-nav {

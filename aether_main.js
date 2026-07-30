@@ -1073,7 +1073,8 @@ function setViewMode(mode) {
 
 function getEffectiveViewMode() {
   var pref = getViewModePreference();
-  if (pref === 'canvas' || pref === 'list') return pref;
+  if (pref === 'canvas') return 'canvas';
+  if (pref === 'list') return 'list';
   return isNarrowViewport() ? 'list' : 'canvas';
 }
 
@@ -1178,21 +1179,21 @@ function updateViewModeButtons() {
 }
 
 function applyViewModeLayout() {
+  var pref = getViewModePreference();
   var effective = getEffectiveViewMode();
-  document.body.classList.remove('view-pref-auto', 'view-pref-canvas', 'view-pref-list', 'view-effective-canvas', 'view-effective-list');
-  document.body.classList.add('view-pref-' + getViewModePreference());
+  document.body.classList.remove('view-pref-auto', 'view-pref-canvas', 'view-pref-list', 'view-effective-canvas', 'view-effective-list', 'view-mobile-ui');
+  document.body.classList.add('view-pref-' + pref);
   document.body.classList.add('view-effective-' + effective);
+  if (isNarrowViewport()) document.body.classList.add('view-mobile-ui');
   updateViewModeButtons();
 
   var viewBar = document.getElementById('view-mode-bar');
-  if (viewBar) {
-    viewBar.hidden = (effective === 'canvas' && !isNarrowViewport());
-  }
-
-  document.body.classList.toggle('view-mobile-ui', effective === 'list' || isNarrowViewport());
+  if (viewBar) viewBar.hidden = false;
 
   if (effective === 'list') {
     renderMobileListView();
+    var mobileRoot = document.getElementById('mobile-list-view');
+    if (mobileRoot) mobileRoot.hidden = false;
     var panel = document.getElementById('control-panel');
     if (panel && isNarrowViewport() && !panel.classList.contains('collapsed')) {
       panel.classList.add('collapsed');
@@ -1202,8 +1203,13 @@ function applyViewModeLayout() {
         sidebarBtn.title = 'サイドバーを開く';
       }
     }
-  } else if (window.mobileDetailOpen) {
-    closeMobileDetail();
+  } else {
+    if (window.mobileDetailOpen) closeMobileDetail();
+    var mobileRoot = document.getElementById('mobile-list-view');
+    if (mobileRoot) mobileRoot.hidden = true;
+    if (typeof fitToView === 'function') {
+      setTimeout(function () { fitToView(); }, 80);
+    }
   }
 }
 
@@ -1361,8 +1367,8 @@ function renderMobileBottomNav() {
   var stepLabel = stepName === 'すべて' ? '全ステップ' : stepName;
   nav.innerHTML =
     '<button type="button" class="mobile-bottom-btn' + presClass + '" onclick="togglePresentationMode()">🎬 ' + presLabel + '</button>' +
-    '<span class="mobile-bottom-step">' + escapeMobileHtml(stepLabel) + '</span>' +
-    '<button type="button" class="mobile-bottom-btn" onclick="document.getElementById(\'mobile-overview-panel\').scrollIntoView({behavior:\'smooth\'})">🗺 マップ</button>';
+    '<button type="button" class="mobile-bottom-btn mobile-bottom-btn-accent" onclick="setViewMode(\'canvas\')" title="2Dキャンバス表示に切り替え">🗺 キャンバス</button>' +
+    '<span class="mobile-bottom-step">' + escapeMobileHtml(stepLabel) + '</span>';
 }
 
 function renderMobileDetailContent(note) {
@@ -1912,7 +1918,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.18 pc-layout-fix (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.19 mobile-toggle-fix (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();
