@@ -1542,7 +1542,7 @@ body.light-theme .pres-btn {
 
 .view-mode-btn-pres {
   margin-left: auto;
-  min-width: 52px;
+  min-width: 44px;
   padding: 6px 10px;
 }
 
@@ -1552,8 +1552,42 @@ body.light-theme .pres-btn {
   color: #fff;
 }
 
+.mobile-tag-filter-wrap {
+  display: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(34vw, 128px);
+}
+
+body.view-mobile-ui .mobile-tag-filter-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.mobile-tag-filter {
+  width: 100%;
+  min-height: 36px;
+  max-height: 36px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+}
+
+body.light-theme .mobile-tag-filter {
+  background: rgba(15, 23, 42, 0.04);
+}
+
 @media (min-width: 769px) {
   #mobile-pres-toggle-btn {
+    display: none !important;
+  }
+
+  .mobile-tag-filter-wrap {
     display: none !important;
   }
 }
@@ -2288,52 +2322,6 @@ body.mobile-detail-open:not(.mobile-canvas-detail) .mobile-detail-backdrop {
   flex-shrink: 0;
 }
 
-.mobile-tag-filter-wrap {
-  display: none;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
-}
-
-body.view-mobile-ui .mobile-tag-filter-wrap {
-  display: flex;
-}
-
-.mobile-tag-filter-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-.mobile-tag-filter {
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 36px;
-  padding: 4px 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-dark);
-  color: var(--text-primary);
-  font-size: 0.82rem;
-  font-family: var(--font-body);
-}
-
-body.light-theme .mobile-tag-filter {
-  background: #fff;
-}
-
-.mobile-tag-filter-count {
-  flex: 0 0 auto;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--accent-blue);
-  white-space: nowrap;
-}
-
 .mobile-mode-hint {
   margin: 0;
   padding: 6px 12px;
@@ -2464,16 +2452,12 @@ body.view-effective-list .control-panel {
     order: 1;
   }
 
-  body.view-mobile-ui .mobile-tag-filter-wrap {
+  body.view-mobile-ui .mobile-mode-hint {
     order: 2;
   }
 
-  body.view-mobile-ui .mobile-mode-hint {
-    order: 3;
-  }
-
   body.view-mobile-ui.view-effective-canvas #mobile-detail-sheet {
-    order: 4;
+    order: 3;
   }
 
   body.view-mobile-ui.view-effective-canvas .whiteboard-container {

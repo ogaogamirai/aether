@@ -1214,7 +1214,6 @@ function getMobileBrowseNotes() {
 function renderMobileTagFilter() {
   var wrap = document.getElementById('mobile-tag-filter-wrap');
   var sel = document.getElementById('mobile-tag-filter');
-  var countEl = document.getElementById('mobile-tag-filter-count');
   if (!wrap || !sel) return;
   if (!isNarrowViewport()) {
     wrap.hidden = true;
@@ -1227,7 +1226,12 @@ function renderMobileTagFilter() {
   }
   wrap.hidden = false;
   var current = window.activeTag === null || window.activeTag === undefined ? '' : String(window.activeTag);
-  sel.innerHTML = '<option value="">すべて</option>' + tags.map(function (t) {
+  var all = getNotesSortedForMobileList();
+  var pool = getMobileDetailNavigatePool();
+  var countLabel = window.activeTag
+    ? pool.length + ' / ' + all.length + ' 件'
+    : all.length + ' 件';
+  sel.innerHTML = '<option value="">すべて (' + all.length + ')</option>' + tags.map(function (t) {
     return '<option value="' + escapeMobileHtml(t) + '">' + escapeMobileHtml(t) + '</option>';
   }).join('');
   sel.value = tags.indexOf(current) >= 0 || current === '' ? current : '';
@@ -1236,13 +1240,7 @@ function renderMobileTagFilter() {
     current = '';
     sel.value = '';
   }
-  var pool = getMobileDetailNavigatePool();
-  var all = getNotesSortedForMobileList();
-  if (countEl) {
-    countEl.textContent = window.activeTag
-      ? pool.length + ' / ' + all.length + ' 件'
-      : all.length + ' 件';
-  }
+  sel.title = 'タグで絞り込み · ' + countLabel;
 }
 
 function setMobileTagFilter(value) {
@@ -2308,7 +2306,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.25 mobile-tag-filter-mode-hints (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.26 mobile-tag-filter-in-view-bar (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();

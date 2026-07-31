@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.25">
+  <link rel="stylesheet" href="style.css?v=4.0.26">
 </head>
 <body class="light-theme">
 
@@ -21,6 +21,11 @@
     <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode('auto')" title="スマホではグラフ表示（推奨）">自動</button>
     <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode('list')" title="テキスト中心・グラフ非表示">読む</button>
     <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode('canvas')" title="配置マップを見る・付箋タップで詳細">見る</button>
+    <div id="mobile-tag-filter-wrap" class="mobile-tag-filter-wrap" hidden>
+      <select id="mobile-tag-filter" class="mobile-tag-filter" aria-label="タグで付箋を絞り込み" onchange="setMobileTagFilter(this.value)">
+        <option value="">すべて</option>
+      </select>
+    </div>
     <button type="button" id="mobile-pres-toggle-btn" class="view-mode-btn view-mode-btn-pres" onclick="togglePresentationMode()" title="プレゼンモード ON/OFF">🎬</button>
   </div>
 
@@ -33,14 +38,6 @@
   </div>
 
   <nav id="mobile-node-strip" class="mobile-node-strip" aria-label="付箋切替" hidden></nav>
-
-  <div id="mobile-tag-filter-wrap" class="mobile-tag-filter-wrap" hidden>
-    <label class="mobile-tag-filter-label" for="mobile-tag-filter">タグ</label>
-    <select id="mobile-tag-filter" class="mobile-tag-filter" aria-label="タグで付箋を絞り込み" onchange="setMobileTagFilter(this.value)">
-      <option value="">すべて</option>
-    </select>
-    <span id="mobile-tag-filter-count" class="mobile-tag-filter-count"></span>
-  </div>
 
   <p id="mobile-mode-hint" class="mobile-mode-hint" hidden></p>
 
