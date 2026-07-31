@@ -457,9 +457,9 @@ async function exportPortableViewer() {
       '<body class="light-theme">',
       '  <div id="view-mode-bar" class="view-mode-bar" role="toolbar" aria-label="スマホ表示切替">',
       '    <span class="view-mode-label">スマホ</span>',
-      '    <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode(\'auto\')" title="キャンバス（グラフ）表示。狭い画面でも配置が見える">自動</button>',
-      '    <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode(\'list\')" title="テキスト一覧モード（グラフ非表示）">一覧</button>',
-      '    <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode(\'canvas\')" title="2Dキャンバス表示">キャンバス</button>',
+      '    <button type="button" class="view-mode-btn" data-view-mode="auto" onclick="setViewMode(\'auto\')" title="スマホではグラフ表示（推奨）">自動</button>',
+      '    <button type="button" class="view-mode-btn" data-view-mode="list" onclick="setViewMode(\'list\')" title="テキスト中心・グラフ非表示">読む</button>',
+      '    <button type="button" class="view-mode-btn" data-view-mode="canvas" onclick="setViewMode(\'canvas\')" title="配置マップを見る・付箋タップで詳細">見る</button>',
       '    <button type="button" id="mobile-pres-toggle-btn" class="view-mode-btn view-mode-btn-pres" onclick="togglePresentationMode()" title="プレゼンモード ON/OFF">🎬</button>',
       '  </div>',
       '  <div class="tags-bar-toggle-float" id="tags-bar-toggle-wrap" hidden>',
@@ -470,6 +470,14 @@ async function exportPortableViewer() {
       '    </label>',
       '  </div>',
       '  <nav id="mobile-node-strip" class="mobile-node-strip" aria-label="付箋切替" hidden></nav>',
+      '  <div id="mobile-tag-filter-wrap" class="mobile-tag-filter-wrap" hidden>',
+      '    <label class="mobile-tag-filter-label" for="mobile-tag-filter">タグ</label>',
+      '    <select id="mobile-tag-filter" class="mobile-tag-filter" aria-label="タグで付箋を絞り込み" onchange="setMobileTagFilter(this.value)">',
+      '      <option value="">すべて</option>',
+      '    </select>',
+      '    <span id="mobile-tag-filter-count" class="mobile-tag-filter-count"></span>',
+      '  </div>',
+      '  <p id="mobile-mode-hint" class="mobile-mode-hint" hidden></p>',
       '  <div id="mobile-detail-backdrop" class="mobile-detail-backdrop" hidden onclick="closeMobileDetail()"></div>',
       '  <div id="mobile-detail-sheet" class="mobile-detail-sheet" hidden role="dialog" aria-modal="true" aria-labelledby="mobile-detail-title">',
       '    <header class="mobile-detail-header">',
@@ -645,4 +653,4 @@ async function exportPortableViewer() {
 }
 
 // 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
-window.__AETHER_EXPORT_BUILD__ = 'L2.9-mobile-nav-all-notes-v4.0.24';
+window.__AETHER_EXPORT_BUILD__ = 'L3.0-mobile-tag-filter-v4.0.25';

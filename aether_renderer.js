@@ -953,4 +953,6 @@ function filterByTag(tag) {
 
   // 2. SVG関係線およびカスタム図形の再描画
   drawAllShapes();
+
+  if (typeof afterMobileTagFilterChange === 'function') afterMobileTagFilterChange();
 }

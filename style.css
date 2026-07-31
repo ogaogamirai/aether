@@ -2288,6 +2288,74 @@ body.mobile-detail-open:not(.mobile-canvas-detail) .mobile-detail-backdrop {
   flex-shrink: 0;
 }
 
+.mobile-tag-filter-wrap {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+body.view-mobile-ui .mobile-tag-filter-wrap {
+  display: flex;
+}
+
+.mobile-tag-filter-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.mobile-tag-filter {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 36px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-family: var(--font-body);
+}
+
+body.light-theme .mobile-tag-filter {
+  background: #fff;
+}
+
+.mobile-tag-filter-count {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  white-space: nowrap;
+}
+
+.mobile-mode-hint {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  background: rgba(59, 130, 246, 0.06);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+body.light-theme .mobile-mode-hint {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.mobile-strip-empty {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  padding: 4px 2px;
+  white-space: nowrap;
+}
+
 body.light-theme .mobile-node-strip {
   background: rgba(248, 250, 252, 0.96);
 }
@@ -2354,6 +2422,15 @@ body.view-mobile-ui.view-effective-canvas .mobile-node-strip {
   font-size: 0.74rem;
 }
 
+body.view-mobile-ui {
+  flex-direction: column;
+}
+
+body.view-mobile-ui #mobile-list-view {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 /* スマホ表示モードのみ: 縦積みレイアウト */
 body.view-effective-list {
   flex-direction: column;
@@ -2387,12 +2464,20 @@ body.view-effective-list .control-panel {
     order: 1;
   }
 
-  body.view-mobile-ui.view-effective-canvas #mobile-detail-sheet {
+  body.view-mobile-ui .mobile-tag-filter-wrap {
     order: 2;
   }
 
-  body.view-mobile-ui.view-effective-canvas .whiteboard-container {
+  body.view-mobile-ui .mobile-mode-hint {
     order: 3;
+  }
+
+  body.view-mobile-ui.view-effective-canvas #mobile-detail-sheet {
+    order: 4;
+  }
+
+  body.view-mobile-ui.view-effective-canvas .whiteboard-container {
+    order: 5;
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
@@ -2400,7 +2485,7 @@ body.view-effective-list .control-panel {
   }
 
   body.view-mobile-ui.view-effective-canvas .control-panel {
-    order: 4;
+    order: 6;
     flex: 0 0 36%;
     width: 100%;
     height: auto;

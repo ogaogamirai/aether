@@ -115,7 +115,8 @@ function applyDSL(options) {
     });
   }
 
-  if (typeof renderMobileListView === 'function') renderMobileListView();
+  renderMobileListView();
+  if (typeof renderMobileTagFilter === 'function') renderMobileTagFilter();
   if (typeof applyViewModeLayout === 'function') applyViewModeLayout();
 }
 
@@ -1188,6 +1189,101 @@ function escapeMobileHtml(text) {
     .replace(/"/g, '&quot;');
 }
 
+function noteMatchesActiveTag(note) {
+  if (!note || window.activeTag === null || window.activeTag === undefined) return true;
+  return !!(note.tags && note.tags.indexOf(window.activeTag) >= 0);
+}
+
+function collectAllBoardTags() {
+  var tags = new Set();
+  var source = (typeof notes !== 'undefined' && notes) ? notes : (window.notes || []);
+  source.forEach(function (n) {
+    if (n.tags) n.tags.forEach(function (t) { if (t) tags.add(t); });
+  });
+  return Array.from(tags).sort();
+}
+
+function getMobileBrowseNotes() {
+  var pool = getMobileDetailNavigatePool();
+  if (window.isPresentationMode) {
+    return pool.filter(noteVisibleInCurrentContext);
+  }
+  return pool;
+}
+
+function renderMobileTagFilter() {
+  var wrap = document.getElementById('mobile-tag-filter-wrap');
+  var sel = document.getElementById('mobile-tag-filter');
+  var countEl = document.getElementById('mobile-tag-filter-count');
+  if (!wrap || !sel) return;
+  if (!isNarrowViewport()) {
+    wrap.hidden = true;
+    return;
+  }
+  var tags = collectAllBoardTags();
+  if (!tags.length) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  var current = window.activeTag === null || window.activeTag === undefined ? '' : String(window.activeTag);
+  sel.innerHTML = '<option value="">すべて</option>' + tags.map(function (t) {
+    return '<option value="' + escapeMobileHtml(t) + '">' + escapeMobileHtml(t) + '</option>';
+  }).join('');
+  sel.value = tags.indexOf(current) >= 0 || current === '' ? current : '';
+  if (current && sel.value !== current) {
+    window.activeTag = null;
+    current = '';
+    sel.value = '';
+  }
+  var pool = getMobileDetailNavigatePool();
+  var all = getNotesSortedForMobileList();
+  if (countEl) {
+    countEl.textContent = window.activeTag
+      ? pool.length + ' / ' + all.length + ' 件'
+      : all.length + ' 件';
+  }
+}
+
+function setMobileTagFilter(value) {
+  if (typeof filterByTag === 'function') {
+    filterByTag(value === '' ? null : value);
+  }
+}
+
+function afterMobileTagFilterChange() {
+  renderMobileTagFilter();
+  renderMobileNodeStrip();
+  if (typeof renderMobileListView === 'function') renderMobileListView();
+  if (window.mobileDetailOpen && window.focusedNoteId) {
+    var pool = getMobileDetailNavigatePool();
+    var still = pool.find(function (n) { return String(n.id) === String(window.focusedNoteId); });
+    if (still) {
+      updateMobileDetailPosition(still.id);
+    } else if (pool.length) {
+      var drawerMode = document.body.classList.contains('mobile-canvas-detail');
+      openMobileDetail(pool[0].id, { drawer: drawerMode });
+    } else if (typeof closeMobileDetail === 'function') {
+      closeMobileDetail();
+    }
+  }
+}
+
+function renderMobileModeHint() {
+  var el = document.getElementById('mobile-mode-hint');
+  if (!el) return;
+  if (!isNarrowViewport()) {
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  if (getEffectiveViewMode() === 'list') {
+    el.textContent = '読むモード — グラフは非表示。付箋をテキストで順に読む向け。タグで絞り込み可。';
+  } else {
+    el.textContent = '見るモード — 配置マップ＋付箋ストリップ。タップで詳細、タグで表示を絞る。';
+  }
+}
+
 function noteVisibleInCurrentContext(note) {
   if (!note) return false;
   if (window.isPresentationMode && typeof isTimeVisible === 'function') {
@@ -1351,6 +1447,9 @@ function applyViewModeLayout() {
   if (isNarrowViewport()) document.body.classList.add('view-mobile-ui');
   updateViewModeButtons();
   applyTagsBarVisibility();
+  updateMobilePresToggle();
+  renderMobileTagFilter();
+  renderMobileModeHint();
 
   var viewBar = document.getElementById('view-mode-bar');
   if (viewBar) viewBar.hidden = false;
@@ -1472,9 +1571,11 @@ function renderMobileOverviewPanel() {
   }
 
   var indexRows = allNotes.map(function (note, i) {
-    var hidden = !noteVisibleInCurrentContext(note);
+    var tagHidden = !noteMatchesActiveTag(note);
+    var hidden = !noteVisibleInCurrentContext(note) || tagHidden;
     var active = window.focusedNoteId === note.id ? ' active' : '';
     var dim = hidden ? ' dimmed' : '';
+    if (tagHidden && window.activeTag) return '';
     return '<button type="button" class="mobile-index-row' + active + dim + '" onclick="openMobileDetail(\'' + note.id + '\')">' +
       '<span class="mobile-index-num">' + (i + 1) + '</span>' +
       '<span class="mobile-index-stripe ' + note.color + '"></span>' +
@@ -1484,14 +1585,15 @@ function renderMobileOverviewPanel() {
 
   panel.innerHTML =
     '<div class="mobile-overview-head">' +
-      '<h2 class="mobile-overview-title">一覧モード</h2>' +
-      '<p class="mobile-overview-lead">グラフは非表示です。テキスト中心で読むとき用。「キャンバス」に戻ると配置マップが見えます。</p>' +
+      '<h2 class="mobile-overview-title">読むモード</h2>' +
+      '<p class="mobile-overview-lead">グラフは非表示。付箋をテキストで読む向け。「見る」に切り替えると配置マップが見えます。</p>' +
       renderMobileStatChips(allNotes.length, visible.length, relCount) +
     '</div>' +
     renderMobileMiniMap(allNotes) +
     stepBlock +
     '<details class="mobile-index-panel">' +
-      '<summary class="mobile-index-summary">全付箋を番号順に見る（' + allNotes.length + '件）</summary>' +
+      '<summary class="mobile-index-summary">付箋を番号順に見る（' +
+        (window.activeTag ? getMobileDetailNavigatePool().length + ' / ' : '') + allNotes.length + '件）</summary>' +
       '<div class="mobile-index-list">' + indexRows + '</div>' +
     '</details>';
 }
@@ -1499,17 +1601,26 @@ function renderMobileOverviewPanel() {
 function renderMobileBrowseList() {
   var scroll = document.getElementById('mobile-list-scroll');
   if (!scroll) return;
-  var visible = getMobileVisibleNotes();
+  var visible = getMobileBrowseNotes();
   var allNotes = getNotesSortedForMobileList();
+  var navNotes = getMobileDetailNavigatePool();
 
   if (!visible.length) {
     scroll.innerHTML =
       '<div class="mobile-list-section-label">いま表示中の付箋</div>' +
-      '<div class="mobile-list-empty"><span class="mobile-list-empty-icon">📋</span><p>このステップでは表示する付箋がありません。<br>上の「時系列ステップ」を切り替えてください。</p></div>';
+      '<div class="mobile-list-empty"><span class="mobile-list-empty-icon">📋</span><p>' +
+      (window.activeTag
+        ? 'タグ「' + escapeMobileHtml(window.activeTag) + '」に該当する付箋がありません。<br>タグを「すべて」に戻してください。'
+        : 'このステップでは表示する付箋がありません。<br>上の「時系列ステップ」を切り替えてください。') +
+      '</p></div>';
     return;
   }
 
-  var html = '<div class="mobile-list-section-label">いま表示中の付箋（' + visible.length + '件）— タップで詳細。全' + allNotes.length + '件は上の「全付箋を番号順に見る」から</div>';
+  var html = '<div class="mobile-list-section-label">表示中の付箋（' + visible.length + '件';
+  if (window.activeTag || navNotes.length !== allNotes.length) {
+    html += ' / 全' + allNotes.length + '件中';
+  }
+  html += '）— タップで詳細</div>';
   html += visible.map(function (note) {
     var globalIdx = allNotes.findIndex(function (n) { return n.id === note.id; }) + 1;
     var active = window.focusedNoteId === note.id ? ' active' : '';
@@ -1608,7 +1719,7 @@ function updateMobilePresToggle() {
 }
 
 function getMobileDetailNavigatePool() {
-  return getNotesSortedForMobileList();
+  return getNotesSortedForMobileList().filter(noteMatchesActiveTag);
 }
 
 function renderMobileNodeStrip() {
@@ -1620,18 +1731,22 @@ function renderMobileNodeStrip() {
     return;
   }
   var allNotes = getNotesSortedForMobileList();
-  if (!allNotes.length) {
-    strip.hidden = true;
-    strip.innerHTML = '';
+  var navNotes = getMobileDetailNavigatePool();
+  if (!navNotes.length) {
+    strip.hidden = false;
+    strip.innerHTML = '<span class="mobile-strip-empty">' +
+      (window.activeTag ? 'タグ「' + escapeMobileHtml(window.activeTag) + '」の付箋はありません' : '付箋がありません') +
+    '</span>';
     return;
   }
   strip.hidden = false;
-  strip.innerHTML = allNotes.map(function (note, i) {
+  strip.innerHTML = navNotes.map(function (note) {
+    var globalIdx = allNotes.findIndex(function (n) { return String(n.id) === String(note.id); }) + 1;
     var hidden = !noteVisibleInCurrentContext(note);
     var active = String(window.focusedNoteId) === String(note.id) ? ' active' : '';
     var dim = hidden ? ' dimmed' : '';
     return '<button type="button" class="mobile-strip-chip' + active + dim + '" data-note-id="' + escapeMobileHtml(String(note.id)) + '" title="' + escapeMobileHtml(note.content) + '">' +
-      '<span class="mobile-strip-num">' + (i + 1) + '</span>' +
+      '<span class="mobile-strip-num">' + globalIdx + '</span>' +
       '<span class="mobile-strip-stripe ' + note.color + '"></span>' +
       '<span class="mobile-strip-label">' + escapeMobileHtml(note.content) + '</span>' +
     '</button>';
@@ -2193,7 +2308,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.24 mobile-nav-all-notes (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.25 mobile-tag-filter-mode-hints (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();
