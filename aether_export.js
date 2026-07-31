@@ -651,4 +651,4 @@ async function exportPortableViewer() {
 }
 
 // 読込確認用（DevTools で window.__AETHER_EXPORT_BUILD__ を確認）
-window.__AETHER_EXPORT_BUILD__ = 'L3.0-mobile-tag-filter-v4.0.26';
+window.__AETHER_EXPORT_BUILD__ = 'L3.0-mobile-tag-filter-v4.0.27';

@@ -1148,6 +1148,7 @@ function applyTagsBarVisibility() {
 // --- Responsive / mobile list view v2 (overview + browse + detail sheet) ---
 var AETHER_VIEW_MODE_KEY = 'aether_view_mode';
 var AETHER_VIEW_BREAKPOINT = 768;
+var _aetherWasNarrow = typeof window !== 'undefined' && window.innerWidth < AETHER_VIEW_BREAKPOINT;
 window.mobileDetailOpen = false;
 
 function isNarrowViewport() {
@@ -1436,13 +1437,35 @@ function updateViewModeButtons() {
   });
 }
 
+function cleanupDesktopFromMobileLayout() {
+  if (typeof closeMobileDetail === 'function') closeMobileDetail();
+  document.body.classList.remove('mobile-detail-open', 'mobile-canvas-detail');
+  if (window.activeTag !== null && typeof filterByTag === 'function') {
+    filterByTag(null);
+  } else if (typeof renderCanvas === 'function') {
+    renderCanvas();
+  }
+  if (typeof fitToView === 'function') {
+    setTimeout(function () { fitToView(); }, 80);
+  }
+}
+
 function applyViewModeLayout() {
+  var narrow = isNarrowViewport();
+  var leavingMobile = _aetherWasNarrow && !narrow;
   var pref = getViewModePreference();
   var effective = getEffectiveViewMode();
+
+  if (leavingMobile && pref === 'list') {
+    try { localStorage.setItem(AETHER_VIEW_MODE_KEY, 'auto'); } catch (err) { /* ignore */ }
+    pref = 'auto';
+    effective = 'canvas';
+  }
+
   document.body.classList.remove('view-pref-auto', 'view-pref-canvas', 'view-pref-list', 'view-effective-canvas', 'view-effective-list', 'view-mobile-ui');
   document.body.classList.add('view-pref-' + pref);
   document.body.classList.add('view-effective-' + effective);
-  if (isNarrowViewport()) document.body.classList.add('view-mobile-ui');
+  if (narrow) document.body.classList.add('view-mobile-ui');
   updateViewModeButtons();
   applyTagsBarVisibility();
   updateMobilePresToggle();
@@ -1450,7 +1473,9 @@ function applyViewModeLayout() {
   renderMobileModeHint();
 
   var viewBar = document.getElementById('view-mode-bar');
-  if (viewBar) viewBar.hidden = false;
+  if (viewBar) viewBar.hidden = !narrow;
+
+  if (leavingMobile) cleanupDesktopFromMobileLayout();
 
   if (effective === 'list') {
     renderMobileListView();
@@ -1483,6 +1508,8 @@ function applyViewModeLayout() {
       setTimeout(function () { fitToView(); }, 80);
     }
   }
+
+  _aetherWasNarrow = narrow;
 }
 
 function renderMobileMiniMap(notesList) {
@@ -2306,7 +2333,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.26 mobile-tag-filter-in-view-bar (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.27 desktop-cleanup-on-resize (dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();
