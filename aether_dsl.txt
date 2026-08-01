@@ -3,7 +3,7 @@
 
 # === STICKIES ===
 sticky N1_sentiment_diff "朝鮮・台湾の対日感情・定量比較" {
-  pos: 1000 100
+  pos: 1000 80
   color: "purple"
   tags: "思考の起点 問題意識 定量比較"
   time: "Step1_起点"
@@ -12,7 +12,7 @@ sticky N1_sentiment_diff "朝鮮・台湾の対日感情・定量比較" {
 }
 
 sticky N25_final_reevaluation_conclusion "【最終総合結論】日本の植民地・外地統治政策の史実的再評価" {
-  pos: 1800 100
+  pos: 1800 80
   color: "red"
   tags: "最終総合結論 史実的再評価 本国直投 全民教育 寿命倍増 自虐史観克服"
   time: "Step9_最終結論"
@@ -21,7 +21,7 @@ sticky N25_final_reevaluation_conclusion "【最終総合結論】日本の植�
 }
 
 sticky N6_taiwan_sentiment "台湾における対日親近感・感謝の歴史的背景" {
-  pos: 100 500
+  pos: 100 400
   color: "green"
   tags: "台湾対日感情 八田與一 飛虎将軍 二二八事件 治水・教育"
   time: "Step3_台湾感情分析"
@@ -30,7 +30,7 @@ sticky N6_taiwan_sentiment "台湾における対日親近感・感謝の歴史�
 }
 
 sticky N4_korea_premises "朝鮮人の対日感情：価値観と事実認識の分類" {
-  pos: 700 500
+  pos: 700 400
   color: "orange"
   tags: "価値観 事実認識"
   time: "Step4_二大軸分類"
@@ -39,25 +39,25 @@ sticky N4_korea_premises "朝鮮人の対日感情：価値観と事実認識の
 }
 
 sticky N5_premise_verification "価値観・事実認識の史実・ファクト検証" {
-  pos: 700 850
+  pos: 700 750
   color: "red"
   tags: "史実検証結論 水車技術落差 土地所有権確定 氏姓二重構造 寿命倍増 正当性欠如"
   time: "Step4_二大軸検証"
-  tone: "stable"
+  tone: "excited"
   desc: "【概要・検証結果】独立史実基盤（N9, N10）および統計・法制データに基づくファクト検証の結果、朝鮮側の主張前提である『事実認識』（古代からの技術優越という錯覚、水車未導入の遅れ無視、所有権確定や数十兆円直投を「収奪」とする誤解、氏と姓の二重構造誤解、文化侵略・言語抹殺説の虚妄、寿命倍増の成果無視）はいずれも客観的史実データと著しく矛盾し正当性を欠く。\n\n| 分類領域 | 【事実認識】に対する史実・データ検証 | 【価値観】と客観的実態の整合性評価 |\n|---|---|---|\n| 1. 文明・文化領域 | 独立史実基盤(N9, N10)より、朝鮮は中国文化の通過点にとどまり19世紀まで水車未導入。ハングルは総督府が普及。日本は古代から自前技術・堂島米市場・寺子屋(70%)を大開花 | 古代〜近世を通じた日本の圧倒的優位に対し、「自国が文化・文明的に優位」とする事実認識は正反対の観念的錯覚 |\n| 2. 経済・開発領域 | 土地調査は所有権確定。米移出は正当代金の対日貿易（現金流入）。累計数十兆円の直投 | 「一方的奪奪・収奪」という事実認識は、多大資本・物資の直接流入実態と矛盾 |\n| 3. 血統・家制度領域 | 創氏改名は「氏」の創設。伝統の「姓（金・朴等）・本貫」は戸籍裏に永久保存（改名任意<10%） | 「姓の抹殺」という事実認識は、氏と姓を別物として扱う近代二重法構造の誤解に基づく |\n| 4. 歴史・主体領域 | 平均寿命が24歳から56歳へ倍増。就学率が5%から49%へ急拡大 | 生命保護と発展の実質的成果を全否定し日本に全責任転嫁する事実認識は妥当性を欠く |"
 }
 
 sticky N2_taiwan_governance "台湾における日本統治" {
-  pos: 100 1250
+  pos: 100 1150
   color: "blue"
   tags: "台湾 自立成長 近代化後押し"
   time: "Step2_地域比較"
   tone: "stable"
-  desc: "【概要】日本による近代化の後押し（上水道による寿命30歳➔60歳、就学率71.3%、縦貫鉄道整備）と17億円の黒字自立成長が直接的に実感された台湾における実績と社会変化。\n\n| 指標・視点 | 客観的数値・データ | 日本による近代化後押しの実態 |\n|---|---|---|\n| 平均寿命推移 | 1905年 約30歳 ➔ 1940年代 約45〜60歳 | 1902年基隆水道・検疫・医療普及による著しい寿命伸長 |\n| 識字率推移 | 1900年初期 低水準 ➔ 1940年代 約60%〜70% | 公学校教育（就学率71.3%）を通じた高い教育水準の確立 |\n| 鉄道・インフレ | 約1,000 km | 縦貫鉄道・港湾整備による近代産業基盤の創出 |\n| 貿易収支・財政 | 受取超過（黒字） / 基礎収支17億円 | 自立型経済開発と高い生産性向上による成果 |"
+  desc: "【概要】日本による近代化の後押し（上水道による寿命30歳➔60歳、就学率71.3%、縦貫鉄道整備）と17億円の黒字自立成長が直接的に実感された台湾における実績と社会変化。\n\n| 指標・視点 | 客観的数値・データ | 日本による近代化後押しの実態 |\n|---|---|---|\n| 平均寿命推移 | 1905年 約30歳 ➔ 1940年代 約45〜60歳 | 1902年基隆水道・検疫・医療普及による著しい寿命伸長 |\n| 識字率推移 | 1900年初期 低水準 ➔ 1940年代 約60%〜70% | 公学校教育（就学率71.3%）を通じた高い教育水準の確立 |\n| 鉄道・インフラ | 約1,000 km | 縦貫鉄道・港湾整備による近代産業基盤の創出 |\n| 貿易収支・財政 | 受取超過（黒字） / 基礎収支17億円 | 自立型経済開発と高い生産性向上による成果 |"
 }
 
 sticky N7_korea_contributions "朝鮮における日本人の多大投資と技術貢献" {
-  pos: 400 1250
+  pos: 400 1150
   color: "yellow"
   tags: "朝鮮多大投資 水豊ダム 鉄道5000km 治山緑化 近代医療 円借款ソウル地下鉄"
   time: "Step3_朝鮮貢献分析"
@@ -66,7 +66,7 @@ sticky N7_korea_contributions "朝鮮における日本人の多大投資と技�
 }
 
 sticky N9_fact_base "【独立史実基盤】古代〜近代の技術・経済・生産力通史比較" {
-  pos: 700 1250
+  pos: 700 1150
   color: "purple"
   tags: "独立史実基盤 学術出典[1-6] たたら製鉄 堂島米会所 反射炉 1763通信使驚愕 水車未導入"
   time: "Step4_二大軸検証"
@@ -75,7 +75,7 @@ sticky N9_fact_base "【独立史実基盤】古代〜近代の技術・経済�
 }
 
 sticky N10_cultural_policy_facts "【詳細ファクトチェック】「文化侵略」言説の史実検証" {
-  pos: 1000 1250
+  pos: 1000 1150
   color: "purple"
   tags: "文化侵略検証 ハングル綴字法統一 創氏改名二重法構造 本貫保存 文化財保護"
   time: "Step4_二大軸検証"
@@ -84,7 +84,7 @@ sticky N10_cultural_policy_facts "【詳細ファクトチェック】「文化�
 }
 
 sticky N11_western_colonial_overview "【新探究】欧米列強 ⇔ 日本 統治政策の構造的比較" {
-  pos: 1400 500
+  pos: 1400 400
   color: "purple"
   tags: "新探究 欧米比較 学術論文[1-24] 構造的相違"
   time: "Step5_欧米比較"
@@ -93,7 +93,7 @@ sticky N11_western_colonial_overview "【新探究】欧米列強 ⇔ 日本 統
 }
 
 sticky N12_western_finance_extraction "1. 財政・資本：搾取型本国回収 vs 巨額本国直投" {
-  pos: 1400 850
+  pos: 1400 750
   color: "blue"
   tags: "財政流出入 ベルギーコンゴ オランダ栽培制度 本国直投"
   time: "Step5_欧米比較"
@@ -102,7 +102,7 @@ sticky N12_western_finance_extraction "1. 財政・資本：搾取型本国回�
 }
 
 sticky N13_western_education_literacy "2. 教育：愚民化・選別 vs 全体普通教育の急拡大" {
-  pos: 1400 1150
+  pos: 1400 1050
   color: "green"
   tags: "教育比較 愚民化政策 インドネシア文盲率 就学率71.3%"
   time: "Step5_欧米比較"
@@ -111,7 +111,7 @@ sticky N13_western_education_literacy "2. 教育：愚民化・選別 vs 全体�
 }
 
 sticky N14_western_health_monoculture "3. 衛生・産業：モノカルチャー vs 重工業化・寿命倍増" {
-  pos: 1400 1450
+  pos: 1400 1350
   color: "yellow"
   tags: "公衆衛生 モノカルチャー 水豊ダム 寿命倍増"
   time: "Step5_欧米比較"
@@ -120,7 +120,7 @@ sticky N14_western_health_monoculture "3. 衛生・産業：モノカルチャ�
 }
 
 sticky N15_western_divide_and_rule "4. 行政・支配：分割統治 vs 法治主義・直接同化" {
-  pos: 1400 1750
+  pos: 1400 1650
   color: "orange"
   tags: "分割統治 DivideAndRule 英外交官報告 法治主義"
   time: "Step5_欧米比較"
@@ -129,7 +129,7 @@ sticky N15_western_divide_and_rule "4. 行政・支配：分割統治 vs 法治�
 }
 
 sticky N16_americas_colonial_overview "【新探究】南北アメリカ植民地政策 ⇔ 日本統治の比較" {
-  pos: 1800 500
+  pos: 1800 400
   color: "purple"
   tags: "南北アメリカ ポトシ銀山 人口激減 涙の道 奴隷貿易"
   time: "Step6_南北アメリカ比較"
@@ -138,7 +138,7 @@ sticky N16_americas_colonial_overview "【新探究】南北アメリカ植民�
 }
 
 sticky N17_latin_america_spain_portugal "1. 中南米：ポトシ銀山・先住民80%減殺・黒人奴隷貿易" {
-  pos: 1800 850
+  pos: 1800 750
   color: "blue"
   tags: "中南米 スペイン エンコミエンダ ポトシ銀山 奴隷貿易 ラス・カスタス"
   time: "Step6_南北アメリカ比較"
@@ -147,7 +147,7 @@ sticky N17_latin_america_spain_portugal "1. 中南米：ポトシ銀山・先住
 }
 
 sticky N18_north_america_uk_usa "2. 北米：インディアン強制移住法・保留地・奴隷制" {
-  pos: 1800 1150
+  pos: 1800 1050
   color: "yellow"
   tags: "北米 イギリス アメリカ ManifestDestiny 涙の道 保留地"
   time: "Step6_南北アメリカ比較"
@@ -156,7 +156,7 @@ sticky N18_north_america_uk_usa "2. 北米：インディアン強制移住法�
 }
 
 sticky N19_japanese_ideology_overview "【新探究】日本の植民地・外地統治政策の根本理念・背景・現実" {
-  pos: 2200 500
+  pos: 2200 400
   color: "purple"
   tags: "根本理念 一視同仁 内地方制主義 生物学の原則 東アジア自立"
   time: "Step7_日本統治理念"
@@ -165,7 +165,7 @@ sticky N19_japanese_ideology_overview "【新探究】日本の植民地・外�
 }
 
 sticky N20_japanese_ideology_core_four "1. 日本統治の4大根本理念と歴史的背景" {
-  pos: 2200 850
+  pos: 2200 750
   color: "blue"
   tags: "一視同仁 内地方制主義 生物学の原則 東アジア自立 防衛危機感"
   time: "Step7_日本統治理念"
@@ -174,7 +174,7 @@ sticky N20_japanese_ideology_core_four "1. 日本統治の4大根本理念と歴
 }
 
 sticky N21_japanese_ideology_reality_friction "2. 理想的理念の現実（成果）と戦時下の歴史的摩擦" {
-  pos: 2200 1150
+  pos: 2200 1050
   color: "yellow"
   tags: "嘉南大圳 水豊ダム 就学率急増 寿命倍増 皇民化 摩擦"
   time: "Step7_日本統治理念"
@@ -183,7 +183,7 @@ sticky N21_japanese_ideology_reality_friction "2. 理想的理念の現実（成
 }
 
 sticky N22_textbook_media_overview "【新探究】日本の教科書記述・マスメディア論調における統治評価" {
-  pos: 2600 500
+  pos: 2600 400
   color: "purple"
   tags: "教科書記述 メディア論調 自虐史観 WGIP 近隣諸国条項"
   time: "Step8_教科書メディア分析"
@@ -192,7 +192,7 @@ sticky N22_textbook_media_overview "【新探究】日本の教科書記述・�
 }
 
 sticky N23_textbook_descriptions "1. 歴史教科書記述：加害・自虐偏向と客観的開発ファクトの欠落" {
-  pos: 2600 850
+  pos: 2600 750
   color: "blue"
   tags: "東京書籍 山川出版社 土地調査 創氏改名 ハングル 育鵬社 自由社"
   time: "Step8_教科書メディア分析"
@@ -201,7 +201,7 @@ sticky N23_textbook_descriptions "1. 歴史教科書記述：加害・自虐偏�
 }
 
 sticky N24_media_trends_wgip "2. メディア論調：革新系追認 vs 保守系ファクト主張 ＆ 偏向要因" {
-  pos: 2600 1150
+  pos: 2600 1050
   color: "yellow"
   tags: "朝日新聞 毎日新聞 産経新聞 正論 WGIP 近隣諸国条項"
   time: "Step8_教科書メディア分析"
@@ -210,151 +210,183 @@ sticky N24_media_trends_wgip "2. メディア論調：革新系追認 vs 保守�
 }
 
 # === DRAWINGS ===
-drawing area_top "思考の起点と最終総合結論（最上段ヘッダー）" {
+drawing area_crown "👑 探究の冠：思考の起点 ＆ 🔴 最終総合結論（最上段スターバースト）" {
   type: "circle-area"
   targets: "N1_sentiment_diff N25_final_reevaluation_conclusion"
   color: "red"
 }
 
-drawing area_left "対日感情の解明と史実・ファクト検証エリア（左ブロック）" {
+drawing area_east_asia "🌸 東アジア対日感情と独立史実ファクト基盤エリア" {
   type: "circle-area"
   targets: "N6_taiwan_sentiment N4_korea_premises N5_premise_verification N2_taiwan_governance N7_korea_contributions N9_fact_base N10_cultural_policy_facts"
   color: "blue"
 }
 
-drawing area_right "世界史的比較・根本理念・自虐史観検証エリア（右ブロック）" {
+drawing area_world_comparison "🌐 欧米列強（旧大陸＆南北アメリカ）統治比較エリア" {
   type: "circle-area"
-  targets: "N11_western_colonial_overview N12_western_finance_extraction N13_western_education_literacy N14_western_health_monoculture N15_western_divide_and_rule N16_americas_colonial_overview N17_latin_america_spain_portugal N18_north_america_uk_usa N19_japanese_ideology_overview N20_japanese_ideology_core_four N21_japanese_ideology_reality_friction N22_textbook_media_overview N23_textbook_descriptions N24_media_trends_wgip"
+  targets: "N11_western_colonial_overview N12_western_finance_extraction N13_western_education_literacy N14_western_health_monoculture N15_western_divide_and_rule N16_americas_colonial_overview N17_latin_america_spain_portugal N18_north_america_uk_usa"
   color: "purple"
+}
+
+drawing area_ideology_and_media "🏛️ 日本統治の4大根本理念 ＆ 自虐史観メディア分析エリア" {
+  type: "circle-area"
+  targets: "N19_japanese_ideology_overview N20_japanese_ideology_core_four N21_japanese_ideology_reality_friction N22_textbook_media_overview N23_textbook_descriptions N24_media_trends_wgip"
+  color: "green"
 }
 
 # === RELATIONS ===
 relation N7_korea_contributions -> N5_premise_verification {
   type: "evidence"
-  label: "朝鮮巨額投資・インフラ開発ファクト"
+  label: "巨額投資・インフラ開発ファクト"
+  color: "yellow"
 }
 
 relation N9_fact_base -> N5_premise_verification {
   type: "evidence"
-  label: "古代〜近代の技術・経済通史史実基盤"
+  label: "古代〜近代の技術通史史実基盤"
+  color: "purple"
 }
 
 relation N10_cultural_policy_facts -> N5_premise_verification {
   type: "evidence"
   label: "ハングル統一・創氏改名・文化財ファクト"
+  color: "purple"
 }
 
 relation N5_premise_verification -> N4_korea_premises {
   type: "analysis"
   label: "史実ファクトによる前提認識の解明"
+  color: "red"
 }
 
 relation N4_korea_premises -> N1_sentiment_diff {
   type: "conclusion"
-  label: "感情ギャップの解明"
+  label: "感情ギャップの解明へ"
+  color: "orange"
 }
 
 relation N2_taiwan_governance -> N6_taiwan_sentiment {
   type: "evidence"
   label: "台湾統治実績・自立成長"
+  color: "blue"
 }
 
 relation N6_taiwan_sentiment -> N1_sentiment_diff {
   type: "conclusion"
   label: "台湾の親近感・感謝背景へ"
+  color: "green"
 }
 
 relation N11_western_colonial_overview -> N12_western_finance_extraction {
   type: "comparison"
   label: "1. 財政・資本比較"
+  color: "blue"
 }
 
 relation N11_western_colonial_overview -> N13_western_education_literacy {
   type: "comparison"
   label: "2. 教育・識字率比較"
+  color: "green"
 }
 
 relation N11_western_colonial_overview -> N14_western_health_monoculture {
   type: "comparison"
   label: "3. 衛生・産業比較"
+  color: "yellow"
 }
 
 relation N11_western_colonial_overview -> N15_western_divide_and_rule {
   type: "comparison"
   label: "4. 行政・支配比較"
+  color: "orange"
 }
 
 relation N11_western_colonial_overview -> N16_americas_colonial_overview {
   type: "expansion"
   label: "南北アメリカ比較へ"
+  color: "purple"
 }
 
 relation N16_americas_colonial_overview -> N17_latin_america_spain_portugal {
   type: "comparison"
-  label: "1. 中南米（スペイン・ポルトガル）"
+  label: "1. 中南米（ポトシ銀山・奴隷貿易）"
+  color: "blue"
 }
 
 relation N16_americas_colonial_overview -> N18_north_america_uk_usa {
   type: "comparison"
-  label: "2. 北米（英・米）"
+  label: "2. 北米（涙の道・保留地）"
+  color: "yellow"
 }
 
 relation N11_western_colonial_overview -> N19_japanese_ideology_overview {
   type: "expansion"
   label: "日本統治根本理念へ"
+  color: "purple"
 }
 
 relation N19_japanese_ideology_overview -> N20_japanese_ideology_core_four {
   type: "expansion"
-  label: "1. 4大根本理念と背景"
+  label: "1. 4大根本理念と歴史的背景"
+  color: "blue"
 }
 
 relation N19_japanese_ideology_overview -> N21_japanese_ideology_reality_friction {
   type: "expansion"
-  label: "2. 現実（成果）と戦時摩擦"
+  label: "2. 現実（成果）と戦時体制摩擦"
+  color: "yellow"
 }
 
 relation N19_japanese_ideology_overview -> N22_textbook_media_overview {
   type: "expansion"
   label: "教科書・メディア分析へ"
+  color: "purple"
 }
 
 relation N22_textbook_media_overview -> N23_textbook_descriptions {
   type: "expansion"
   label: "1. 歴史教科書記述分析"
+  color: "blue"
 }
 
 relation N22_textbook_media_overview -> N24_media_trends_wgip {
   type: "expansion"
   label: "2. メディア論調＆自虐要因"
+  color: "yellow"
 }
 
 relation N1_sentiment_diff -> N25_final_reevaluation_conclusion {
   type: "conclusion"
-  label: "対日感情ギャップ解明から最終再評価へ"
+  label: "感情ギャップから最終再評価へ"
+  color: "purple"
 }
 
 relation N5_premise_verification -> N25_final_reevaluation_conclusion {
   type: "conclusion"
   label: "史実ファクト検証から最終結論へ"
+  color: "red"
 }
 
 relation N11_western_colonial_overview -> N25_final_reevaluation_conclusion {
   type: "conclusion"
-  label: "欧米搾取統治との構造的対比から最終結論へ"
+  label: "欧米搾取統治との対比から最終結論へ"
+  color: "blue"
 }
 
 relation N16_americas_colonial_overview -> N25_final_reevaluation_conclusion {
   type: "conclusion"
   label: "南北アメリカ滅失支配との対比から最終結論へ"
+  color: "purple"
 }
 
 relation N19_japanese_ideology_overview -> N25_final_reevaluation_conclusion {
   type: "conclusion"
   label: "日本統治の4大根本理念から最終結論へ"
+  color: "green"
 }
 
 relation N22_textbook_media_overview -> N25_final_reevaluation_conclusion {
   type: "conclusion"
-  label: "教科書・メディア自虐偏向の克服から最終結論へ"
+  label: "自虐史観の克服から最終結論へ"
+  color: "orange"
 }
