@@ -119,6 +119,33 @@ sticky N15_western_divide_and_rule "4. 行政・支配：分割統治 vs 法治�
   desc: "【概要】欧米が民族・宗教対立を利用した「分割統治（Divide and Rule）」で分断支配したのに対し、日本が法治主義の直接適用と開発を進め、当時の英外交官報告書からも「文明的経済開発」と高く評価された統治手法の対比。\n\n| 統治手法 | 具体的史実と学術的評価 [12-14, 22] | 本質的比較特徴 |\n|---|---|---|\n| 欧米（英・荷・ベルギー） | 少数民族や宗教対立を利用し現地民同士を競わせる分割統治。特別法差別 | 分断と間接的従属の固定 |\n| アメリカ（フィリピン） | 「友愛的同化」を掲げ、立憲主義と官僚制・司法制度を構築 | 日米に共通する近代法制導入 |\n| 日本（台湾・朝鮮） | 近代法制度の直接適用と法治主義。英外交官報告は「文明的経済開発」と絶賛 | 直接統合と法治の近代整備 |"
 }
 
+sticky N16_americas_colonial_overview "【新探究】南北アメリカ植民地政策 ⇔ 日本統治の比較" {
+  pos: 2200 100
+  color: "purple"
+  tags: "南北アメリカ ポトシ銀山 人口激減 涙の道 奴隷貿易"
+  time: "Step6_南北アメリカ比較"
+  tone: "excited"
+  desc: "【概要】16〜19世紀における南北アメリカ大陸（中南米：スペイン・ポルトガル、北米：英・仏・米）の植民地政策と、日本（台湾・朝鮮）の統治政策の構造的比較。欧米が「先住民滅失・奴隷貿易・土地奪取・人種カースト制」を強行したのに対し、日本が「生命保護・平均寿命倍増・全民普通教育・巨額本国直投」を提供した歴史的真実。\n\n| 比較軸 | 中南米（スペイン・ポルトガル） | 北米（イギリス・アメリカ合衆国） | 日本の統治政策（台湾・朝鮮） | 構造的相違の本質 |\n|---|---|---|---|---|\n| 1. 先住民・生命安全 | 過酷労働（銀山）と感染症で先住民80〜90%激減 | インディアン強制移住法(1830)・涙の道・保留地 | 全域水道・予防接種で平均寿命倍増（台湾60歳・朝鮮56歳） | 欧米は滅失・排除、日本は生命安全創出 |\n| 2. 労働力・人種制度 | 大西洋黒人奴隷貿易・カースト制（ラス・カスタス） | 黒人奴隷制プランテーション・人種隔離 | 近代法適用・身分差別撤廃・全民普通教育急拡大 | 欧米は奴隷制・隔離、日本は法治・全民教育 |\n| 3. 資源・経済構造 | 銀・金の本国持ち去り（ポトシ銀山）・大農園 | 先住民土地の接収（Manifest Destiny）・西漸 | 朝鮮へ数兆〜数十兆円直投・水豊ダム・嘉南大圳 | 欧米は資源抽出・土地奪取、日本は本国資本直投 |\n| 4. 教育・能力開発 | カトリック改宗中心・民衆一般教育非実施 | 先住民同化学校（文化剥奪）・白人優先教育 | 台湾公学校71.3%・朝鮮普通学校49%の能力底上げ | 欧米は文化剥奪・非実施、日本は公教育 |"
+}
+
+sticky N17_latin_america_spain_portugal "1. 中南米：ポトシ銀山・先住民80%減殺・黒人奴隷貿易" {
+  pos: 2200 450
+  color: "blue"
+  tags: "中南米 スペイン エンコミエンダ ポトシ銀山 奴隷貿易 ラス・カスタス"
+  time: "Step6_南北アメリカ比較"
+  tone: "stable"
+  desc: "【概要】スペイン・ポルトガルによる中南米支配の実態。エンコミエンダ制・ポトシ銀山での過酷労働により先住民人口が80〜90%激減。アフリカから数百万人の黒人奴隷を強制連行し、厳格な人種カースト制（ラス・カスタス）を固定化した構造。\n\n| 支配項目 | 中南米（スペイン・ポルトガル）の実態 | 日本の統治実績との対比 |\n|---|---|---|\n| 先住民の扱い | エンコミエンダ制・ポトシ銀山強制労働と天然痘等で80〜90%人口激減 | 日本は医療急設・種痘により平均寿命を24歳から56歳へと倍増 |\n| 労働力・人種 | アフリカから数百万人の黒人奴隷を大西洋貿易で補填。カースト制固定 | 奴隷制・人種カーストを否定し、近代法治主義と身分差別撤廃を適用 |\n| 資源流出入 | ポトシ銀山等の大量の銀・金をスペイン本国へ持ち去り | 日本は本国一般会計から朝鮮へ累計数十兆円の資金を直接投入・手当て |"
+}
+
+sticky N18_north_america_uk_usa "2. 北米：インディアン強制移住法・保留地・奴隷制" {
+  pos: 2200 800
+  color: "yellow"
+  tags: "北米 イギリス アメリカ ManifestDestiny 涙の道 保留地"
+  time: "Step6_南北アメリカ比較"
+  tone: "stable"
+  desc: "【概要】イギリス・アメリカ合衆国による北米支配の実態。先住民（インディアン）との共生を拒否して西へ追い出し、「 Manifest Destiny（明白な天命）」の下で1830年インディアン強制移住法（涙の道 Trail of Tears）を強行し保留地に押し込めた歴史。\n\n| 支配項目 | 北米（イギリス・アメリカ合衆国）の実態 | 日本の統治実績との対比 |\n|---|---|---|\n| 先住民土地政策 | 1830年インディアン強制移住法・涙の道(Trail of Tears)で保留地へ追放 | 日本は朝鮮・台湾で土地調査事業を実施し、現地民の近代的所有権を確定 |\n| 国家観・理念 | 「 Manifest Destiny（明白な天命）」による白人領土拡大と排除 | 日本は外地を本国と同等の行政区画・社会開発対象として位置づけ |\n| 奴隷制・労働 | 南部綿花・タバコ農園における大規摸黒人奴隷制と人種隔離 | 日本は公学校・普通学校制度を導入し全住民の公教育機会を創出 |"
+}
+
 # === DRAWINGS ===
 drawing area_step1 "思考の起点・結論" {
   type: "circle-area"
@@ -132,10 +159,16 @@ drawing area_step2 "対日感情の分析・史実検証とファクト基盤" {
   color: "red"
 }
 
-drawing area_step3 "新探究：欧米列強 ⇔ 日本 統治政策構造比較" {
+drawing area_step3 "欧米列強（旧大陸） ⇔ 日本 統治政策構造比較" {
   type: "circle-area"
   targets: "N11_western_colonial_overview N12_western_finance_extraction N13_western_education_literacy N14_western_health_monoculture N15_western_divide_and_rule"
   color: "blue"
+}
+
+drawing area_step4 "南北アメリカ大陸 ⇔ 日本 統治政策構造比較" {
+  type: "circle-area"
+  targets: "N16_americas_colonial_overview N17_latin_america_spain_portugal N18_north_america_uk_usa"
+  color: "purple"
 }
 
 # === RELATIONS ===
@@ -197,4 +230,19 @@ relation N11_western_colonial_overview -> N14_western_health_monoculture {
 relation N11_western_colonial_overview -> N15_western_divide_and_rule {
   type: "comparison"
   label: "4. 行政・支配比較"
+}
+
+relation N11_western_colonial_overview -> N16_americas_colonial_overview {
+  type: "expansion"
+  label: "南北アメリカ大陸の植民地政策比較へ"
+}
+
+relation N16_americas_colonial_overview -> N17_latin_america_spain_portugal {
+  type: "comparison"
+  label: "1. 中南米（スペイン・ポルトガル）"
+}
+
+relation N16_americas_colonial_overview -> N18_north_america_uk_usa {
+  type: "comparison"
+  label: "2. 北米（イギリス・アメリカ合衆国）"
 }
