@@ -874,7 +874,6 @@ function drawRelation(rel) {
     }
   }
 }
-}
 
 // タグフィルターバーを動的に再構成する
 function updateTagsFilterBar(tags) {
