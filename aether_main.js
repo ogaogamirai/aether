@@ -2292,6 +2292,22 @@ const DEFAULT_DSL = "# Aether DSL Auto-Saved v3.0\n\nsticky Origin_J \"日本人
 // Boot helpers: legacy DSL（順序保持）→ structured → DEFAULT_DSL
 async function applyDefaultOrCachedDsl() {
   try {
+    // 0) aether_dsl.txt を最優先でオートロード（キャッシュ問題を解消）
+    try {
+      const res = await fetch('aether_dsl.txt?t=' + Date.now());
+      if (res.ok) {
+        const text = await res.text();
+        if (text && text.trim()) {
+          document.getElementById('dsl-input').value = text;
+          applyDSL({ silent: true });
+          console.log('[Aether Loader] Successfully loaded latest aether_dsl.txt');
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('[Aether Loader] Fetch aether_dsl.txt failed, fallback to IndexedDB:', e);
+    }
+
     // 1) legacy board_state.current_dsl 優先（配列順・全文を保持）
     const db = await initDB();
     if (db.objectStoreNames.contains(STORE_NAME)) {
