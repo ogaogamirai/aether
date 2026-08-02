@@ -1,4 +1,5 @@
-// Aether Canvas Renderer v4.0
+// Aether Canvas Renderer v4.0.38 — arc edge prototype
+window.__AETHER_RENDERER_BUILD__ = '4.0.38-arc-edges';
 
 // Predefined beautiful SVG vector paths for icons (Approach A)
 const PRESET_ICONS = {
@@ -315,10 +316,18 @@ function isEdgeFocused(sourceId, targetId) {
 
 function applyEdgeFocusStyle(el, colorHex, baseWidth, sourceId, targetId) {
   if (!el || !isEdgeFocused(sourceId, targetId)) return;
-  el.classList.add('edge-focused');
-  el.setAttribute('stroke', themeColor('--edge-highlight', colorHex || 'rgba(59,130,246,0.9)'));
-  el.setAttribute('stroke-width', String(Math.max(Number(baseWidth) + 1.2, 3.2)));
-  el.setAttribute('opacity', '1');
+  var group = el;
+  if (el.classList && !el.classList.contains('aether-edge') && el.parentElement &&
+      el.parentElement.classList && el.parentElement.classList.contains('aether-edge')) {
+    group = el.parentElement;
+  }
+  group.classList.add('edge-focused');
+  var path = group.querySelector ? group.querySelector('.aether-edge-path') : el;
+  if (!path) path = el;
+  path.classList.add('edge-focused');
+  path.setAttribute('stroke', themeColor('--edge-highlight', colorHex || 'rgba(59,130,246,0.9)'));
+  path.setAttribute('stroke-width', String(Math.max(Number(baseWidth) + 1.2, 3.2)));
+  path.setAttribute('opacity', '1');
 }
 
 function drawingColorHex(color, fallback) {
@@ -478,33 +487,23 @@ function drawGuidePath(dw) {
   }
 }
 
-function drawLineBetween(source, target, strokeColor, strokeWidth, dashArray = '') {
-  const sx = source.x + NOTE_HALF_W;
-  const sy = source.y + NOTE_HALF_H;
-  const tx = target.x + NOTE_HALF_W;
-  const ty = target.y + NOTE_HALF_H;
-
-  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  line.setAttribute('x1', sx);
-  line.setAttribute('y1', sy);
-  line.setAttribute('x2', tx);
-  line.setAttribute('y2', ty);
-  line.setAttribute('stroke', strokeColor);
-  line.setAttribute('stroke-width', strokeWidth);
-  if (dashArray) line.setAttribute('stroke-dasharray', dashArray);
-
-  applyEdgeFocusStyle(line, strokeColor, strokeWidth, source.id, target.id);
-  
-  // タグフィルターによる半透明化
+function drawLineBetween(source, target, strokeColor, strokeWidth, dashArray) {
+  const geo = computeEdgeGeometry(source, target, source.id, target.id);
+  const group = createEdgeGroup(source.id, target.id, 'aether-edge-legacy');
+  const path = appendArcPath(group, geo, {
+    color: strokeColor,
+    width: strokeWidth,
+    dash: dashArray || ''
+  });
   if (window.activeTag !== null) {
     const sourceHas = source.tags && source.tags.includes(window.activeTag);
     const targetHas = target.tags && target.tags.includes(window.activeTag);
     if (!sourceHas || !targetHas) {
-      line.setAttribute('class', 'dimmed');
+      group.classList.add('dimmed');
+      path.classList.add('dimmed');
     }
   }
-  
-  appendToSvg(line);
+  finalizeEdgeGroup(group, path, strokeColor, strokeWidth, source.id, target.id, false);
 }
 
 function drawCurveArrow(dw) {
@@ -745,186 +744,215 @@ function applyRelationFlow(el, rel) {
   }
 }
 
-// Draw semantic relation edges v3.0 (conflict, influence, similarity, default)
+// ---------------------------------------------------------------------------
+// Arc edge routing v1 — 辺接続 + 符号付き二次ベジェ + フォーカス時ラベル
+// ---------------------------------------------------------------------------
+function getNoteCenter(note) {
+  return { x: note.x + NOTE_HALF_W, y: note.y + NOTE_HALF_H };
+}
+
+function getNoteAnchorPoint(note, towardX, towardY) {
+  const cx = note.x + NOTE_HALF_W;
+  const cy = note.y + NOTE_HALF_H;
+  const dx = towardX - cx;
+  const dy = towardY - cy;
+  if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) {
+    return { x: cx, y: cy };
+  }
+  const inset = 6;
+  const hw = NOTE_HALF_W - inset;
+  const hh = NOTE_HALF_H - inset;
+  const scale = Math.min(
+    Math.abs(dx) > 0.001 ? hw / Math.abs(dx) : Infinity,
+    Math.abs(dy) > 0.001 ? hh / Math.abs(dy) : Infinity
+  );
+  return { x: cx + dx * scale, y: cy + dy * scale };
+}
+
+function edgeRouteSign(fromId, toId) {
+  var s = String(fromId) + '->' + String(toId);
+  var h = 0;
+  for (var i = 0; i < s.length; i++) {
+    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  }
+  return h % 2 === 0 ? 1 : -1;
+}
+
+function computeEdgeGeometry(source, target, fromId, toId, opts) {
+  opts = opts || {};
+  const tc = getNoteCenter(target);
+  const sc = getNoteCenter(source);
+  const start = getNoteAnchorPoint(source, tc.x, tc.y);
+  const end = getNoteAnchorPoint(target, sc.x, sc.y);
+  const sx = start.x;
+  const sy = start.y;
+  const tx = end.x;
+  const ty = end.y;
+  const dx = tx - sx;
+  const dy = ty - sy;
+  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  const mx = (sx + tx) / 2;
+  const my = (sy + ty) / 2;
+  const nx = -dy / dist;
+  const ny = dx / dist;
+  const sign = typeof opts.sign === 'number' ? opts.sign : edgeRouteSign(fromId, toId);
+  const magnitude = (opts.magnitudeScale || 1) * Math.min(140, Math.max(28, dist * 0.22));
+  const cx = mx + nx * magnitude * sign;
+  const cy = my + ny * magnitude * sign;
+  return {
+    sx: sx, sy: sy, tx: tx, ty: ty, cx: cx, cy: cy,
+    mx: mx, my: my, nx: nx, ny: ny, dist: dist, sign: sign, magnitude: magnitude,
+    d: 'M ' + sx + ' ' + sy + ' Q ' + cx + ' ' + cy + ' ' + tx + ' ' + ty
+  };
+}
+
+function quadPointAt(t, sx, sy, cx, cy, tx, ty) {
+  const u = 1 - t;
+  return {
+    x: u * u * sx + 2 * u * t * cx + t * t * tx,
+    y: u * u * sy + 2 * u * t * cy + t * t * ty
+  };
+}
+
+function createEdgeGroup(sourceId, targetId, extraClass) {
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('class', 'aether-edge' + (extraClass ? ' ' + extraClass : ''));
+  g.setAttribute('data-from', String(sourceId));
+  g.setAttribute('data-to', String(targetId));
+  return g;
+}
+
+function appendArcPath(group, geo, options) {
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', geo.d);
+  path.setAttribute('fill', 'none');
+  path.setAttribute('class', 'aether-edge-path' + (options.extraClass ? ' ' + options.extraClass : ''));
+  path.setAttribute('stroke', options.color);
+  path.setAttribute('stroke-width', String(options.width));
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('stroke-linejoin', 'round');
+  if (options.dash) path.setAttribute('stroke-dasharray', options.dash);
+  if (options.marker) path.setAttribute('marker-end', options.marker);
+  if (options.dimmed) path.classList.add('dimmed');
+  if (options.flowRel) applyRelationFlow(path, options.flowRel);
+  group.appendChild(path);
+  return path;
+}
+
+function appendEdgeLabel(group, geo, text, color, labelClass) {
+  if (!text) return null;
+  const mid = quadPointAt(0.5, geo.sx, geo.sy, geo.cx, geo.cy, geo.tx, geo.ty);
+  const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  label.setAttribute('class', 'aether-edge-label' + (labelClass ? ' ' + labelClass : ''));
+  label.setAttribute('x', mid.x);
+  label.setAttribute('y', mid.y - 8);
+  label.setAttribute('fill', color);
+  label.setAttribute('font-size', '11px');
+  label.setAttribute('font-weight', '600');
+  label.setAttribute('font-family', 'var(--font-display), sans-serif');
+  label.setAttribute('text-anchor', 'middle');
+  label.textContent = text;
+  group.appendChild(label);
+  return label;
+}
+
+function finalizeEdgeGroup(group, pathEl, colorHex, baseWidth, sourceId, targetId, isDimmed) {
+  if (isDimmed && group) group.classList.add('dimmed');
+  applyEdgeFocusStyle(group, colorHex, baseWidth, sourceId, targetId);
+  appendToSvg(group);
+  return pathEl;
+}
+
+function relationMarkerId(rel) {
+  var valid = ['blue', 'purple', 'green', 'pink', 'yellow'];
+  var c = (rel && rel.color) ? String(rel.color) : 'blue';
+  if (valid.indexOf(c) >= 0) return 'url(#arrow-' + c + ')';
+  return 'url(#arrow-default)';
+}
+
+// Draw semantic relation edges v3.0 — arc routing prototype
 function drawRelation(rel) {
   const source = notes.find(n => n.id === rel.from);
   const target = notes.find(n => n.id === rel.to);
   if (!source || !target) return;
 
-  const sx = source.x + NOTE_HALF_W;
-  const sy = source.y + NOTE_HALF_H;
-  const tx = target.x + NOTE_HALF_W;
-  const ty = target.y + NOTE_HALF_H;
-
-  const dx = tx - sx;
-  const dy = ty - sy;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist === 0) return;
-
   let colorHex = drawingColorHex(rel.color, '#3b82f6');
   if (rel.type === 'conflict') colorHex = drawingColorHex('red', '#ef4444');
 
-  // タグフィルターとの合致判定
-  const matches = (window.activeTag === null) || 
-                  (rel.tags && rel.tags.includes(window.activeTag)) || 
-                  ((source.tags && source.tags.includes(window.activeTag)) && (target.tags && target.tags.includes(window.activeTag)));
+  const matches = (window.activeTag === null) ||
+                  (rel.tags && rel.tags.includes(window.activeTag)) ||
+                  ((source.tags && source.tags.includes(window.activeTag)) &&
+                   (target.tags && target.tags.includes(window.activeTag)));
   const isDimmed = !matches;
+  const relType = String(rel.type || 'default').toLowerCase();
+  const group = createEdgeGroup(source.id, target.id, 'aether-edge-' + relType);
 
-  if (rel.type === 'conflict') {
+  if (relType === 'conflict') {
+    const geo = computeEdgeGeometry(source, target, rel.from, rel.to);
+    const dx = geo.tx - geo.sx;
+    const dy = geo.ty - geo.sy;
+    const dist = geo.dist;
+    if (dist === 0) return;
     const steps = 12;
-    let d = `M ${sx} ${sy}`;
-    const nx = -dy / dist;
-    const ny = dx / dist;
-
+    let d = 'M ' + geo.sx + ' ' + geo.sy;
     for (let i = 1; i < steps; i++) {
       const t = i / steps;
-      const px = sx + dx * t;
-      const py = sy + dy * t;
+      const px = geo.sx + dx * t;
+      const py = geo.sy + dy * t;
       const offset = (i % 2 === 0 ? 8 : -8);
-      d += ` L ${px + nx * offset} ${py + ny * offset}`;
+      d += ' L ' + (px + geo.nx * offset) + ' ' + (py + geo.ny * offset);
     }
-    d += ` L ${tx} ${ty}`;
+    d += ' L ' + geo.tx + ' ' + geo.ty;
+    geo.d = d;
 
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', d);
-    path.setAttribute('stroke', colorHex);
-    path.setAttribute('fill', 'none');
-    path.setAttribute('stroke-width', String(relationStrokeWidth(rel, 2.5)));
-    if (isDimmed) path.classList.add('dimmed');
-    applyRelationFlow(path, rel);
-    applyEdgeFocusStyle(path, colorHex, relationStrokeWidth(rel, 2.5), source.id, target.id);
-    appendToSvg(path);
-
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('x', sx + dx/2);
-    text.setAttribute('y', sy + dy/2 + 4);
-    text.setAttribute('font-size', '15px');
-    text.setAttribute('text-anchor', 'middle');
-    text.textContent = '⚡';
-    if (isDimmed) text.setAttribute('class', 'dimmed');
-    appendToSvg(text);
-
-    if (rel.label) {
-      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      label.setAttribute('x', sx + dx/2);
-      label.setAttribute('y', sy + dy/2 - 10);
-      label.setAttribute('fill', '#ef4444');
-      label.setAttribute('font-size', '11px');
-      label.setAttribute('font-weight', '600');
-      label.setAttribute('font-family', 'var(--font-display)');
-      label.setAttribute('text-anchor', 'middle');
-      label.textContent = rel.label;
-      if (isDimmed) label.setAttribute('class', 'dimmed');
-      appendToSvg(label);
-    }
-  } 
-  else if (rel.type === 'influence') {
-    // 影響・波及：太めの破線＋矢印
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', sx);
-    line.setAttribute('y1', sy);
-    line.setAttribute('x2', tx);
-    line.setAttribute('y2', ty);
-    line.setAttribute('stroke', colorHex);
-    line.setAttribute('stroke-width', String(relationStrokeWidth(rel, 3)));
-    line.setAttribute('stroke-dasharray', '8 4');
-    if (isDimmed) line.classList.add('dimmed');
-    applyRelationFlow(line, rel);
-    
-    const markerId = `arrow-${rel.color}` || 'arrow-default';
-    line.setAttribute('marker-end', `url(#${markerId})`);
-    applyEdgeFocusStyle(line, colorHex, relationStrokeWidth(rel, 3), source.id, target.id);
-    appendToSvg(line);
-
-    if (rel.label) {
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', sx + dx/2);
-      text.setAttribute('y', sy + dy/2 - 8);
-      text.setAttribute('fill', colorHex);
-      text.setAttribute('font-size', '11px');
-      text.setAttribute('font-weight', '600');
-      text.setAttribute('font-family', 'var(--font-display)');
-      text.setAttribute('text-anchor', 'middle');
-      text.textContent = rel.label;
-      if (isDimmed) text.setAttribute('class', 'dimmed');
-      appendToSvg(text);
-    }
+    const width = relationStrokeWidth(rel, 2.5);
+    const path = appendArcPath(group, geo, {
+      color: colorHex,
+      width: width,
+      flowRel: rel
+    });
+    const bolt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    bolt.setAttribute('class', 'aether-edge-icon');
+    bolt.setAttribute('x', geo.mx);
+    bolt.setAttribute('y', geo.my + 4);
+    bolt.setAttribute('font-size', '15px');
+    bolt.setAttribute('text-anchor', 'middle');
+    bolt.textContent = '⚡';
+    group.appendChild(bolt);
+    appendEdgeLabel(group, geo, rel.label, colorHex, 'aether-edge-label-conflict');
+    finalizeEdgeGroup(group, path, colorHex, width, source.id, target.id, isDimmed);
+    return;
   }
-  else if (rel.type === 'similarity') {
-    // 類似・並列：二重平行線
-    const nx = -dy / dist;
-    const ny = dx / dist;
-    
-    const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line1.setAttribute('x1', sx + nx * 4);
-    line1.setAttribute('y1', sy + ny * 4);
-    line1.setAttribute('x2', tx + nx * 4);
-    line1.setAttribute('y2', ty + ny * 4);
-    line1.setAttribute('stroke', colorHex);
-    line1.setAttribute('stroke-width', String(relationStrokeWidth(rel, 1.8)));
-    if (isDimmed) line1.classList.add('dimmed');
-    applyRelationFlow(line1, rel);
-    applyEdgeFocusStyle(line1, colorHex, relationStrokeWidth(rel, 1.8), source.id, target.id);
-    appendToSvg(line1);
 
-    const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line2.setAttribute('x1', sx - nx * 4);
-    line2.setAttribute('y1', sy - ny * 4);
-    line2.setAttribute('x2', tx - nx * 4);
-    line2.setAttribute('y2', ty - ny * 4);
-    line2.setAttribute('stroke', colorHex);
-    line2.setAttribute('stroke-width', String(relationStrokeWidth(rel, 1.8)));
-    if (isDimmed) line2.classList.add('dimmed');
-    applyRelationFlow(line2, rel);
-    appendToSvg(line2);
-
-    if (rel.label) {
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', sx + dx/2);
-      text.setAttribute('y', sy + dy/2 - 8);
-      text.setAttribute('fill', colorHex);
-      text.setAttribute('font-size', '10.5px');
-      text.setAttribute('font-weight', '600');
-      text.setAttribute('font-family', 'var(--font-display)');
-      text.setAttribute('text-anchor', 'middle');
-      text.textContent = rel.label;
-      if (isDimmed) text.setAttribute('class', 'dimmed');
-      appendToSvg(text);
-    }
+  if (relType === 'similarity') {
+    const geoOuter = computeEdgeGeometry(source, target, rel.from, rel.to, { magnitudeScale: 1.08 });
+    const geoInner = computeEdgeGeometry(source, target, rel.from, rel.to, { magnitudeScale: 0.78 });
+    const width = relationStrokeWidth(rel, 1.8);
+    appendArcPath(group, geoOuter, { color: colorHex, width: width, flowRel: rel, extraClass: 'aether-edge-sim-outer' });
+    const innerPath = appendArcPath(group, geoInner, {
+      color: colorHex,
+      width: Math.max(width - 0.4, 1.2),
+      flowRel: rel,
+      extraClass: 'aether-edge-sim-inner'
+    });
+    appendEdgeLabel(group, geoOuter, rel.label, colorHex);
+    finalizeEdgeGroup(group, innerPath, colorHex, width, source.id, target.id, isDimmed);
+    return;
   }
-  else {
-    // デフォルト：クッキリした直線＋カラー矢印
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', sx);
-    line.setAttribute('y1', sy);
-    line.setAttribute('x2', tx);
-    line.setAttribute('y2', ty);
-    line.setAttribute('stroke', colorHex);
-    line.setAttribute('stroke-width', String(relationStrokeWidth(rel, 2.2)));
-    if (rel.style === 'dashed') line.setAttribute('stroke-dasharray', '5 5');
-    
-    if (isDimmed) line.classList.add('dimmed');
-    applyRelationFlow(line, rel);
-    
-    const markerId = `arrow-${rel.color}` || 'arrow-default';
-    line.setAttribute('marker-end', `url(#${markerId})`);
-    applyEdgeFocusStyle(line, colorHex, relationStrokeWidth(rel, 2.2), source.id, target.id);
-    appendToSvg(line);
 
-    if (rel.label) {
-      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', sx + dx/2);
-      text.setAttribute('y', sy + dy/2 - 8);
-      text.setAttribute('fill', colorHex);
-      text.setAttribute('font-size', '11px');
-      text.setAttribute('font-weight', '600');
-      text.setAttribute('font-family', 'var(--font-display)');
-      text.setAttribute('text-anchor', 'middle');
-      text.textContent = rel.label;
-      if (isDimmed) text.setAttribute('class', 'dimmed');
-      appendToSvg(text);
-    }
-  }
+  const geo = computeEdgeGeometry(source, target, rel.from, rel.to);
+  const width = relationStrokeWidth(rel, relType === 'influence' ? 2.6 : 2.2);
+  const dash = relType === 'influence' ? '9 5' : (rel.style === 'dashed' ? '5 5' : '');
+  const marker = relationMarkerId(rel);
+  const path = appendArcPath(group, geo, {
+    color: colorHex,
+    width: width,
+    dash: dash,
+    marker: marker,
+    flowRel: rel
+  });
+  appendEdgeLabel(group, geo, rel.label, colorHex);
+  finalizeEdgeGroup(group, path, colorHex, width, source.id, target.id, isDimmed);
 }
 
 // タグフィルターバーを動的に再構成する
