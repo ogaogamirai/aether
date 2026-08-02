@@ -410,6 +410,8 @@ body.light-theme .tag-chip.active {
 
 .control-panel.collapsed {
   width: 0px;
+  min-width: 0;
+  overflow: hidden;
   border-left-color: transparent;
 }
 
@@ -2593,6 +2595,7 @@ body.view-effective-list .control-panel {
   body.view-mobile-ui.view-effective-canvas .control-panel.collapsed {
     flex: 0 0 0;
     min-height: 0;
+    min-width: 0;
     overflow: hidden;
     border-top: none;
   }
