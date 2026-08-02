@@ -617,7 +617,11 @@ function zoom(delta) {
 function getActiveNotesPool() {
   const sourceNotes = (typeof notes !== 'undefined' && notes && notes.length) ? notes : (window.notes || []);
   return sourceNotes.filter(n => {
-    if (typeof isTimeVisible === 'function') return isTimeVisible(n.time);
+    // 時系列ステップで非表示のノードは厳格に除外
+    if (typeof isTimeVisible === 'function' && !isTimeVisible(n.time)) return false;
+    // DOM上で非表示・dimmed のノードを除外
+    const el = document.getElementById('note-' + n.id);
+    if (el && (el.classList.contains('dimmed') || el.hidden)) return false;
     return true;
   });
 }
@@ -626,7 +630,7 @@ function focusNoteByArrowKey(direction) {
   const pool = getActiveNotesPool();
   if (!pool.length) return;
 
-  // 現在フォーカスされているノードを取得（なければ先頭N1等のノード）
+  // 現在フォーカスされているノードを取得（なければPoolの先頭）
   let current = pool.find(n => String(n.id) === String(window.focusedNoteId));
   if (!current) current = pool[0];
 
@@ -642,33 +646,32 @@ function focusNoteByArrowKey(direction) {
     const ty = Number(target.y) + 70;
     const dx = tx - cx;
     const dy = ty - cy;
-    const dist = Math.hypot(dx, dy);
 
     let validDir = false;
     let primaryDiff = 0;
     let secondaryDiff = 0;
 
-    if (direction === 'Right' && dx > 20) {
+    if (direction === 'Right' && dx > 10) {
       validDir = true;
       primaryDiff = dx;
       secondaryDiff = Math.abs(dy);
-    } else if (direction === 'Left' && dx < -20) {
+    } else if (direction === 'Left' && dx < -10) {
       validDir = true;
       primaryDiff = -dx;
       secondaryDiff = Math.abs(dy);
-    } else if (direction === 'Down' && dy > 20) {
+    } else if (direction === 'Down' && dy > 10) {
       validDir = true;
       primaryDiff = dy;
       secondaryDiff = Math.abs(dx);
-    } else if (direction === 'Up' && dy < -20) {
+    } else if (direction === 'Up' && dy < -10) {
       validDir = true;
       primaryDiff = -dy;
       secondaryDiff = Math.abs(dx);
     }
 
     if (validDir) {
-      // 主方向の近さと、垂直方向のずれの加重スコア（隣のノードが最優先される）
-      const score = primaryDiff + secondaryDiff * 2.2;
+      // 主方向の直線距離と垂直偏角の加重計算（真横・真下の近接ノードを最優先）
+      const score = primaryDiff + secondaryDiff * 1.5;
       if (score < minScore) {
         minScore = score;
         bestTarget = target;
