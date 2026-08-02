@@ -411,8 +411,15 @@ body.light-theme .tag-chip.active {
 .control-panel.collapsed {
   width: 0px;
   min-width: 0;
-  overflow: hidden;
   border-left-color: transparent;
+}
+
+/* 折りたたみ時はパネル内部のコンテンツだけを隠し、
+   左端に浮いているトグルボタンは常に表示する */
+.control-panel.collapsed .panel-header,
+.control-panel.collapsed .tabs-header,
+.control-panel.collapsed .tab-content {
+  display: none;
 }
 
 /* Sidebar toggle button floated on left edge */
@@ -2596,8 +2603,13 @@ body.view-effective-list .control-panel {
     flex: 0 0 0;
     min-height: 0;
     min-width: 0;
-    overflow: hidden;
     border-top: none;
+  }
+
+  body.view-mobile-ui.view-effective-canvas .control-panel.collapsed .panel-header,
+  body.view-mobile-ui.view-effective-canvas .control-panel.collapsed .tabs-header,
+  body.view-mobile-ui.view-effective-canvas .control-panel.collapsed .tab-content {
+    display: none;
   }
 
   #presentation-controller {
