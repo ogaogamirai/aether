@@ -644,6 +644,11 @@ function getNoteLayoutY(note) {
   return Number(note.y) || 0;
 }
 
+if (typeof window !== 'undefined') {
+  window.getNoteLayoutX = getNoteLayoutX;
+  window.getNoteLayoutY = getNoteLayoutY;
+}
+
 function extractLayoutMapFromDsl(text) {
   var map = {};
   if (!text) return map;
@@ -821,7 +826,55 @@ function findGridNeighbor(current, direction, pool) {
 function findArrowNavTarget(current, direction, pool) {
   var areaTarget = findAreaGroupNeighbor(current, direction, pool);
   if (areaTarget) return areaTarget;
-  return findGridNeighbor(current, direction, pool);
+  var gridTarget = findGridNeighbor(current, direction, pool);
+  if (gridTarget) return gridTarget;
+  return findRelationNeighborInDirection(current, direction, pool);
+}
+
+function directionAngleForNav(direction) {
+  if (direction === 'Right') return 0;
+  if (direction === 'Left') return Math.PI;
+  if (direction === 'Down') return Math.PI / 2;
+  if (direction === 'Up') return -Math.PI / 2;
+  return 0;
+}
+
+function findRelationNeighborInDirection(current, direction, pool) {
+  var relList = (typeof relations !== 'undefined' && relations && relations.length)
+    ? relations
+    : (window.relations || []);
+  if (!relList.length) return null;
+
+  var curId = String(current.id);
+  var curX = getNoteLayoutX(current);
+  var curY = getNoteLayoutY(current);
+  var targetAngle = directionAngleForNav(direction);
+  var best = null;
+  var bestScore = -Infinity;
+  var minScore = 0.35;
+
+  relList.forEach(function (rel) {
+    var otherId = null;
+    if (String(rel.from) === curId) otherId = String(rel.to);
+    else if (String(rel.to) === curId) otherId = String(rel.from);
+    else return;
+
+    var other = pool.find(function (n) { return String(n.id) === otherId; });
+    if (!other) return;
+
+    var dx = getNoteLayoutX(other) - curX;
+    var dy = getNoteLayoutY(other) - curY;
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+
+    var angle = Math.atan2(dy, dx);
+    var score = Math.cos(angle - targetAngle);
+    if (score > bestScore) {
+      bestScore = score;
+      best = other;
+    }
+  });
+
+  return bestScore >= minScore ? best : null;
 }
 
 function findInitialGridFocusInDirection(direction, pool) {

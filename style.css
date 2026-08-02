@@ -1180,7 +1180,12 @@ body.aether-kb-focus #svg-layer .aether-edge:not(.edge-focused) .aether-edge-pat
 }
 
 #svg-layer .aether-edge-sim-inner {
-  opacity: 0.34;
+  opacity: 0.58;
+  stroke-dasharray: 7 5;
+}
+
+#svg-layer .aether-edge-sim-outer {
+  opacity: 0.46;
 }
 
 #svg-layer .aether-edge-label,

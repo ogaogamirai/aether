@@ -1,5 +1,5 @@
-// Aether Canvas Renderer v4.0.38 — arc edge prototype
-window.__AETHER_RENDERER_BUILD__ = '4.0.38-arc-edges';
+// Aether Canvas Renderer v4.0.39 — arc edges use layout coords (match keyboard nav)
+window.__AETHER_RENDERER_BUILD__ = '4.0.39-arc-layout-nav';
 
 // Predefined beautiful SVG vector paths for icons (Approach A)
 const PRESET_ICONS = {
@@ -747,13 +747,29 @@ function applyRelationFlow(el, rel) {
 // ---------------------------------------------------------------------------
 // Arc edge routing v1 — 辺接続 + 符号付き二次ベジェ + フォーカス時ラベル
 // ---------------------------------------------------------------------------
+function getNoteLayoutX(note) {
+  if (typeof window.getNoteLayoutX === 'function') return window.getNoteLayoutX(note);
+  if (!note) return 0;
+  var lx = note.layoutX;
+  if (lx != null && isFinite(Number(lx))) return Number(lx);
+  return Number(note.x) || 0;
+}
+
+function getNoteLayoutY(note) {
+  if (typeof window.getNoteLayoutY === 'function') return window.getNoteLayoutY(note);
+  if (!note) return 0;
+  var ly = note.layoutY;
+  if (ly != null && isFinite(Number(ly))) return Number(ly);
+  return Number(note.y) || 0;
+}
+
 function getNoteCenter(note) {
-  return { x: note.x + NOTE_HALF_W, y: note.y + NOTE_HALF_H };
+  return { x: getNoteLayoutX(note) + NOTE_HALF_W, y: getNoteLayoutY(note) + NOTE_HALF_H };
 }
 
 function getNoteAnchorPoint(note, towardX, towardY) {
-  const cx = note.x + NOTE_HALF_W;
-  const cy = note.y + NOTE_HALF_H;
+  const cx = getNoteLayoutX(note) + NOTE_HALF_W;
+  const cy = getNoteLayoutY(note) + NOTE_HALF_H;
   const dx = towardX - cx;
   const dy = towardY - cy;
   if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) {
@@ -924,14 +940,20 @@ function drawRelation(rel) {
     return;
   }
 
-  if (relType === 'similarity') {
-    const geoOuter = computeEdgeGeometry(source, target, rel.from, rel.to, { magnitudeScale: 1.08 });
-    const geoInner = computeEdgeGeometry(source, target, rel.from, rel.to, { magnitudeScale: 0.78 });
-    const width = relationStrokeWidth(rel, 1.8);
-    appendArcPath(group, geoOuter, { color: colorHex, width: width, flowRel: rel, extraClass: 'aether-edge-sim-outer' });
+  if (relType === 'similarity' || relType === 'comparison') {
+    const geoOuter = computeEdgeGeometry(source, target, rel.from, rel.to, { magnitudeScale: 1.28 });
+    const geoInner = computeEdgeGeometry(source, target, rel.from, rel.to, { magnitudeScale: 0.52 });
+    const width = relationStrokeWidth(rel, 2.1);
+    appendArcPath(group, geoOuter, {
+      color: colorHex,
+      width: width + 0.5,
+      flowRel: rel,
+      extraClass: 'aether-edge-sim-outer'
+    });
     const innerPath = appendArcPath(group, geoInner, {
       color: colorHex,
-      width: Math.max(width - 0.4, 1.2),
+      width: Math.max(width - 0.6, 1.1),
+      dash: '7 5',
       flowRel: rel,
       extraClass: 'aether-edge-sim-inner'
     });
