@@ -146,6 +146,8 @@ function parseAetherDSL(text) {
           if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
             currentSticky.x = coords[0];
             currentSticky.y = coords[1];
+            currentSticky.layoutX = coords[0];
+            currentSticky.layoutY = coords[1];
           }
         } else if (prop === 'color') {
           currentSticky.color = val;

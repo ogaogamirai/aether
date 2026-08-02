@@ -100,6 +100,10 @@ function renderCanvas() {
       if (!matches) el.classList.add('dimmed');
     }
 
+    if (window.focusedNoteId && String(note.id) === String(window.focusedNoteId)) {
+      el.classList.add('focused');
+    }
+
     const badges = [];
     if (roleClass) badges.push('<span class="sticky-badge role-badge">' + roleClass + '</span>');
     if (confClass) badges.push('<span class="sticky-badge conf-badge">' + confClass + '</span>');
@@ -303,15 +307,35 @@ function drawAllShapes() {
   });
 }
 
+function isEdgeFocused(sourceId, targetId) {
+  var fid = window.focusedNoteId;
+  if (!fid) return false;
+  return String(sourceId) === String(fid) || String(targetId) === String(fid);
+}
+
+function applyEdgeFocusStyle(el, colorHex, baseWidth, sourceId, targetId) {
+  if (!el || !isEdgeFocused(sourceId, targetId)) return;
+  el.classList.add('edge-focused');
+  el.setAttribute('stroke', themeColor('--edge-highlight', colorHex || 'rgba(59,130,246,0.9)'));
+  el.setAttribute('stroke-width', String(Math.max(Number(baseWidth) + 1.2, 3.2)));
+  el.setAttribute('opacity', '1');
+}
+
 function drawingColorHex(color, fallback) {
-  if (color === 'purple') return '#8b5cf6';
-  if (color === 'green') return '#10b981';
-  if (color === 'pink') return '#ec4899';
-  if (color === 'yellow') return '#eab308';
-  if (color === 'red') return '#ef4444';
-  if (color === 'orange') return '#f59e0b';
-  if (color === 'blue') return '#3b82f6';
-  return fallback || '#3b82f6';
+  var map = {
+    blue: '--accent-blue',
+    purple: '--accent-purple',
+    green: '--accent-emerald',
+    pink: '--accent-pink',
+    yellow: '--accent-amber',
+    red: '#ef4444',
+    orange: '#f59e0b'
+  };
+  if (map[color] && map[color].startsWith('--')) {
+    return themeColor(map[color], fallback || '#3b82f6');
+  }
+  if (map[color]) return map[color];
+  return fallback || themeColor('--accent-blue', '#3b82f6');
 }
 
 // Phase K3: callout — 付箋に付く吹き出し注釈
@@ -468,6 +492,8 @@ function drawLineBetween(source, target, strokeColor, strokeWidth, dashArray = '
   line.setAttribute('stroke', strokeColor);
   line.setAttribute('stroke-width', strokeWidth);
   if (dashArray) line.setAttribute('stroke-dasharray', dashArray);
+
+  applyEdgeFocusStyle(line, strokeColor, strokeWidth, source.id, target.id);
   
   // タグフィルターによる半透明化
   if (window.activeTag !== null) {
@@ -735,12 +761,8 @@ function drawRelation(rel) {
   const dist = Math.sqrt(dx * dx + dy * dy);
   if (dist === 0) return;
 
-  let colorHex = '#3b82f6';
-  if (rel.color === 'purple') colorHex = '#8b5cf6';
-  else if (rel.color === 'green') colorHex = '#10b981';
-  else if (rel.color === 'pink') colorHex = '#ec4899';
-  else if (rel.color === 'yellow') colorHex = '#eab308';
-  else if (rel.color === 'red' || rel.type === 'conflict') colorHex = '#ef4444';
+  let colorHex = drawingColorHex(rel.color, '#3b82f6');
+  if (rel.type === 'conflict') colorHex = drawingColorHex('red', '#ef4444');
 
   // タグフィルターとの合致判定
   const matches = (window.activeTag === null) || 
@@ -770,6 +792,7 @@ function drawRelation(rel) {
     path.setAttribute('stroke-width', String(relationStrokeWidth(rel, 2.5)));
     if (isDimmed) path.classList.add('dimmed');
     applyRelationFlow(path, rel);
+    applyEdgeFocusStyle(path, colorHex, relationStrokeWidth(rel, 2.5), source.id, target.id);
     appendToSvg(path);
 
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -810,6 +833,7 @@ function drawRelation(rel) {
     
     const markerId = `arrow-${rel.color}` || 'arrow-default';
     line.setAttribute('marker-end', `url(#${markerId})`);
+    applyEdgeFocusStyle(line, colorHex, relationStrokeWidth(rel, 3), source.id, target.id);
     appendToSvg(line);
 
     if (rel.label) {
@@ -840,6 +864,7 @@ function drawRelation(rel) {
     line1.setAttribute('stroke-width', String(relationStrokeWidth(rel, 1.8)));
     if (isDimmed) line1.classList.add('dimmed');
     applyRelationFlow(line1, rel);
+    applyEdgeFocusStyle(line1, colorHex, relationStrokeWidth(rel, 1.8), source.id, target.id);
     appendToSvg(line1);
 
     const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -883,6 +908,7 @@ function drawRelation(rel) {
     
     const markerId = `arrow-${rel.color}` || 'arrow-default';
     line.setAttribute('marker-end', `url(#${markerId})`);
+    applyEdgeFocusStyle(line, colorHex, relationStrokeWidth(rel, 2.2), source.id, target.id);
     appendToSvg(line);
 
     if (rel.label) {

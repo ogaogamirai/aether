@@ -1,6 +1,6 @@
 :root {
-  --bg-dark: #0d0f12;
-  --bg-card: rgba(22, 26, 33, 0.7);
+  --bg-dark: #0a0c10;
+  --bg-card: rgba(22, 26, 33, 0.72);
   --border-color: rgba(255, 255, 255, 0.08);
   --accent-blue: #3b82f6;
   --accent-purple: #8b5cf6;
@@ -12,10 +12,18 @@
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
   /* SVG 接続線・ラベル（ダーク既定） */
-  --connection-line: rgba(255, 255, 255, 0.15);
-  --connection-label: rgba(255, 255, 255, 0.7);
+  --connection-line: rgba(255, 255, 255, 0.18);
+  --connection-label: rgba(255, 255, 255, 0.78);
   --connection-label-muted: rgba(255, 255, 255, 0.6);
-  --arrow-default: rgba(255, 255, 255, 0.4);
+  --arrow-default: rgba(255, 255, 255, 0.45);
+  /* グラフキャンバス・フォーカス演出 */
+  --canvas-grid-dot: rgba(255, 255, 255, 0.045);
+  --canvas-glow-blue: rgba(59, 130, 246, 0.10);
+  --canvas-glow-purple: rgba(139, 92, 246, 0.08);
+  --edge-highlight: rgba(96, 165, 250, 0.95);
+  --focus-glow: rgba(59, 130, 246, 0.55);
+  --note-glass-blur: 10px;
+  --sticky-shadow: 0 14px 36px -10px rgba(0, 0, 0, 0.55);
 }
 
 /* ライトテーマ用変数（明るく透き通るようなパステル＆グラスモフィズム調） */
@@ -61,10 +69,12 @@ body {
   position: relative;
   overflow: hidden;
   cursor: grab;
-  background-image: 
-    radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 24px 24px;
   background-color: var(--bg-dark);
+  background-image:
+    radial-gradient(circle at 15% 20%, var(--canvas-glow-blue), transparent 42%),
+    radial-gradient(circle at 85% 75%, var(--canvas-glow-purple), transparent 38%),
+    radial-gradient(var(--canvas-grid-dot) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 28px 28px;
   transition: background-color 0.3s ease;
 }
 
@@ -95,6 +105,10 @@ body.light-theme .dsl-textarea {
 
 .whiteboard-container:active {
   cursor: grabbing;
+}
+
+.whiteboard-container:focus {
+  outline: none;
 }
 
 /* Drag & drop import highlight */
@@ -135,15 +149,17 @@ body.light-theme .whiteboard-container.drop-active {
   width: 180px;
   min-height: 140px;
   padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+  border-radius: 14px;
+  box-shadow: var(--sticky-shadow);
   cursor: move;
   user-select: none;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.25s ease, filter 0.25s ease;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(var(--note-glass-blur));
+  -webkit-backdrop-filter: blur(var(--note-glass-blur));
 }
 
 .sticky-note:hover {
@@ -151,11 +167,11 @@ body.light-theme .whiteboard-container.drop-active {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
 }
 
-.sticky-note.yellow { background: linear-gradient(135deg, #fef08a, #fef9c3); color: #854d0e; }
-.sticky-note.blue { background: linear-gradient(135deg, #bfdbfe, #dbeafe); color: #1e40af; }
-.sticky-note.green { background: linear-gradient(135deg, #a7f3d0, #d1fae5); color: #065f46; }
-.sticky-note.pink { background: linear-gradient(135deg, #fbcfe8, #fce7f3); color: #9d174d; }
-.sticky-note.purple { background: linear-gradient(135deg, #e9d5ff, #f3e8ff); color: #6b21a8; }
+.sticky-note.yellow { background: linear-gradient(145deg, rgba(254,240,138,0.96), rgba(254,249,195,0.88)); color: #854d0e; }
+.sticky-note.blue { background: linear-gradient(145deg, rgba(191,219,254,0.96), rgba(219,234,254,0.88)); color: #1e40af; }
+.sticky-note.green { background: linear-gradient(145deg, rgba(167,243,208,0.96), rgba(209,250,229,0.88)); color: #065f46; }
+.sticky-note.pink { background: linear-gradient(145deg, rgba(251,207,232,0.96), rgba(252,231,243,0.88)); color: #9d174d; }
+.sticky-note.purple { background: linear-gradient(145deg, rgba(233,213,255,0.96), rgba(243,232,255,0.88)); color: #6b21a8; }
 
 /* Dimmed elements (for tag filtering) */
 .dimmed {
@@ -1132,8 +1148,34 @@ body.light-theme .legend-open-btn {
 /* Focused Sticky Note (Keyboard navigation highlight) */
 .sticky-note.focused {
   outline: 3px solid var(--accent-blue);
-  outline-offset: 4px;
-  box-shadow: 0 0 25px rgba(59, 130, 246, 0.55), 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  outline-offset: 5px;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35), 0 0 32px var(--focus-glow), var(--sticky-shadow);
+  transform: translateY(-2px) scale(1.025);
+  z-index: 20;
+  opacity: 1 !important;
+  filter: none !important;
+  pointer-events: auto !important;
+  animation: aether-focus-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes aether-focus-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35), 0 0 28px var(--focus-glow), var(--sticky-shadow); }
+  50% { box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.75), var(--sticky-shadow); }
+}
+
+body.aether-kb-focus #notes-container .sticky-note:not(.focused):not(.dimmed) {
+  opacity: 0.52;
+  filter: saturate(0.72) brightness(0.92);
+}
+
+body.aether-kb-focus #svg-layer line:not(.edge-focused),
+body.aether-kb-focus #svg-layer path:not(.edge-focused) {
+  opacity: 0.35;
+}
+
+#svg-layer .edge-focused {
+  filter: drop-shadow(0 0 8px var(--focus-glow));
+  opacity: 1 !important;
 }
 
 body.light-theme .sticky-note.focused {

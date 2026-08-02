@@ -56,6 +56,10 @@ function applyDSL(options) {
   connections = state.connections || [];
   drawings = state.drawings || [];
   relations = state.relations || [];
+  notes.forEach(function (n) {
+    n.layoutX = Number(n.x) || 0;
+    n.layoutY = Number(n.y) || 0;
+  });
   // window へも同期（配布HTMLの共有状態を確実に保つ）
   syncCanvasGlobals();
   window.activeTag = null;
@@ -118,6 +122,11 @@ function applyDSL(options) {
   renderMobileListView();
   if (typeof renderMobileTagFilter === 'function') renderMobileTagFilter();
   if (typeof applyViewModeLayout === 'function') applyViewModeLayout();
+  if (typeof syncNavLayoutFromAllSources === 'function') {
+    syncNavLayoutFromAllSources().catch(function (err) {
+      console.warn('[Aether Nav] layout sync skipped:', err);
+    });
+  }
 }
 
 function updateTimeSlider(times) {
@@ -165,6 +174,9 @@ function handleTimeSlider(value) {
   updatePresentationStepName();
 
   if (typeof renderMobileListView === 'function') renderMobileListView();
+  if (typeof reconcileKeyboardFocusAfterStepChange === 'function') {
+    setTimeout(reconcileKeyboardFocusAfterStepChange, 30);
+  }
 
   if (window.isPresentationMode) {
     setTimeout(() => {
@@ -612,137 +624,395 @@ function zoom(delta) {
 }
 
 // ---------------------------------------------------------------------------
-// スマートキーボードナビゲーション（矢印キー ↑↓←→ / Tab で隣接ノードへフォーカス＆移動）
+// キーボードナビゲーション — 設計格子 layoutX/layoutY を正とする（表示 x/y とは分離）
+// ドラッグで付箋位置がずれても、←→↑↓ は DSL pos の行・列で移動する。
 // ---------------------------------------------------------------------------
-function getActiveNotesPool() {
-  const sourceNotes = (typeof notes !== 'undefined' && notes && notes.length) ? notes : (window.notes || []);
-  return sourceNotes.filter(n => {
-    // 時系列ステップで非表示のノードは厳格に除外
+var AETHER_GRID_ROW_TOL = 90;
+var AETHER_GRID_COL_TOL = 130;
+
+function getNoteLayoutX(note) {
+  if (!note) return 0;
+  var lx = note.layoutX;
+  if (lx != null && isFinite(Number(lx))) return Number(lx);
+  return Number(note.x) || 0;
+}
+
+function getNoteLayoutY(note) {
+  if (!note) return 0;
+  var ly = note.layoutY;
+  if (ly != null && isFinite(Number(ly))) return Number(ly);
+  return Number(note.y) || 0;
+}
+
+function extractLayoutMapFromDsl(text) {
+  var map = {};
+  if (!text) return map;
+  var re = /sticky\s+(\w+)\s+"[^"]*"\s*\{[\s\S]*?pos:\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)/g;
+  var m;
+  while ((m = re.exec(String(text))) !== null) {
+    map[m[1]] = [Number(m[2]), Number(m[3])];
+  }
+  return map;
+}
+
+function detectBoardKeyFromDsl(text) {
+  var hit = String(text || '').match(/Board:\s*([\w-]+)/i);
+  return hit ? hit[1] : null;
+}
+
+function applyLayoutMapToNotes(map, opts) {
+  var options = opts || {};
+  if (!map) return 0;
+  var count = 0;
+  getSourceNotesArray().forEach(function (note) {
+    var entry = map[String(note.id)];
+    if (!entry) return;
+    var x = Array.isArray(entry) ? entry[0] : entry.x;
+    var y = Array.isArray(entry) ? entry[1] : entry.y;
+    if (!isFinite(Number(x)) || !isFinite(Number(y))) return;
+    note.layoutX = Number(x);
+    note.layoutY = Number(y);
+    count += 1;
+  });
+  if (count && typeof syncCanvasGlobals === 'function') syncCanvasGlobals();
+  if (count && (!options.silent) && typeof showToast === 'function') {
+    showToast('ナビ格子を更新しました（' + count + ' 件）', 'success');
+  }
+  return count;
+}
+
+function syncLayoutFromDslTextarea(opts) {
+  var ta = document.getElementById('dsl-input');
+  if (!ta || !String(ta.value || '').trim()) return 0;
+  return applyLayoutMapToNotes(extractLayoutMapFromDsl(ta.value), opts);
+}
+
+function applyBuiltinBoardLayout(opts) {
+  var layouts = (typeof window !== 'undefined') ? window.AETHER_BOARD_LAYOUTS : null;
+  if (!layouts) return 0;
+  var ta = document.getElementById('dsl-input');
+  var key = detectBoardKeyFromDsl(ta && ta.value);
+  if (!key || !layouts[key]) return 0;
+  return applyLayoutMapToNotes(layouts[key], opts);
+}
+
+async function syncNavLayoutFromAllSources() {
+  var applied = 0;
+  try {
+    var res = await fetch('aether_dsl.txt?t=' + Date.now());
+    if (res.ok) {
+      applied = applyLayoutMapToNotes(extractLayoutMapFromDsl(await res.text()), { silent: true });
+    }
+  } catch (err) { /* file:// 等 */ }
+  if (!applied) applied = syncLayoutFromDslTextarea({ silent: true });
+  if (!applied) applied = applyBuiltinBoardLayout({ silent: true });
+  if (applied) {
+    console.log('[Aether Nav] layout coords synced for', applied, 'notes');
+  }
+  return applied;
+}
+
+function getSourceNotesArray() {
+  return (typeof notes !== 'undefined' && notes && notes.length) ? notes : (window.notes || []);
+}
+
+function getKeyboardNavPool() {
+  return getSourceNotesArray().filter(function (n) {
     if (typeof isTimeVisible === 'function' && !isTimeVisible(n.time)) return false;
-    // DOM上で非表示・dimmed のノードを除外
-    const el = document.getElementById('note-' + n.id);
-    if (el && (el.classList.contains('dimmed') || el.hidden)) return false;
-    return true;
+    return !!document.getElementById('note-' + n.id);
   });
 }
 
-function focusNoteByArrowKey(direction) {
-  const pool = getActiveNotesPool();
-  if (!pool.length) return;
+function getActiveNotesPool() {
+  return getKeyboardNavPool().filter(function (n) {
+    var el = document.getElementById('note-' + n.id);
+    return !(el && el.hidden);
+  });
+}
 
-  // 現在フォーカスされているノードを取得（なければPoolの先頭）
-  let current = pool.find(n => String(n.id) === String(window.focusedNoteId));
-  if (!current) current = pool[0];
+function isSameGridRow(a, b) {
+  return Math.abs(getNoteLayoutY(a) - getNoteLayoutY(b)) <= AETHER_GRID_ROW_TOL;
+}
 
-  const cx = Number(current.x) + 90;
-  const cy = Number(current.y) + 70;
+function isSameGridCol(a, b) {
+  return Math.abs(getNoteLayoutX(a) - getNoteLayoutX(b)) <= AETHER_GRID_COL_TOL;
+}
 
-  let bestTarget = null;
-  let minScore = Infinity;
+function getSortedNavPool() {
+  return getKeyboardNavPool().slice().sort(function (a, b) {
+    var dy = getNoteLayoutY(a) - getNoteLayoutY(b);
+    if (Math.abs(dy) > 8) return dy;
+    return getNoteLayoutX(a) - getNoteLayoutX(b);
+  });
+}
 
-  pool.forEach(target => {
-    if (String(target.id) === String(current.id)) return;
-    const tx = Number(target.x) + 90;
-    const ty = Number(target.y) + 70;
-    const dx = tx - cx;
-    const dy = ty - cy;
+function resolveDrawingTargetIds(dw) {
+  if (!dw || !dw.targets) return [];
+  if (Array.isArray(dw.targets)) return dw.targets.slice();
+  return String(dw.targets).split(/\s+/).filter(Boolean);
+}
 
-    let validDir = false;
-    let primaryDiff = 0;
-    let secondaryDiff = 0;
-
-    if (direction === 'Right' && dx > 10) {
-      validDir = true;
-      primaryDiff = dx;
-      secondaryDiff = Math.abs(dy);
-    } else if (direction === 'Left' && dx < -10) {
-      validDir = true;
-      primaryDiff = -dx;
-      secondaryDiff = Math.abs(dy);
-    } else if (direction === 'Down' && dy > 10) {
-      validDir = true;
-      primaryDiff = dy;
-      secondaryDiff = Math.abs(dx);
-    } else if (direction === 'Up' && dy < -10) {
-      validDir = true;
-      primaryDiff = -dy;
-      secondaryDiff = Math.abs(dx);
-    }
-
-    if (validDir) {
-      // 主方向の直線距離と垂直偏角の加重計算（真横・真下の近接ノードを最優先）
-      const score = primaryDiff + secondaryDiff * 1.5;
-      if (score < minScore) {
-        minScore = score;
-        bestTarget = target;
+function findAreaGroupPeers(current, pool) {
+  var drawingList = (typeof drawings !== 'undefined' && drawings && drawings.length)
+    ? drawings
+    : (window.drawings || []);
+  if (!drawingList.length && typeof parseAetherDSL === 'function') {
+    var ta = document.getElementById('dsl-input');
+    if (ta && ta.value && ta.value.trim()) {
+      var reparsed = parseAetherDSL(ta.value);
+      if (reparsed.drawings && reparsed.drawings.length) {
+        drawingList = reparsed.drawings;
+        drawings = reparsed.drawings;
+        window.drawings = reparsed.drawings;
       }
     }
-  });
+  }
+  var curId = String(current.id);
+  for (var i = 0; i < drawingList.length; i++) {
+    var dw = drawingList[i];
+    if (dw.type !== 'circle-area') continue;
+    if (typeof isTimeVisible === 'function' && dw.time && !isTimeVisible(dw.time)) continue;
+    var ids = resolveDrawingTargetIds(dw);
+    if (ids.indexOf(curId) < 0) continue;
+    return ids.map(function (id) {
+      return pool.find(function (n) { return String(n.id) === String(id); });
+    }).filter(Boolean);
+  }
+  return null;
+}
 
-  if (bestTarget) {
-    focusAndSelectNote(bestTarget);
+function findAreaGroupNeighbor(current, direction, pool) {
+  var group = findAreaGroupPeers(current, pool);
+  if (!group || group.length < 2) return null;
+  return findGridNeighbor(current, direction, group);
+}
+
+function findGridNeighbor(current, direction, pool) {
+  var curX = getNoteLayoutX(current);
+  var curY = getNoteLayoutY(current);
+
+  if (direction === 'Right' || direction === 'Left') {
+    var rowPeers = pool.filter(function (n) {
+      if (String(n.id) === String(current.id)) return false;
+      return isSameGridRow(current, n);
+    }).sort(function (a, b) { return getNoteLayoutX(a) - getNoteLayoutX(b); });
+
+    if (direction === 'Right') {
+      var right = rowPeers.filter(function (n) { return getNoteLayoutX(n) > curX + 1; });
+      return right.length ? right[0] : null;
+    }
+    var left = rowPeers.filter(function (n) { return getNoteLayoutX(n) < curX - 1; });
+    return left.length ? left[left.length - 1] : null;
+  }
+
+  var colPeers = pool.filter(function (n) {
+    if (String(n.id) === String(current.id)) return false;
+    return isSameGridCol(current, n);
+  }).sort(function (a, b) { return getNoteLayoutY(a) - getNoteLayoutY(b); });
+
+  if (direction === 'Down') {
+    var down = colPeers.filter(function (n) { return getNoteLayoutY(n) > curY + 1; });
+    return down.length ? down[0] : null;
+  }
+  var up = colPeers.filter(function (n) { return getNoteLayoutY(n) < curY - 1; });
+  return up.length ? up[up.length - 1] : null;
+}
+
+function findArrowNavTarget(current, direction, pool) {
+  var areaTarget = findAreaGroupNeighbor(current, direction, pool);
+  if (areaTarget) return areaTarget;
+  return findGridNeighbor(current, direction, pool);
+}
+
+function findInitialGridFocusInDirection(direction, pool) {
+  var sorted = getSortedNavPool();
+  if (!sorted.length) return pool[0] || null;
+  if (direction === 'Right' || direction === 'Down') return sorted[0];
+  return sorted[sorted.length - 1];
+}
+
+function focusNoteByArrowKey(direction) {
+  if (typeof getEffectiveViewMode === 'function' && getEffectiveViewMode() === 'list') return;
+
+  var pool = getKeyboardNavPool();
+  if (!pool.length) return;
+
+  var current = pool.find(function (n) { return String(n.id) === String(window.focusedNoteId); });
+  if (!current) {
+    var seed = findInitialGridFocusInDirection(direction, pool);
+    if (seed) focusAndSelectNote(seed, { silent: true });
+    return;
+  }
+
+  var target = findArrowNavTarget(current, direction, pool);
+  if (target) {
+    focusAndSelectNote(target, { silent: true });
   }
 }
 
 function focusNextNoteInOrder(delta) {
-  const pool = getActiveNotesPool();
+  var pool = getSortedNavPool();
   if (!pool.length) return;
-  let idx = pool.findIndex(n => String(n.id) === String(window.focusedNoteId));
+  var idx = pool.findIndex(function (n) { return String(n.id) === String(window.focusedNoteId); });
   if (idx < 0) idx = 0;
-  let nextIdx = (idx + delta + pool.length) % pool.length;
-  focusAndSelectNote(pool[nextIdx]);
+  var nextIdx = (idx + delta + pool.length) % pool.length;
+  focusAndSelectNote(pool[nextIdx], { silent: true });
 }
 
-function focusAndSelectNote(note) {
-  if (!note) return;
-  window.focusedNoteId = String(note.id);
-  
-  // ハイライト表示
-  document.querySelectorAll('#notes-container .sticky-note').forEach(el => el.classList.remove('focused'));
-  const targetEl = document.getElementById('note-' + note.id);
-  if (targetEl) targetEl.classList.add('focused');
+function clearKeyboardFocusState() {
+  window.focusedNoteId = null;
+  document.querySelectorAll('#notes-container .sticky-note').forEach(function (el) {
+    el.classList.remove('focused');
+  });
+  if (document.body) document.body.classList.remove('aether-kb-focus');
+  if (typeof drawAllShapes === 'function') drawAllShapes();
+}
 
-  // 画面中央へスムーズ移動
+function focusAndSelectNote(note, opts) {
+  if (!note) return;
+  var options = opts || {};
+  window.focusedNoteId = String(note.id);
+
+  document.querySelectorAll('#notes-container .sticky-note').forEach(function (el) {
+    el.classList.remove('focused');
+  });
+  var targetEl = document.getElementById('note-' + note.id);
+  if (targetEl) targetEl.classList.add('focused');
+  if (document.body) document.body.classList.add('aether-kb-focus');
+
+  var canvasEl = document.getElementById('canvas-container');
+  if (canvasEl && typeof canvasEl.focus === 'function') {
+    try { canvasEl.focus({ preventScroll: true }); } catch (err) { canvasEl.focus(); }
+  }
+
   centerFocusedNote(note);
 
-  // 右パネル詳細表示
   if (typeof showNodeDetails === 'function') {
     showNodeDetails(note);
+  } else if (typeof drawAllShapes === 'function') {
+    drawAllShapes();
   }
-  
-  showToast('フォーカス: ' + note.content, 'success');
+
+  if (!options.silent) {
+    showToast('フォーカス: ' + note.content, 'success');
+  }
 }
 
-// キーボードイベントリスナーの登録
-window.addEventListener('keydown', (e) => {
-  // 入力フォームや textarea にフォーカス中はショートカットをスキップ
-  const activeEl = document.activeElement;
-  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+function reconcileKeyboardFocusAfterStepChange() {
+  if (!window.focusedNoteId) return;
+  var pool = getKeyboardNavPool();
+  if (!pool.length) {
+    clearKeyboardFocusState();
+    return;
+  }
+  var stillVisible = pool.some(function (n) {
+    return String(n.id) === String(window.focusedNoteId);
+  });
+  if (stillVisible) {
+    var note = pool.find(function (n) { return String(n.id) === String(window.focusedNoteId); });
+    if (note) {
+      var el = document.getElementById('note-' + note.id);
+      if (el) el.classList.add('focused');
+      if (document.body) document.body.classList.add('aether-kb-focus');
+      if (typeof drawAllShapes === 'function') drawAllShapes();
+    }
+    return;
+  }
+  var first = typeof getFirstNoteForCurrentStep === 'function'
+    ? getFirstNoteForCurrentStep()
+    : getSortedNavPool()[0];
+  if (first) focusAndSelectNote(first, { silent: true });
+}
+
+// キーボード（capture で最優先）— build: 4.0.37-layout-nav
+window.__AETHER_KB_NAV_BUILD__ = '4.0.37-layout-nav';
+
+function handleAetherKeyboardNav(e) {
+  if (e.ctrlKey && !e.metaKey && !e.altKey) {
+    if (e.key === 'ArrowRight') {
+      if (typeof isTypingTarget === 'function' && isTypingTarget(e.target)) return;
+      e.preventDefault();
+      nextPresentationStep();
+      return;
+    }
+    if (e.key === 'ArrowLeft') {
+      if (typeof isTypingTarget === 'function' && isTypingTarget(e.target)) return;
+      e.preventDefault();
+      prevPresentationStep();
+      return;
+    }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      if (typeof isTypingTarget === 'function' && isTypingTarget(e.target)) return;
+      e.preventDefault();
+      zoom(e.key === 'ArrowUp' ? 0.1 : -0.1);
+      return;
+    }
+  }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+  if (e.key === 'Escape') {
+    if (window.mobileDetailOpen && typeof closeMobileDetail === 'function') {
+      closeMobileDetail();
+      return;
+    }
+    if (window.isPresentationMode) {
+      togglePresentationMode(false);
+    }
+    if (window.focusedNoteId) {
+      if (typeof clearKeyboardFocusState === 'function') {
+        clearKeyboardFocusState();
+      } else {
+        var el0 = document.getElementById('note-' + window.focusedNoteId);
+        if (el0) el0.classList.remove('focused');
+        window.focusedNoteId = null;
+      }
+      var detailsContainer = document.getElementById('details-view-container');
+      if (detailsContainer) {
+        detailsContainer.innerHTML =
+          '<div class="details-empty-state" style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">' +
+            '<span style="font-size: 2.5rem; display: block; margin-bottom: 12px;">📖</span>' +
+            '<p style="font-size: 0.85rem; line-height: 1.5;">キャンバス上の付箋をクリックすると、<br>ここに詳細情報が表示されます。</p>' +
+          '</div>';
+      }
+      switchTab('dsl');
+    }
     return;
   }
 
-  if (e.key === 'ArrowRight' || e.key === 'Right') {
+  if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    if (typeof isTypingTarget === 'function' && isTypingTarget(e.target)) return;
     e.preventDefault();
-    focusNoteByArrowKey('Right');
-  } else if (e.key === 'ArrowLeft' || e.key === 'Left') {
-    e.preventDefault();
-    focusNoteByArrowKey('Left');
-  } else if (e.key === 'ArrowDown' || e.key === 'Down') {
-    e.preventDefault();
-    focusNoteByArrowKey('Down');
-  } else if (e.key === 'ArrowUp' || e.key === 'Up') {
-    e.preventDefault();
-    focusNoteByArrowKey('Up');
-  } else if (e.key === 'Tab') {
-    e.preventDefault();
-    focusNextNoteInOrder(e.shiftKey ? -1 : 1);
-  } else if (e.key === 'f' || e.key === 'F') {
-    if (!e.ctrlKey && !e.metaKey) {
-      e.preventDefault();
-      if (typeof fitToView === 'function') fitToView();
-    }
+    if (window.isPresentationMode) focusPresentationStepView();
+    else if (typeof fitToView === 'function') fitToView();
+    return;
   }
-});
+
+  if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    if (typeof isTypingTarget === 'function' && isTypingTarget(e.target)) return;
+    e.preventDefault();
+    togglePresentationMode();
+    return;
+  }
+
+  var navKeys = ['ArrowRight', 'Right', 'ArrowLeft', 'Left', 'ArrowDown', 'Down', 'ArrowUp', 'Up', 'Tab'];
+  if (navKeys.indexOf(e.key) < 0) return;
+
+  if (typeof isTypingTarget === 'function' && isTypingTarget(e.target)) {
+    var kbGraph = window.focusedNoteId && document.body && document.body.classList.contains('aether-kb-focus');
+    if (!kbGraph) return;
+  }
+
+  e.preventDefault();
+  e.stopImmediatePropagation();
+
+  if (e.key === 'ArrowRight' || e.key === 'Right') focusNoteByArrowKey('Right');
+  else if (e.key === 'ArrowLeft' || e.key === 'Left') focusNoteByArrowKey('Left');
+  else if (e.key === 'ArrowDown' || e.key === 'Down') focusNoteByArrowKey('Down');
+  else if (e.key === 'ArrowUp' || e.key === 'Up') focusNoteByArrowKey('Up');
+  else if (e.key === 'Tab') focusNextNoteInOrder(e.shiftKey ? -1 : 1);
+}
+
+window.addEventListener('keydown', handleAetherKeyboardNav, true);
 
 // フォーカス付箋をグラフ領域の中央へパン（世界座標基準・はみ出し可）
 // getBoundingClientRect 依存だと画面外ノードや高倍率が崩れるため、note.x/y を正とする
@@ -1054,9 +1324,11 @@ function showNodeDetails(note) {
     const prevEl = document.getElementById('note-' + window.focusedNoteId);
     if (prevEl) prevEl.classList.remove('focused');
   }
-  window.focusedNoteId = note.id;
+  window.focusedNoteId = String(note.id);
   const currentEl = document.getElementById('note-' + note.id);
   if (currentEl) currentEl.classList.add('focused');
+  if (document.body) document.body.classList.add('aether-kb-focus');
+  if (typeof drawAllShapes === 'function') drawAllShapes();
 
   const tagsHtml = note.tags && note.tags.length > 0
     ? note.tags.map(t => '<span class="details-tag-indicator">' + t + '</span>').join(' ')
@@ -1108,8 +1380,6 @@ function showNodeDetails(note) {
     } else if (typeof openMobileDetail === 'function') {
       openMobileDetail(note.id, { drawer: true });
     }
-  } else if (typeof focusMobileListCard === 'function') {
-    focusMobileListCard(note.id, false);
   }
 
   // 選択変更時はフォーカス付箋をグラフ中央へ（倍率変更後も同じ経路・はみ出し可）
@@ -1125,118 +1395,6 @@ function isTypingTarget(el) {
   if (el.isContentEditable) return true;
   return false;
 }
-
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    if (window.mobileDetailOpen && typeof closeMobileDetail === 'function') {
-      closeMobileDetail();
-      return;
-    }
-    if (window.isPresentationMode) {
-      togglePresentationMode(false);
-    }
-    if (window.focusedNoteId) {
-      const el = document.getElementById('note-' + window.focusedNoteId);
-      if (el) el.classList.remove('focused');
-      window.focusedNoteId = null;
-
-      const detailsContainer = document.getElementById('details-view-container');
-      if (detailsContainer) {
-        detailsContainer.innerHTML =
-          '<div class="details-empty-state" style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">' +
-            '<span style="font-size: 2.5rem; display: block; margin-bottom: 12px;">📖</span>' +
-            '<p style="font-size: 0.85rem; line-height: 1.5;">キャンバス上の付箋をクリックすると、<br>ここに詳細情報が表示されます。</p>' +
-          '</div>';
-      }
-      switchTab('dsl');
-    }
-    return;
-  }
-
-  // F: グラフ全体表示（入力中は無効）
-  // プレゼン中は「横最大 + 選択縦中央」を維持（fitToView の縦縮めを避ける）
-  if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    if (isTypingTarget(e.target)) return;
-    e.preventDefault();
-    if (window.isPresentationMode) {
-      focusPresentationStepView();
-    } else {
-      fitToView();
-    }
-    return;
-  }
-
-  // P: プレゼンモード切り替え（入力中は無効）
-  if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    if (isTypingTarget(e.target)) return;
-    e.preventDefault();
-    togglePresentationMode();
-    return;
-  }
-
-  // Ctrl + ArrowRight: 次のプレゼンステップ
-  if (e.ctrlKey && e.key === 'ArrowRight') {
-    if (isTypingTarget(e.target)) return;
-    e.preventDefault();
-    nextPresentationStep();
-    return;
-  }
-
-  // Ctrl + ArrowLeft: 前のプレゼンステップ
-  if (e.ctrlKey && e.key === 'ArrowLeft') {
-    if (isTypingTarget(e.target)) return;
-    e.preventDefault();
-    prevPresentationStep();
-    return;
-  }
-
-  // Ctrl + ArrowUp / ArrowDown: ズーム（フォーカス付箋へ中央追従）
-  if (e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-    if (isTypingTarget(e.target)) return;
-    e.preventDefault();
-    zoom(e.key === 'ArrowUp' ? 0.1 : -0.1);
-    return;
-  }
-
-  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-    if (e.ctrlKey || e.metaKey || e.shiftKey) return; // Ctrl 等の修飾キーがあればスキップ
-    if (isTypingTarget(e.target)) return;
-    if (!window.focusedNoteId) return;
-    e.preventDefault();
-
-    const currentNote = notes.find(n => n.id === window.focusedNoteId);
-    if (!currentNote) return;
-
-    let bestTarget = null;
-    let minDistance = Infinity;
-
-    notes.forEach(note => {
-      if (note.id === window.focusedNoteId) return;
-      // プレゼン中は現在ステップで見えている付箋だけを対象にする
-      if (window.isPresentationMode && typeof isTimeVisible === 'function' && !isTimeVisible(note.time)) return;
-
-      const dx = note.x - currentNote.x;
-      const dy = note.y - currentNote.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      let isCorrectDirection = false;
-      if (e.key === 'ArrowRight' && dx > 20 && Math.abs(dy) < Math.abs(dx) * 1.5) isCorrectDirection = true;
-      if (e.key === 'ArrowLeft' && dx < -20 && Math.abs(dy) < Math.abs(dx) * 1.5) isCorrectDirection = true;
-      if (e.key === 'ArrowDown' && dy > 20 && Math.abs(dx) < Math.abs(dy) * 1.5) isCorrectDirection = true;
-      if (e.key === 'ArrowUp' && dy < -20 && Math.abs(dx) < Math.abs(dy) * 1.5) isCorrectDirection = true;
-
-      if (isCorrectDirection && dist < minDistance) {
-        minDistance = dist;
-        bestTarget = note;
-      }
-    });
-
-    if (bestTarget) {
-      // showNodeDetails 内でプレゼン時の縦中央合わせを行う
-      showNodeDetails(bestTarget);
-    }
-  }
-});
 
 function toggleTheme() {
   const body = document.body;
@@ -2439,6 +2597,9 @@ async function applyDefaultOrCachedDsl() {
       }
     } catch (e) {
       console.warn('[Aether Loader] Fetch aether_dsl.txt failed, fallback to IndexedDB:', e);
+      if (location.protocol === 'file:') {
+        showToast('file:// では aether_dsl.txt を自動読込できません。IndexedDB の保存データを使用します。python aether_server.py 等で開くと最新 DSL が読み込まれます。', 'error');
+      }
     }
 
     // 1) legacy board_state.current_dsl 優先（配列順・全文を保持）
@@ -2482,7 +2643,7 @@ async function applyDefaultOrCachedDsl() {
 
 // Boot: ?dsl= remote/relative → IndexedDB restore → default DSL. No polling / no API.
 window.onload = async () => {
-  console.log('[Aether] build 4.0.27 desktop-cleanup-on-resize (dedupeCanvasState=', typeof dedupeCanvasState, ')');
+  console.log('[Aether] build 4.0.37-layout-nav (kb=', window.__AETHER_KB_NAV_BUILD__, ', dedupeCanvasState=', typeof dedupeCanvasState, ')');
   setupCanvasInteractions();
   setupDragAndDrop();
   updateLiveWatchUi();
@@ -2508,4 +2669,5 @@ window.onload = async () => {
   } else {
     await applyDefaultOrCachedDsl();
   }
+  await syncNavLayoutFromAllSources();
 };

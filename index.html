@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.27">
+  <link rel="stylesheet" href="style.css?v=4.0.37">
 </head>
 <body class="light-theme">
 
@@ -65,7 +65,7 @@
   </div>
 
   <!-- Infinite Canvas -->
-  <div class="whiteboard-container" id="canvas-container">
+  <div class="whiteboard-container" id="canvas-container" tabindex="0" aria-label="Aether グラフキャンバス">
     <div class="canvas-tags-chrome" id="canvas-tags-chrome">
       <div class="tags-filter-bar" id="tags-filter-bar"></div>
     </div>
@@ -116,7 +116,9 @@
           <div class="legend-row legend-shortcut"><kbd class="legend-kbd">P</kbd><span>プレゼン ON/OFF</span></div>
           <div class="legend-row legend-shortcut"><kbd class="legend-kbd">Ctrl</kbd><span class="legend-plus">+</span><kbd class="legend-kbd">←</kbd><kbd class="legend-kbd">→</kbd><span>プレゼン step 前後</span></div>
           <div class="legend-row legend-shortcut"><kbd class="legend-kbd">Ctrl</kbd><span class="legend-plus">+</span><kbd class="legend-kbd">↑</kbd><kbd class="legend-kbd">↓</kbd><span>ズーム</span></div>
-          <div class="legend-row legend-shortcut"><kbd class="legend-kbd">↑</kbd><kbd class="legend-kbd">↓</kbd><kbd class="legend-kbd">←</kbd><kbd class="legend-kbd">→</kbd><span>選択付箋を移動</span></div>
+          <div class="legend-row legend-shortcut"><kbd class="legend-kbd">←</kbd><kbd class="legend-kbd">→</kbd><span>同一行（DSL pos の y が近い付箋）</span></div>
+          <div class="legend-row legend-shortcut"><kbd class="legend-kbd">↑</kbd><kbd class="legend-kbd">↓</kbd><span>同一列（DSL pos の x が近い付箋）</span></div>
+          <div class="legend-row legend-shortcut"><kbd class="legend-kbd">Tab</kbd><span>Step 内の付箋を順送り</span></div>
           <div class="legend-row legend-shortcut"><kbd class="legend-kbd">Esc</kbd><span>プレゼン終了 / 選択解除</span></div>
         </div>
         <div class="legend-section">
@@ -243,10 +245,11 @@
     window.drawings = drawings;
     window.relations = relations;
   </script>
-  <script src="aether_parser.js?v=4.0.32"></script>
-  <script src="aether_renderer.js?v=4.0.32"></script>
-  <script src="aether_storage.js?v=4.0.32"></script>
-  <script src="aether_main.js?v=4.0.32"></script>
-  <script src="aether_export.js?v=4.0.32"></script>
+  <script src="aether_layouts.js?v=4.0.37"></script>
+  <script src="aether_parser.js?v=4.0.37"></script>
+  <script src="aether_renderer.js?v=4.0.37"></script>
+  <script src="aether_storage.js?v=4.0.37"></script>
+  <script src="aether_main.js?v=4.0.37"></script>
+  <script src="aether_export.js?v=4.0.37"></script>
 </body>
 </html>
