@@ -140,8 +140,21 @@ function updateTimeSlider(times) {
     return;
   }
 
+  // Step は表示順を保証するため、数値プレフィックス（1_, 2_, ...）で自然順ソートする。
+  // 数値プレフィックスを持たない step は文字列順で後方へ配置（'すべて' は常に先頭）。
+  const sortedTimes = Array.from(new Set(times)).sort((a, b) => {
+    const na = parseInt(a, 10);
+    const nb = parseInt(b, 10);
+    const aNum = !isNaN(na);
+    const bNum = !isNaN(nb);
+    if (aNum && bNum) return na - nb;
+    if (aNum) return -1;
+    if (bNum) return 1;
+    return a.localeCompare(b);
+  });
+
   containerEl.style.display = 'flex';
-  window.timeSteps = ['すべて', ...times];
+  window.timeSteps = ['すべて', ...sortedTimes];
   slider.min = 0;
   slider.max = window.timeSteps.length - 1;
   slider.value = 0;

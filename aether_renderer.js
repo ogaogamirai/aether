@@ -764,12 +764,15 @@ function getNoteLayoutY(note) {
 }
 
 function getNoteCenter(note) {
-  return { x: getNoteLayoutX(note) + NOTE_HALF_W, y: getNoteLayoutY(note) + NOTE_HALF_H };
+  // エッジは常にノードの「表示位置」（x/y）に接続する。
+  // layoutX/layoutY はキーボードナビ用の設計格子であり、IDB復元やドラッグで
+  // x/y と乖離することがあるため、エッジ描画には使わない。
+  return { x: Number(note.x) + NOTE_HALF_W, y: Number(note.y) + NOTE_HALF_H };
 }
 
 function getNoteAnchorPoint(note, towardX, towardY) {
-  const cx = getNoteLayoutX(note) + NOTE_HALF_W;
-  const cy = getNoteLayoutY(note) + NOTE_HALF_H;
+  const cx = Number(note.x) + NOTE_HALF_W;
+  const cy = Number(note.y) + NOTE_HALF_H;
   const dx = towardX - cx;
   const dy = towardY - cy;
   if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) {
