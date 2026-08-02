@@ -379,6 +379,7 @@ function focusPresentationStepView() {
   const panel = document.getElementById('control-panel');
   if (panel && panel.classList.contains('collapsed')) {
     panel.classList.remove('collapsed');
+    syncSidebarCollapsedBodyClass();
     const btn = document.getElementById('sidebar-toggle-btn');
     if (btn) {
       btn.textContent = '◀';
@@ -1828,6 +1829,7 @@ function applyViewModeLayout() {
     var panel = document.getElementById('control-panel');
     if (panel && isNarrowViewport() && !panel.classList.contains('collapsed')) {
       panel.classList.add('collapsed');
+      syncSidebarCollapsedBodyClass();
       var sidebarBtn = document.getElementById('sidebar-toggle-btn');
       if (sidebarBtn) {
         sidebarBtn.textContent = '▶';
@@ -1841,6 +1843,7 @@ function applyViewModeLayout() {
     var panel = document.getElementById('control-panel');
     if (panel && isNarrowViewport() && !panel.classList.contains('collapsed')) {
       panel.classList.add('collapsed');
+      syncSidebarCollapsedBodyClass();
       var sidebarBtn = document.getElementById('sidebar-toggle-btn');
       if (sidebarBtn) {
         sidebarBtn.textContent = '▶';
@@ -2296,11 +2299,18 @@ function initResponsiveView() {
   });
 }
 
+function syncSidebarCollapsedBodyClass() {
+  const panel = document.getElementById('control-panel');
+  if (!panel) return;
+  document.body.classList.toggle('sidebar-collapsed', panel.classList.contains('collapsed'));
+}
+
 function toggleSidebar() {
   const panel = document.getElementById('control-panel');
   const btn = document.getElementById('sidebar-toggle-btn');
   if (!panel || !btn) return;
   const isCollapsed = panel.classList.toggle('collapsed');
+  syncSidebarCollapsedBodyClass();
   btn.textContent = isCollapsed ? '▶' : '◀';
   btn.title = isCollapsed ? 'サイドバーを開く' : 'サイドバーを閉じる';
 }

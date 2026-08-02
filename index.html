@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="style.css?v=4.0.40">
+  <link rel="stylesheet" href="style.css?v=4.0.41">
 </head>
 <body class="light-theme">
 
@@ -29,12 +29,15 @@
     <button type="button" id="mobile-pres-toggle-btn" class="view-mode-btn view-mode-btn-pres" onclick="togglePresentationMode()" title="プレゼンモード ON/OFF">🎬</button>
   </div>
 
-  <div class="tags-bar-toggle-float" id="tags-bar-toggle-wrap" hidden>
-    <label class="tags-visibility-toggle" title="グラフ上のタグフィルター表示">
-      <input type="checkbox" id="tags-bar-visible-toggle" checked onchange="setTagsBarVisible(this.checked)">
-      <span class="tags-toggle-track" aria-hidden="true"><span class="tags-toggle-thumb"></span></span>
-      <span class="tags-toggle-label">タグ</span>
-    </label>
+  <div class="canvas-top-chrome" id="canvas-top-chrome">
+    <div class="tags-bar-toggle-float" id="tags-bar-toggle-wrap" hidden>
+      <label class="tags-visibility-toggle" title="グラフ上のタグフィルター表示">
+        <input type="checkbox" id="tags-bar-visible-toggle" checked onchange="setTagsBarVisible(this.checked)">
+        <span class="tags-toggle-track" aria-hidden="true"><span class="tags-toggle-thumb"></span></span>
+        <span class="tags-toggle-label">タグ</span>
+      </label>
+    </div>
+    <button type="button" id="legend-open-btn" class="legend-open-btn" onclick="toggleLegend(true)" title="ガイドを表示" style="display:none;">📋 ガイド</button>
   </div>
 
   <nav id="mobile-node-strip" class="mobile-node-strip" aria-label="付箋切替" hidden></nav>
@@ -144,8 +147,6 @@
         </div>
       </div>
     </div>
-    <button type="button" id="legend-open-btn" class="legend-open-btn" onclick="toggleLegend(true)" title="ガイドを表示" style="display:none;">📋 ガイド</button>
-
     <!-- 時系列スライダーUI -->
     <div class="time-slider-container" id="time-slider-container">
       <input type="range" id="time-slider" min="0" max="0" value="0" oninput="handleTimeSlider(this.value)">
@@ -171,14 +172,27 @@
       <div class="panel-title-block">
         <h1 title="人とAIの共創無限ホワイトボード">🌌 Aether</h1>
       </div>
-      <div class="panel-toolbar">
-        <button class="toolbar-btn" id="pres-mode-btn" onclick="togglePresentationMode()" title="プレゼンモード (P)">🎬</button>
-        <button class="toolbar-btn" onclick="zoom(0.1)" title="拡大">＋</button>
-        <button class="toolbar-btn" onclick="zoom(-0.1)" title="縮小">－</button>
-        <button class="toolbar-btn" onclick="fitToView()" title="全体表示 (F)">⊡</button>
-        <button class="toolbar-btn" onclick="resetTransform()" title="リセット">⟲</button>
-        <button class="toolbar-btn" id="theme-btn" onclick="toggleTheme()" title="テーマ切り替え">🌙</button>
-        <span id="scale-indicator" class="scale-indicator">100%</span>
+      <div class="panel-header-actions">
+        <div class="dsl-actions-toolbar" role="toolbar" aria-label="DSL操作">
+          <button type="button" id="btn-apply-dsl" class="toolbar-btn" onclick="applyDSL()" title="DSLをキャンバスに適用">↓</button>
+          <button type="button" id="btn-generate-dsl" class="toolbar-btn" onclick="generateDSLFromCanvas()" title="キャンバスからDSLを生成">↑</button>
+          <button type="button" id="btn-import-dsl" class="toolbar-btn" onclick="triggerImportDSL()" title="ローカルのDSLファイルを読み込み">📂</button>
+          <button type="button" id="btn-export-dsl" class="toolbar-btn" onclick="exportDSLToFile()" title="現在のDSLをテキストファイルとして保存">💾</button>
+          <button type="button" id="btn-export-viewer" class="toolbar-btn toolbar-btn-accent" onclick="exportPortableViewer()" title="他者と共有できる自己完結型インタラクティブHTMLを出力">📤</button>
+          <span class="dsl-toolbar-gap" aria-hidden="true"></span>
+          <button type="button" id="live-watch-btn" class="toolbar-btn" onclick="toggleLiveFolderWatch()" title="フォルダ内のDSLを監視（LIVE中は閲覧のみ・ファイルが正本）">👁️</button>
+          <span id="live-indicator" class="live-indicator" title="LIVE: 監視ファイルが正本。キャンバスは閲覧のみ">○ IDLE</span>
+        </div>
+        <span class="panel-toolbar-divider" aria-hidden="true"></span>
+        <div class="panel-toolbar">
+          <button class="toolbar-btn" id="pres-mode-btn" onclick="togglePresentationMode()" title="プレゼンモード (P)">🎬</button>
+          <button class="toolbar-btn" onclick="zoom(0.1)" title="拡大">＋</button>
+          <button class="toolbar-btn" onclick="zoom(-0.1)" title="縮小">－</button>
+          <button class="toolbar-btn" onclick="fitToView()" title="全体表示 (F)">⊡</button>
+          <button class="toolbar-btn" onclick="resetTransform()" title="リセット">⟲</button>
+          <button class="toolbar-btn" id="theme-btn" onclick="toggleTheme()" title="テーマ切り替え">🌙</button>
+          <span id="scale-indicator" class="scale-indicator">100%</span>
+        </div>
       </div>
     </div>
 
@@ -191,17 +205,7 @@
     <div class="tab-content active" id="tab-dsl">
       <div class="dsl-editor-container">
         <textarea class="dsl-textarea" id="dsl-input" placeholder="Aether DSL を記述してください..."></textarea>
-        <div class="dsl-actions">
-          <div class="dsl-actions-toolbar" role="toolbar" aria-label="DSL操作">
-            <button type="button" id="btn-apply-dsl" class="toolbar-btn" onclick="applyDSL()" title="DSLをキャンバスに適用">↓</button>
-            <button type="button" id="btn-generate-dsl" class="toolbar-btn" onclick="generateDSLFromCanvas()" title="キャンバスからDSLを生成">↑</button>
-            <button type="button" id="btn-import-dsl" class="toolbar-btn" onclick="triggerImportDSL()" title="ローカルのDSLファイルを読み込み">📂</button>
-            <button type="button" id="btn-export-dsl" class="toolbar-btn" onclick="exportDSLToFile()" title="現在のDSLをテキストファイルとして保存">💾</button>
-            <button type="button" id="btn-export-viewer" class="toolbar-btn toolbar-btn-accent" onclick="exportPortableViewer()" title="他者と共有できる自己完結型インタラクティブHTMLを出力">📤</button>
-            <span class="dsl-toolbar-gap" aria-hidden="true"></span>
-            <button type="button" id="live-watch-btn" class="toolbar-btn" onclick="toggleLiveFolderWatch()" title="フォルダ内のDSLを監視（LIVE中は閲覧のみ・ファイルが正本）">👁️</button>
-            <span id="live-indicator" class="live-indicator" title="LIVE: 監視ファイルが正本。キャンバスは閲覧のみ">○ IDLE</span>
-          </div>
+        <div class="dsl-actions dsl-actions-footer">
           <label class="live-filename-label" for="live-watch-filename" title="フォルダ直下の監視対象ファイル名">監視ファイル
             <input id="live-watch-filename" class="live-filename-input" type="text" value="aether_dsl.txt" spellcheck="false" title="フォルダ直下の監視対象ファイル名">
           </label>
@@ -245,11 +249,11 @@
     window.drawings = drawings;
     window.relations = relations;
   </script>
-  <script src="aether_layouts.js?v=4.0.40"></script>
-  <script src="aether_parser.js?v=4.0.40"></script>
-  <script src="aether_renderer.js?v=4.0.40"></script>
-  <script src="aether_storage.js?v=4.0.40"></script>
-  <script src="aether_main.js?v=4.0.40"></script>
-  <script src="aether_export.js?v=4.0.40"></script>
+  <script src="aether_layouts.js?v=4.0.41"></script>
+  <script src="aether_parser.js?v=4.0.41"></script>
+  <script src="aether_renderer.js?v=4.0.41"></script>
+  <script src="aether_storage.js?v=4.0.41"></script>
+  <script src="aether_main.js?v=4.0.41"></script>
+  <script src="aether_export.js?v=4.0.41"></script>
 </body>
 </html>
