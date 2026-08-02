@@ -749,7 +749,7 @@ function drawRelation(rel) {
   const isDimmed = !matches;
 
   if (rel.type === 'conflict') {
-    const steps = 14;
+    const steps = 12;
     let d = `M ${sx} ${sy}`;
     const nx = -dy / dist;
     const ny = dx / dist;
@@ -758,7 +758,7 @@ function drawRelation(rel) {
       const t = i / steps;
       const px = sx + dx * t;
       const py = sy + dy * t;
-      const offset = (i % 2 === 0 ? 10 : -10);
+      const offset = (i % 2 === 0 ? 8 : -8);
       d += ` L ${px + nx * offset} ${py + ny * offset}`;
     }
     d += ` L ${tx} ${ty}`;
@@ -767,8 +767,7 @@ function drawRelation(rel) {
     path.setAttribute('d', d);
     path.setAttribute('stroke', colorHex);
     path.setAttribute('fill', 'none');
-    path.setAttribute('stroke-width', String(relationStrokeWidth(rel, 3)));
-    path.setAttribute('filter', 'url(#glow)');
+    path.setAttribute('stroke-width', String(relationStrokeWidth(rel, 2.5)));
     if (isDimmed) path.classList.add('dimmed');
     applyRelationFlow(path, rel);
     appendToSvg(path);
@@ -776,7 +775,7 @@ function drawRelation(rel) {
     const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     text.setAttribute('x', sx + dx/2);
     text.setAttribute('y', sy + dy/2 + 4);
-    text.setAttribute('font-size', '16px');
+    text.setAttribute('font-size', '15px');
     text.setAttribute('text-anchor', 'middle');
     text.textContent = '⚡';
     if (isDimmed) text.setAttribute('class', 'dimmed');
@@ -785,10 +784,10 @@ function drawRelation(rel) {
     if (rel.label) {
       const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       label.setAttribute('x', sx + dx/2);
-      label.setAttribute('y', sy + dy/2 - 14);
+      label.setAttribute('y', sy + dy/2 - 10);
       label.setAttribute('fill', '#ef4444');
       label.setAttribute('font-size', '11px');
-      label.setAttribute('font-weight', '700');
+      label.setAttribute('font-weight', '600');
       label.setAttribute('font-family', 'var(--font-display)');
       label.setAttribute('text-anchor', 'middle');
       label.textContent = rel.label;
@@ -796,81 +795,108 @@ function drawRelation(rel) {
       appendToSvg(label);
     }
   } 
-  else {
-    // 優美な曲線（Bezier Curve Q）による存在感ある有機的エッジ描画
-    const mx = (sx + tx) / 2;
-    const my = (sy + ty) / 2;
-    const nx = -dy / dist;
-    const ny = dx / dist;
-
-    // リレーションごとに異なる計算曲率（S字／カーブ）で直線的寂しさを解消
-    let curvature = 35;
-    if (rel.type === 'influence') curvature = 55;
-    else if (rel.type === 'similarity') curvature = -30;
-    
-    // 向きに応じた美しいカーブ制御点
-    const cx = mx + nx * curvature;
-    const cy = my + ny * curvature;
-
-    const pathData = `M ${sx} ${sy} Q ${cx} ${cy} ${tx} ${ty}`;
-
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', pathData);
-    path.setAttribute('stroke', colorHex);
-    path.setAttribute('fill', 'none');
-    
-    const strokeW = rel.type === 'influence' ? 3.5 : 3.0;
-    path.setAttribute('stroke-width', String(relationStrokeWidth(rel, strokeW)));
-    path.setAttribute('filter', 'url(#glow)');
-
-    if (rel.type === 'influence' || rel.style === 'dashed') {
-      path.setAttribute('stroke-dasharray', '8 4');
-    } else if (rel.type === 'similarity') {
-      path.setAttribute('stroke-dasharray', '3 3');
-    }
-
-    if (isDimmed) path.classList.add('dimmed');
-    applyRelationFlow(path, rel);
+  else if (rel.type === 'influence') {
+    // 影響・波及：太めの破線＋矢印
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', sx);
+    line.setAttribute('y1', sy);
+    line.setAttribute('x2', tx);
+    line.setAttribute('y2', ty);
+    line.setAttribute('stroke', colorHex);
+    line.setAttribute('stroke-width', String(relationStrokeWidth(rel, 3)));
+    line.setAttribute('stroke-dasharray', '8 4');
+    if (isDimmed) line.classList.add('dimmed');
+    applyRelationFlow(line, rel);
     
     const markerId = `arrow-${rel.color}` || 'arrow-default';
-    path.setAttribute('marker-end', `url(#${markerId})`);
-    appendToSvg(path);
+    line.setAttribute('marker-end', `url(#${markerId})`);
+    appendToSvg(line);
 
-    // ラベル（文字）を読みやすく美しいスタイリッシュピルバッジとして描画
     if (rel.label) {
-      const lx = mx + nx * (curvature * 0.55);
-      const ly = my + ny * (curvature * 0.55);
-
-      const labelGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      
-      const labelText = String(rel.label);
-      const estW = labelText.length * 8 + 16;
-      const estH = 20;
-
-      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rect.setAttribute('x', lx - estW / 2);
-      rect.setAttribute('y', ly - 13);
-      rect.setAttribute('width', estW);
-      rect.setAttribute('height', estH);
-      rect.setAttribute('rx', '10');
-      rect.setAttribute('fill', 'rgba(15, 23, 42, 0.85)');
-      rect.setAttribute('stroke', colorHex);
-      rect.setAttribute('stroke-width', '1.2');
-      labelGroup.appendChild(rect);
-
       const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      text.setAttribute('x', lx);
-      text.setAttribute('y', ly + 1);
+      text.setAttribute('x', sx + dx/2);
+      text.setAttribute('y', sy + dy/2 - 8);
+      text.setAttribute('fill', colorHex);
+      text.setAttribute('font-size', '11px');
+      text.setAttribute('font-weight', '600');
+      text.setAttribute('font-family', 'var(--font-display)');
+      text.setAttribute('text-anchor', 'middle');
+      text.textContent = rel.label;
+      if (isDimmed) text.setAttribute('class', 'dimmed');
+      appendToSvg(text);
+    }
+  }
+  else if (rel.type === 'similarity') {
+    // 類似・並列：二重平行線
+    const nx = -dy / dist;
+    const ny = dx / dist;
+    
+    const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line1.setAttribute('x1', sx + nx * 4);
+    line1.setAttribute('y1', sy + ny * 4);
+    line1.setAttribute('x2', tx + nx * 4);
+    line1.setAttribute('y2', ty + ny * 4);
+    line1.setAttribute('stroke', colorHex);
+    line1.setAttribute('stroke-width', String(relationStrokeWidth(rel, 1.8)));
+    if (isDimmed) line1.classList.add('dimmed');
+    applyRelationFlow(line1, rel);
+    appendToSvg(line1);
+
+    const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line2.setAttribute('x1', sx - nx * 4);
+    line2.setAttribute('y1', sy - ny * 4);
+    line2.setAttribute('x2', tx - nx * 4);
+    line2.setAttribute('y2', ty - ny * 4);
+    line2.setAttribute('stroke', colorHex);
+    line2.setAttribute('stroke-width', String(relationStrokeWidth(rel, 1.8)));
+    if (isDimmed) line2.classList.add('dimmed');
+    applyRelationFlow(line2, rel);
+    appendToSvg(line2);
+
+    if (rel.label) {
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', sx + dx/2);
+      text.setAttribute('y', sy + dy/2 - 8);
       text.setAttribute('fill', colorHex);
       text.setAttribute('font-size', '10.5px');
       text.setAttribute('font-weight', '600');
       text.setAttribute('font-family', 'var(--font-display)');
       text.setAttribute('text-anchor', 'middle');
-      text.textContent = labelText;
-      labelGroup.appendChild(text);
+      text.textContent = rel.label;
+      if (isDimmed) text.setAttribute('class', 'dimmed');
+      appendToSvg(text);
+    }
+  }
+  else {
+    // デフォルト：クッキリした直線＋カラー矢印
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', sx);
+    line.setAttribute('y1', sy);
+    line.setAttribute('x2', tx);
+    line.setAttribute('y2', ty);
+    line.setAttribute('stroke', colorHex);
+    line.setAttribute('stroke-width', String(relationStrokeWidth(rel, 2.2)));
+    if (rel.style === 'dashed') line.setAttribute('stroke-dasharray', '5 5');
+    
+    if (isDimmed) line.classList.add('dimmed');
+    applyRelationFlow(line, rel);
+    
+    const markerId = `arrow-${rel.color}` || 'arrow-default';
+    line.setAttribute('marker-end', `url(#${markerId})`);
+    appendToSvg(line);
 
-      if (isDimmed) labelGroup.setAttribute('class', 'dimmed');
-      appendToSvg(labelGroup);
+    if (rel.label) {
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', sx + dx/2);
+      text.setAttribute('y', sy + dy/2 - 8);
+      text.setAttribute('fill', colorHex);
+      text.setAttribute('font-size', '11px');
+      text.setAttribute('font-weight', '600');
+      text.setAttribute('font-family', 'var(--font-display)');
+      text.setAttribute('text-anchor', 'middle');
+      text.textContent = rel.label;
+      if (isDimmed) text.setAttribute('class', 'dimmed');
+      appendToSvg(text);
     }
   }
 }

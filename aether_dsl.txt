@@ -43,7 +43,7 @@ sticky N5_premise_verification "価値観・事実認識の史実・ファクト
   color: "red"
   tags: "史実検証結論 水車技術落差 土地所有権確定 氏姓二重構造 寿命倍増 正当性欠如"
   time: "Step4_二大軸検証"
-  tone: "excited"
+  tone: "stable"
   desc: "【概要・検証結果】独立史実基盤（N9, N10）および統計・法制データに基づくファクト検証の結果、朝鮮側の主張前提である『事実認識』（古代からの技術優越という錯覚、水車未導入の遅れ無視、所有権確定や数十兆円直投を「収奪」とする誤解、氏と姓の二重構造誤解、文化侵略・言語抹殺説の虚妄、寿命倍増の成果無視）はいずれも客観的史実データと著しく矛盾し正当性を欠く。\n\n| 分類領域 | 【事実認識】に対する史実・データ検証 | 【価値観】と客観的実態の整合性評価 |\n|---|---|---|\n| 1. 文明・文化領域 | 独立史実基盤(N9, N10)より、朝鮮は中国文化の通過点にとどまり19世紀まで水車未導入。ハングルは総督府が普及。日本は古代から自前技術・堂島米市場・寺子屋(70%)を大開花 | 古代〜近世を通じた日本の圧倒的優位に対し、「自国が文化・文明的に優位」とする事実認識は正反対の観念的錯覚 |\n| 2. 経済・開発領域 | 土地調査は所有権確定。米移出は正当代金の対日貿易（現金流入）。累計数十兆円の直投 | 「一方的奪奪・収奪」という事実認識は、多大資本・物資の直接流入実態と矛盾 |\n| 3. 血統・家制度領域 | 創氏改名は「氏」の創設。伝統の「姓（金・朴等）・本貫」は戸籍裏に永久保存（改名任意<10%） | 「姓の抹殺」という事実認識は、氏と姓を別物として扱う近代二重法構造の誤解に基づく |\n| 4. 歴史・主体領域 | 平均寿命が24歳から56歳へ倍増。就学率が5%から49%へ急拡大 | 生命保護と発展の実質的成果を全否定し日本に全責任転嫁する事実認識は妥当性を欠く |"
 }
 
@@ -210,25 +210,25 @@ sticky N24_media_trends_wgip "2. メディア論調：革新系追認 vs 保守�
 }
 
 # === DRAWINGS ===
-drawing area_crown "👑 探究の冠：思考の起点 ＆ 🔴 最終総合結論（最上段スターバースト）" {
+drawing area_crown "探究の冠：思考の起点 ＆ 🔴 最終総合結論ヘッダー" {
   type: "circle-area"
   targets: "N1_sentiment_diff N25_final_reevaluation_conclusion"
   color: "red"
 }
 
-drawing area_east_asia "🌸 東アジア対日感情と独立史実ファクト基盤エリア" {
+drawing area_east_asia "東アジア対日感情と独立史実ファクト基盤ガイド" {
   type: "circle-area"
   targets: "N6_taiwan_sentiment N4_korea_premises N5_premise_verification N2_taiwan_governance N7_korea_contributions N9_fact_base N10_cultural_policy_facts"
   color: "blue"
 }
 
-drawing area_world_comparison "🌐 欧米列強（旧大陸＆南北アメリカ）統治比較エリア" {
+drawing area_world_comparison "欧米列強（旧大陸・南北アメリカ）統治比較ガイド" {
   type: "circle-area"
   targets: "N11_western_colonial_overview N12_western_finance_extraction N13_western_education_literacy N14_western_health_monoculture N15_western_divide_and_rule N16_americas_colonial_overview N17_latin_america_spain_portugal N18_north_america_uk_usa"
   color: "purple"
 }
 
-drawing area_ideology_and_media "🏛️ 日本統治の4大根本理念 ＆ 自虐史観メディア分析エリア" {
+drawing area_ideology_and_media "日本統治4大根本理念 ＆ 自虐史観メディア分析ガイド" {
   type: "circle-area"
   targets: "N19_japanese_ideology_overview N20_japanese_ideology_core_four N21_japanese_ideology_reality_friction N22_textbook_media_overview N23_textbook_descriptions N24_media_trends_wgip"
   color: "green"
@@ -237,7 +237,7 @@ drawing area_ideology_and_media "🏛️ 日本統治の4大根本理念 ＆ 自
 # === RELATIONS ===
 relation N7_korea_contributions -> N5_premise_verification {
   type: "evidence"
-  label: "巨額投資・インフラ開発ファクト"
+  label: "朝鮮巨額投資・インフラファクト"
   color: "yellow"
 }
 
@@ -255,13 +255,13 @@ relation N10_cultural_policy_facts -> N5_premise_verification {
 
 relation N5_premise_verification -> N4_korea_premises {
   type: "analysis"
-  label: "史実ファクトによる前提認識の解明"
+  label: "史実ファクトによる前提認知の解明"
   color: "red"
 }
 
 relation N4_korea_premises -> N1_sentiment_diff {
   type: "conclusion"
-  label: "感情ギャップの解明へ"
+  label: "感情ギャップの根本解明へ"
   color: "orange"
 }
 
@@ -279,25 +279,25 @@ relation N6_taiwan_sentiment -> N1_sentiment_diff {
 
 relation N11_western_colonial_overview -> N12_western_finance_extraction {
   type: "comparison"
-  label: "1. 財政・資本比較"
+  label: "1. 財政・資本流出入比較"
   color: "blue"
 }
 
 relation N11_western_colonial_overview -> N13_western_education_literacy {
   type: "comparison"
-  label: "2. 教育・識字率比較"
+  label: "2. 教育・能力開発比較"
   color: "green"
 }
 
 relation N11_western_colonial_overview -> N14_western_health_monoculture {
   type: "comparison"
-  label: "3. 衛生・産業比較"
+  label: "3. 衛生・産業構造比較"
   color: "yellow"
 }
 
 relation N11_western_colonial_overview -> N15_western_divide_and_rule {
   type: "comparison"
-  label: "4. 行政・支配比較"
+  label: "4. 行政・支配手法比較"
   color: "orange"
 }
 
