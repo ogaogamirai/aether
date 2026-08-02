@@ -1,0 +1,831 @@
+{
+  "nodes": [
+    {
+      "id": 1,
+      "name": "男系継承維持の是非",
+      "type": "concept",
+      "level": 0,
+      "summary": "皇位を父方血統（男系）の男子に限って継承し続けるべきか、という現代日本の制度的・歴史的・政治的争点。正統性・安定性・国民理解が交錯する。",
+      "description": "・現行皇室典範は皇位を「皇統に属する男系の男子」に限定する。継承資格者の希少化と皇族数減少を背景に、維持・緩和・再設計が争われる。\n・争点は「伝統を守るか変えるか」の単純二項ではなく、何を伝統と数えるか（万世一系叙述／近代典範／双系史観）自体が対立する。\n・本グラフは賛否を対等に配置し、評価軸（正統性・安定的継承・国民理解）から各オプションを辿る思考ナビとする。",
+      "references": [
+        "https://laws.e-gov.go.jp/law/322AC0000000003",
+        "https://www.cas.go.jp/jp/seisaku/taii_tokurei/"
+      ],
+      "tags": ["中心", "テーマ", "皇位継承"],
+      "x": 400,
+      "y": 300,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 2,
+      "name": "考察サマリ：三者緊張構造",
+      "type": "concept",
+      "level": 0,
+      "summary": "男系維持論争は、正統性・安定的継承・国民理解の三点張力として整理できる。用語混同と「皇族数確保」フレームが本質議論を覆い隠す構造にも注意が必要。",
+      "description": "・伝統の定義自体が争点である。万世一系・例外なき男系という叙述、明治典範以降の近代ルール説、日本社会の双系的慣行という三つの歴史像が並立する。\n・女性天皇（男系女子）と女系天皇は論理的に連続しうるが政治的には分離されやすい。2026年過程は皇族数確保で合意しつつ継承原則を棚上げし、養子子孫資格などで男系を補強する経路が批判された。\n・厳格維持は正統性強調・持続リスク高。女系容認は安定優位・正統性コスト大。男系女子容認は歴史先例と相性の良い折衷候補。結論は読者の評価軸に委ねる。",
+      "references": [
+        "https://mainichi.jp/english/articles/20260702/p2a/00m/0na/033000c",
+        "https://www.sankei.com/article/20260610-ZOAI56VSLFN45FVECY3SRJ322A/"
+      ],
+      "tags": ["考察", "サマリ", "中立"],
+      "x": 400,
+      "y": 760,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 3,
+      "name": "男系",
+      "type": "concept",
+      "level": 1,
+      "summary": "父方を辿ると天皇（皇統）に至る血統。母が皇族でも、父が皇統外なら子は男系にならない。現行継承資格の前提概念。",
+      "description": "・男系（父系・patrilineal）は、父親の線を遡って皇統につながることを意味する。Y染色体論として通俗化されることもあるが、制度上の定義は血統の辿り方である。\n・歴史上の女性天皇も多くは父方が皇統に属する男系女子であり、「女性天皇＝女系」ではない。定義の混同が賛否双方の議論を歪めやすい。\n・男系維持派は連続する父系血統を正統性の核とみなし、女系容認は王朝交代に等しいと警戒する。",
+      "references": [
+        "https://laws.e-gov.go.jp/law/322AC0000000003"
+      ],
+      "tags": ["定義", "血統"],
+      "x": 150,
+      "y": 100,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 4,
+      "name": "女系",
+      "type": "concept",
+      "level": 1,
+      "summary": "母方のみを通じて天皇に至る血統。現行典範では継承資格がなく、容認すれば制度上の大きな転換となる。",
+      "description": "・女系（母系経由の皇統接続）は、父を辿っても皇統に戻らないが母方で天皇につながるケースを指す。現行法では皇位継承資格を持たない。\n・女性天皇を認めても、その子を継承者にするかは別問題。子を認めれば女系継承が現実化する、と双方が理解する。\n・安定性を優先する論は女系容認を現実的解とし、正統性を優先する論は一度の転換が取り返しのつかない先例になると主張する。",
+      "references": [
+        "https://laws.e-gov.go.jp/law/322AC0000000003"
+      ],
+      "tags": ["定義", "血統"],
+      "x": 250,
+      "y": 100,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 5,
+      "name": "女性天皇",
+      "type": "concept",
+      "level": 1,
+      "summary": "女性が天皇に即位する形態。日本史上は8人10代の例があるが、いずれも男系に属するとされる。女系天皇とは区別される。",
+      "description": "・女性天皇（女帝）は性別の問題であり、血統が男系か女系かは別次元。歴史上の女性天皇は父方が皇統につながる男系女子だった、というのが通説的整理である。\n・世論調査では女性天皇容認が比較的高い一方、国会論議では「皇族数確保」に焦点が移り、女性・女系の本格議論は棚上げされやすい。\n・男系維持と両立しうる折衷として「男系女子＝女性天皇容認、女系は不可」という立場も存在する。",
+      "references": [
+        "https://mainichi.jp/english/articles/20260702/p2a/00m/0na/033000c",
+        "https://www.fnn.jp/articles/-/1058475"
+      ],
+      "tags": ["定義", "歴史", "世論"],
+      "x": 150,
+      "y": 200,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 6,
+      "name": "男系男子限定",
+      "type": "concept",
+      "level": 1,
+      "summary": "皇位継承資格を、皇統に属する男系かつ男子に限るルール。現行皇室典範第1条の核心。女性は即位できない。",
+      "description": "・「男系」かつ「男子」の二重条件により、愛子内親王など男系女子も継承資格を持たない。歴史上の女性天皇先例とは現行法が断絶している。\n・維持派は正統性と前例なき女系の回避を理由に、緩和派は持続可能性と象徴天皇制の国民基盤を理由に批判する。\n・2026年の皇族数確保策は、この限定を正面から改正せず、周辺の皇族数と養子ルートで補う設計が中心となった。",
+      "references": [
+        "https://laws.e-gov.go.jp/law/322AC0000000003"
+      ],
+      "tags": ["定義", "制度", "現行法"],
+      "x": 250,
+      "y": 200,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 7,
+      "name": "万世一系",
+      "type": "concept",
+      "level": 2,
+      "summary": "皇統が神代・神武以来、王朝交代なく続いてきたとする歴史叙述。男系維持論の象徴的根拠として多用される。",
+      "description": "・万世一系は「王朝が一度も交代していない」という日本皇室の独自性を表す語として政治・教育言説で用いられてきた。\n・維持派は「例外なき男系」と結びつけて正統性の根拠とする。批判側は神武の歴史学的検証可能性や、叙述が明治期に強化された点を指摘する。\n・グラフ上では「歴史事実そのもの」と「正統化の物語」を分けて読む必要がある。",
+      "references": [
+        "https://mainichi.jp/english/articles/20260702/p2a/00m/0na/033000c"
+      ],
+      "tags": ["定義", "歴史叙述", "正統性"],
+      "x": 100,
+      "y": 150,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 8,
+      "name": "皇統",
+      "type": "concept",
+      "level": 2,
+      "summary": "天皇の血統・系統。典範の「皇統に属する」という表現の基盤。誰が皇統に含まれるかの境界が制度設計を左右する。",
+      "description": "・皇統は継承資格の前提となる血統概念。男系で辿れる範囲をどう画定するかが、旧宮家復帰や養子案の可否に直結する。\n・旧11宮家の男系男子は「皇統に属する」と位置づけられる一方、血縁の時間的距離が国民理解の障害になるとの指摘もある。\n・女系を含めれば皇統の外延は広がるが、伝統的理解との緊張が生じる。",
+      "references": [
+        "https://laws.e-gov.go.jp/law/322AC0000000003"
+      ],
+      "tags": ["定義", "血統"],
+      "x": 200,
+      "y": 50,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 9,
+      "name": "象徴天皇制と国民の総意",
+      "type": "concept",
+      "level": 1,
+      "summary": "憲法第1条は天皇を日本国・国民統合の象徴とし、その地位を「国民の総意に基づく」と定める。継承制度改革の正当性の枠組み。",
+      "description": "・象徴天皇制の下では、継承ルールも最終的に国民の理解と支持を欠いては安定しにくい、という憲法的論点が常に背後にある。\n・世論が女性天皇容認に傾く一方、国会過程が男系前提で進む場合、「国民の総意」との乖離が批判される。\n・逆に、継承を人気投票化すべきでない、という維持派の警告も、象徴の尊厳を守る議論として対置される。",
+      "references": [
+        "https://laws.e-gov.go.jp/law/321CONSTITUTION",
+        "https://mainichi.jp/english/articles/20260701/p2a/00m/0op/013000c"
+      ],
+      "tags": ["定義", "憲法", "正当性"],
+      "x": 280,
+      "y": 50,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 10,
+      "name": "皇室典範第1条",
+      "type": "other",
+      "level": 1,
+      "summary": "「皇位は、皇統に属する男系の男子が、これを継承する。」現行法の継承原則。改正なしに女性・女系天皇は生まれない。",
+      "description": "・1947年の現行典範は、明治期の男系男子原則を戦後法律として引き継いだ。憲法は性別を明示しないが、典範が具体ルールを定める。\n・女性天皇や女系を認めるには第1条（および継承順位規定）の改正が必要。皇族数確保策だけでは原則は変わらない。\n・2026年議論でも、この条文の正面改正より周辺措置が優先された点が「棚上げ」批判を生んだ。",
+      "references": [
+        "https://laws.e-gov.go.jp/law/322AC0000000003"
+      ],
+      "tags": ["制度", "現行法", "典範"],
+      "x": 400,
+      "y": 80,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 11,
+      "name": "皇位継承資格者の希少化",
+      "type": "concept",
+      "level": 1,
+      "summary": "継承資格を持つ皇族男子がごく少数に絞られている現状。報道上は秋篠宮・悠仁親王・常陸宮の3名が繰り返し言及される。",
+      "description": "・男系男子限定と宮家縮小により、次世代で安定したプールを確保できない危機感が制度改革論の出発点である。\n・悠仁親王以降の男子誕生が不確実な以上、「いま資格者がいるから安心」とは言えない、という持続可能性の議論につながる。\n・維持派は旧宮家男系の活用でプールを広げ、緩和派は資格自体の拡大（女子・女系）を求める。",
+      "references": [
+        "https://www.fnn.jp/articles/-/1058475",
+        "https://www.japantimes.co.jp/news/2026/07/01/japan/royals-legislation-heirs/"
+      ],
+      "tags": ["現状", "危機", "制度"],
+      "x": 480,
+      "y": 80,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 12,
+      "name": "女性皇族の婚姻離脱",
+      "type": "concept",
+      "level": 2,
+      "summary": "女性皇族は婚姻により皇籍を離れる現行ルール。男性皇族の配偶者・子が皇族になる非対称が、皇族数減少の構造要因。",
+      "description": "・男性が結婚すれば配偶者と子が皇族に入るが、女性が結婚すれば本人が皇族を離れる。結果として皇族は縮小しやすい。\n・2026年の「婚姻後も身分保持」案は、この非対称の一方を修正し公的活動の担い手を残す狙いがある。\n・ただし夫と子を皇族にしない設計は、女系継承の芽を摘む意図があるとの批判もある。",
+      "references": [
+        "https://www.japantimes.co.jp/news/2026/07/01/japan/royals-legislation-heirs/",
+        "https://mainichi.jp/english/articles/20260701/p2g/00m/0na/045000c"
+      ],
+      "tags": ["現状", "制度", "皇族数"],
+      "x": 350,
+      "y": 150,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 13,
+      "name": "側室制度の廃止",
+      "type": "concept",
+      "level": 2,
+      "summary": "近代以前は側室・複数后妃が男子確保を支えたが、戦後は一夫一婦が前提。男系男子限定の持続を難しくする条件変化。",
+      "description": "・歴史的に皇位継承は側室制度や広い宮家ネットワークに支えられてきた側面がある。戦後はその両方が失われた。\n・側室復活は現代の人権・家族観と両立しがたいため、事実上の選択肢にならない、というのが多くの議論の前提である。\n・したがって「伝統の男系」を維持するなら、別の制度的バッファ（宮家・養子・資格拡大）が必要になる。",
+      "references": [
+        "https://mainichi.jp/english/articles/20260702/p2a/00m/0na/033000c"
+      ],
+      "tags": ["歴史", "現状", "持続可能性"],
+      "x": 450,
+      "y": 150,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 14,
+      "name": "旧11宮家の皇籍離脱（1947）",
+      "type": "other",
+      "level": 2,
+      "summary": "戦後、11宮家51名が皇籍を離れた措置。継承の予備プールが民間に移り、現在の旧宮家養子論の前提となった。",
+      "description": "・1947年の皇籍離脱により、傍系の男系男子が皇族でなくなった。以後、皇族は直系・近親に縮小した。\n・復活・養子論は「皇統に属する男系」を再び制度内に取り込む発想。一方、約80年民間で暮らした人々の受け入れ可能性が争点。\n・2005年有識者会議は国民理解の観点から復帰に否定的だったが、2021年以降は皇族数確保策として再登場した。",
+      "references": [
+        "https://mainichi.jp/english/articles/20260701/p2g/00m/0na/045000c",
+        "https://www.sanyonews.jp/article/1950002"
+      ],
+      "tags": ["歴史", "旧宮家", "1947"],
+      "x": 350,
+      "y": 50,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 15,
+      "name": "悠仁親王以降の先送り",
+      "type": "concept",
+      "level": 2,
+      "summary": "2021年有識者会議以降、悠仁親王までの継承の流れを揺るがせず、その先の制度論は「機が熟していない」として先送りされた。",
+      "description": "・今上→秋篠宮→悠仁という流れを前提にすると、女性天皇・女系の本格議論は「将来課題」に棚上げされやすい。\n・先送りは政治的安定を買う一方、悠仁親王世代の結婚・男子誕生という個人的条件に制度の命運を委ねる構造を生む。\n・批判側は、最も重要な継承原則こそ先に議論すべきだと主張する。",
+      "references": [
+        "https://www.japantimes.co.jp/news/2026/02/28/japan/politics/takaichi-males-imperial-succession/",
+        "https://www.nippon.com/ja/in-depth/d00941/"
+      ],
+      "tags": ["政策", "先送り", "2021"],
+      "x": 480,
+      "y": 180,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 16,
+      "name": "皇族数確保と継承論の分離",
+      "type": "concept",
+      "level": 1,
+      "summary": "2021年報告書の枠組み。喫緊課題として皇族数を確保し、皇位継承のあり方は切り離して後回しにする設計思想。",
+      "description": "・分離は合意形成を容易にする政治技術である。党派が割れやすい継承原則を避け、身分保持と養子に焦点を絞れる。\n・しかし養子子孫の継承資格など、分離したはずの論点が法案に「滑り込む」と、だまし討ち・既成事実化との批判が起きる。\n・本テーマ（男系維持の是非）は、まさに分離によって正面から扱われにくくなった本質争点である。",
+      "references": [
+        "https://www.cas.go.jp/jp/seisaku/taii_tokurei/",
+        "https://mainichi.jp/english/articles/20260701/p2a/00m/0op/013000c"
+      ],
+      "tags": ["政策", "フレーム", "2021"],
+      "x": 400,
+      "y": 180,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 17,
+      "name": "女性天皇8人10代",
+      "type": "other",
+      "level": 2,
+      "summary": "日本史上、女性天皇は8人で10代（重祚を含む）とされる。推古・持統など古代と、近世の例が挙げられる。",
+      "description": "・女性天皇の存在は「女性は天皇になれない」が不変の伝統ではないことを示す、緩和・折衷派の重要な歴史根拠である。\n・維持派は、彼女たちが男系であり、多くの場合「中継ぎ」だったと解釈し、女系容認の先例にはならないと反論する。\n・現行典範が女性即位を封じている点は、歴史全体ではなく近代法の選択として評価する必要がある。",
+      "references": [
+        "https://mainichi.jp/english/articles/20260702/p2a/00m/0na/033000c",
+        "https://mainichi.jp/english/articles/20260701/p2g/00m/0na/045000c"
+      ],
+      "tags": ["歴史", "女性天皇", "先例"],
+      "x": 120,
+      "y": 280,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 18,
+      "name": "中継ぎ論",
+      "type": "concept",
+      "level": 2,
+      "summary": "歴史上の女性天皇を、男系男子が育つまでの一時的即位と解釈する議論。女系継承を否定する論拠として使われる。",
+      "description": "・中継ぎ論は、女性即位を認めつつ「血統の本流は男系男子に戻る」という枠組みを守る解釈である。竹田恒泰らが強調する。\n・歴史学的には、すべての女帝を中継ぎに還元できるかは論争的。時代ごとの継承原理は単一ではなかった、との指摘もある。\n・現代で女性天皇だけ認め女系を拒む立場は、この中継ぎ的発想の現代版になりやすい。",
+      "references": [
+        "https://www.fnn.jp/articles/-/1058475"
+      ],
+      "tags": ["歴史", "解釈", "賛成論隣接"],
+      "x": 100,
+      "y": 360,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 19,
+      "name": "明治旧皇室典範（1889）",
+      "type": "other",
+      "level": 2,
+      "summary": "明治22年の旧典範で男系男子継承が明文化された。養子禁止など近代皇室法の骨格が形成された画期。",
+      "description": "・旧典範はプロイセン的君主制や家族国家観の影響下で、男系男子を厳格化した近代ルールとしての側面が強い、との歴史研究がある。\n・戦後典範は形式を変えつつこの原則を踏襲。したがって「太古からの不変」ではなく「近代の選択」と見る批判が成り立つ。\n・養子禁止の趣旨（皇統紊乱防止）は、2026年の養子解禁論でも慎重論の根拠として再引用される。",
+      "references": [
+        "https://ja.wikipedia.org/wiki/%E7%9A%87%E5%AE%A4%E5%85%B8%E7%AF%84",
+        "https://mainichi.jp/english/articles/20260702/p2a/00m/0na/033000c"
+      ],
+      "tags": ["歴史", "近代", "典範"],
+      "x": 200,
+      "y": 360,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 20,
+      "name": "父系強化の歴史的経緯（学説）",
+      "type": "concept",
+      "level": 2,
+      "summary": "中国的戸籍・儒教的家族観などの影響で、古代後半以降に父系原理が強まったとする歴史学的見取り図。",
+      "description": "・仁藤敦史らによれば、 empirically 確認できる血統継承の型は欽明朝以降に整い、7世紀末以降に父系が強化されたとされる。\n・女系を制度的に完全排除し続けたわけではなく、后妃所生の子の扱いなど時代差が大きい、という指摘もある。\n・「神武以来ずっと同じルール」という単純像を相対化する批判側の基盤ノード。",
+      "references": [
+        "https://mainichi.jp/english/articles/20260702/p2a/00m/0na/033000c"
+      ],
+      "tags": ["歴史", "学説", "批判論隣接"],
+      "x": 100,
+      "y": 440,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 21,
+      "name": "双系的家族慣行（学説）",
+      "type": "concept",
+      "level": 2,
+      "summary": "日本の家族は厳密父系より、娘継承も含む双系的性格が強かったとする家族社会学的議論。落合恵美子ら。",
+      "description": "・庶民社会では娘に家を託す選択が珍しくなく、厳密な男系固執は日本的というより中国文化的影響だ、との指摘がある。\n・皇室を民間家族と同一視できないが、「国民の感覚とのズレ」を説明する補助線として機能する。\n・男系維持がアイデンティティ防衛になるどころか、日本的柔軟性を損なう、という逆説的批判につながる。",
+      "references": [
+        "https://mainichi.jp/articles/20260626/k00/00m/040/321000c"
+      ],
+      "tags": ["学説", "家族", "批判論隣接"],
+      "x": 200,
+      "y": 440,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 22,
+      "name": "神武以来男系叙述とその検証",
+      "type": "concept",
+      "level": 2,
+      "summary": "初代神武から126代男系で続いたとする叙述。政治的に強いが、歴史学では神武の実在自体が未確認とされる。",
+      "description": "・叙述としての連続性は皇室の権威表象として機能してきた。維持派のレトリックの中核。\n・歴史学的実証の対象としては、初期天皇の実在・系譜の形成過程が問題となり、「検証済みの自然科学的事実」ではない。\n・制度論では、叙述を尊重する価値判断と、実証可能な制度史を分けて扱うのが建設的である。",
+      "references": [
+        "https://mainichi.jp/english/articles/20260702/p2a/00m/0na/033000c"
+      ],
+      "tags": ["歴史", "叙述", "検証"],
+      "x": 150,
+      "y": 520,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 23,
+      "name": "2005有識者会議報告書",
+      "type": "organization",
+      "level": 1,
+      "summary": "小泉政権下。女子・女系への拡大に前向きで、旧宮家復帰は国民理解の点から極めて困難と否定的だった。",
+      "description": "・安定的な象徴天皇制のために女性・女系を視野に入れる意義を認め、長子優先など具体像も議論された。\n・旧宮家復帰については「遠い血筋」「国民の理解と支持が難しい」と厳しく評価した点が、後年の養子論との対比で重要。\n・2006年の悠仁親王誕生後、改正機運は後退し、この路線は実現しなかった。",
+      "references": [
+        "https://dl.ndl.go.jp/view/download/digidepo_3531374_po_houkoku.pdf?contentNo=1",
+        "https://www.nippon.com/ja/in-depth/d00941/"
+      ],
+      "tags": ["政策史", "2005", "有識者会議"],
+      "x": 600,
+      "y": 100,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 24,
+      "name": "2021有識者会議報告書",
+      "type": "organization",
+      "level": 1,
+      "summary": "菅・岸田政権下。今上→秋篠宮→悠仁の流れを重視し、皇族数確保を継承論と分離。身分保持案と養子案を提示。",
+      "description": "・2005年路線からの転換点。男系男子継承の流れを「ゆるがせにしない」とし、悠仁親王以降は機が熟していないとした。\n・第1案（女性皇族の婚姻後身分保持）と第2案（旧宮家男系男子の養子）が、その後の立法府議論の土台となった。\n・批判側は、継承の本質を避けた軽量な結論だとし、構成や射程の狭さを問題視する。",
+      "references": [
+        "https://www.cas.go.jp/jp/seisaku/taii_tokurei/",
+        "https://www.japantimes.co.jp/news/2026/02/28/japan/politics/takaichi-males-imperial-succession/"
+      ],
+      "tags": ["政策史", "2021", "有識者会議"],
+      "x": 700,
+      "y": 100,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 25,
+      "name": "立法府の総意（2026）",
+      "type": "organization",
+      "level": 1,
+      "summary": "衆参正副議長らがまとめた皇族数確保の方針。身分保持案と旧宮家養子案を了とし、法制化を求めた。",
+      "description": "・今上→秋篠宮→悠仁の流れを確認した上で、有識者会議の両案を基に具体的制度設計へ進むとした。\n・養子は皇位継承資格を持たないこと、要件の慎重設計、必要に応じた見直しなどが付記された。\n・その後の政府案で養子子孫の継承資格が焦点化し、「総意を超えた滑り込み」との批判が生じた。",
+      "references": [
+        "https://www.sankei.com/article/20260610-ZOAI56VSLFN45FVECY3SRJ322A/",
+        "https://news.infoseek.co.jp/article/20260615jcast20262515606/"
+      ],
+      "tags": ["政策史", "2026", "国会"],
+      "x": 650,
+      "y": 180,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 26,
+      "name": "女性皇族婚姻後身分保持案",
+      "type": "application",
+      "level": 2,
+      "summary": "内親王・女王が結婚後も皇族の身分を保持する案。公的活動の継続と皇族数確保が目的。夫・子の扱いは争点。",
+      "description": "・現行の婚姻離脱を改め、女性皇族を制度内に残す。歴史・活動継続の観点で比較的整合的とされる。\n・政府案では夫と子を皇族にしない方向が強く、女系継承の防止と家族一体性の欠如が同時に批判された。\n・男系原則を変えずに皇族数を増やす（減らさない）措置であり、継承資格拡大とは別物。",
+      "references": [
+        "https://www.sankei.com/article/20260610-ZOAI56VSLFN45FVECY3SRJ322A/",
+        "https://mainichi.jp/english/articles/20260701/p2g/00m/0na/045000c"
+      ],
+      "tags": ["政策", "皇族数", "2026"],
+      "x": 560,
+      "y": 240,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 27,
+      "name": "旧宮家男系男子養子案",
+      "type": "application",
+      "level": 2,
+      "summary": "1947年離脱の旧11宮家の男系男子子孫を、養子縁組で皇族とする案。男系維持と皇族数確保を両立させる狙い。",
+      "description": "・対象は皇統に属する男系男子。本人意思・年齢・養親範囲・手続の慎重設計が求められる。\n・2005年には国民理解困難と否定された案が、2021–2026に再浮上。民間生活からの参入意思と社会的受容が実務上の鍵。\n・男系維持派にとっては中核的手段。批判派には遠い血筋の天皇候補を生むリスクと映る。",
+      "references": [
+        "https://www.sankei.com/article/20260610-ZOAI56VSLFN45FVECY3SRJ322A/",
+        "https://www.sanyonews.jp/article/1950002"
+      ],
+      "tags": ["政策", "旧宮家", "男系維持"],
+      "x": 680,
+      "y": 240,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 28,
+      "name": "養子子孫の継承資格問題",
+      "type": "concept",
+      "level": 2,
+      "summary": "養子本人は継承資格なしとしつつ、その男子子孫には典範の男系男子規定が及び資格を持つ、とする解釈・条項が争点化。",
+      "description": "・立法府総意は養子本人の無資格を強調したが、政府案では子孫への資格適用が明示・解釈され、継承策の滑り込みと批判された。\n・維持派から見れば男系プール確保の自然な帰結。批判派から見れば皇族数議論を借りた男系既成事実化である。\n・「分離」フレームの信頼を損なう論点として、2026年夏の政治対立の焦点になった。",
+      "references": [
+        "https://www.japantimes.co.jp/news/2026/07/01/japan/royals-legislation-heirs/",
+        "https://mainichi.jp/english/articles/20260701/p2a/00m/0op/013000c",
+        "https://www.asahi.com/ajw/articles/16682380"
+      ],
+      "tags": ["政策", "争点", "2026"],
+      "x": 720,
+      "y": 180,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 29,
+      "name": "2026典範改正の国会過程",
+      "type": "other",
+      "level": 2,
+      "summary": "2026年、皇族数確保を柱とする典範改正が国会で急展開。閣議決定・衆院可決報道などがあり、手続と中身双方が論争に。",
+      "description": "・高市政権下で男系男子維持の姿勢が明確化され、優先法案として扱われた、との報道がある（時点依存）。\n・審議の透明性、総意との齟齬、女性・女系議論の不在が野党・識者から批判された。\n・本グラフ作成時点（2026-07-11）の報道ベースであり、最終成立内容は法令で再確認すること。",
+      "references": [
+        "https://news.web.nhk/newsweb/na/na-k10015173031000",
+        "https://www.japantimes.co.jp/news/2026/07/01/japan/royals-legislation-heirs/"
+      ],
+      "tags": ["政策史", "2026", "国会", "時点依存"],
+      "x": 600,
+      "y": 50,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 30,
+      "name": "正統性＝男系連続",
+      "type": "concept",
+      "level": 1,
+      "summary": "天皇の権威は例外なき男系の血統連続に根ざす、とする維持派の中核命題。女系は正統性の断絶とみなされる。",
+      "description": "・「126代男系」叙述と結びつき、皇室が王朝交代を経験しなかった理由として提示される。\n・一度女系を認めれば認める側と認めない側に国民が割れ、象徴の統合機能が損なわれる、というリスク論とセットになる。\n・批判側は、正統性の源泉を血統一択に還元せず、憲法・国民の総意・時代適合も含めて再定義すべきだと反論する。",
+      "references": [
+        "https://www.fnn.jp/articles/-/1058475",
+        "https://www.japantimes.co.jp/news/2026/02/28/japan/politics/takaichi-males-imperial-succession/"
+      ],
+      "tags": ["賛成論", "正統性"],
+      "x": 120,
+      "y": 300,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 31,
+      "name": "女系＝王朝交代リスク",
+      "type": "concept",
+      "level": 2,
+      "summary": "女系天皇の容認は実質的な王朝交代であり、歴史上初めての断絶になる、という維持派の警戒。",
+      "description": "・男系の糸が切れた時点で「別の家」になる、という氏（うじ）的発想に近い議論。ヨーロッパの王朝交代イメージとも重ねられる。\n・象徴天皇が統合の象徴であるほど、血統の解釈分裂は憲法秩序のコストになりうる、と主張される。\n・緩和派は、母方でも天皇の血を継ぐ子を「別王朝」と呼ぶのは過度な形式主義だと批判する。",
+      "references": [
+        "https://www.fnn.jp/articles/-/1058475"
+      ],
+      "tags": ["賛成論", "リスク"],
+      "x": 80,
+      "y": 380,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 32,
+      "name": "人気投票化への警戒",
+      "type": "concept",
+      "level": 2,
+      "summary": "愛子天皇か悠仁天皇かを世論や好感度で決めるのは、皇室を壊す行為に等しい、という維持派の規範的主張。",
+      "description": "・継承は制度と血統の問題であり、人気コンテストではない、という立場。竹田恒泰の発言が象徴的に引用される。\n・象徴天皇制下では逆に「国民の支持」が不可欠だ、という反論と正面衝突する。\n・建設的には、個人の人気と制度設計を切り離し、ルールの安定性を議論する姿勢が双方に求められる。",
+      "references": [
+        "https://www.fnn.jp/articles/-/1058475"
+      ],
+      "tags": ["賛成論", "規範"],
+      "x": 180,
+      "y": 380,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 33,
+      "name": "旧宮家による男系維持可能性",
+      "type": "concept",
+      "level": 2,
+      "summary": "旧宮家の男系男子を皇族に戻すことで、男系原則を崩さずに継承プールと皇族数を確保できる、とする実務論。",
+      "description": "・側室なき現代で男系を守る数少ない制度的手段として位置づけられる。養子案・復帰論の肯定的核。\n・弱点は、血縁の遠さ、本人の意思、国民感情、養子禁止の歴史的趣旨との緊張である。\n・子孫に継承資格を認めれば、男系維持の実効性は上がるが政治的反発も増す。",
+      "references": [
+        "https://www.sankei.com/article/20260610-ZOAI56VSLFN45FVECY3SRJ322A/",
+        "https://www.sanyonews.jp/article/1950002"
+      ],
+      "tags": ["賛成論", "旧宮家", "実務"],
+      "x": 80,
+      "y": 460,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 34,
+      "name": "竹田恒泰の主張（代表）",
+      "type": "person",
+      "level": 3,
+      "summary": "明治天皇の玄孫。例外なき男系の歴史を重視し、人気投票的な女性天皇論を批判する代表的論客の一人。",
+      "description": "・女性天皇の歴史的存在は認めつつ中継ぎと解釈し、女系は男系の終了を意味すると主張する。\n・自身の皇族復帰には否定的発言もあるが、論としては男系維持の論理を明快に言語化する。\n・一個人の見解であり、維持派全体を代表するわけではないが、議論の座標軸として有用。",
+      "references": [
+        "https://www.fnn.jp/articles/-/1058475"
+      ],
+      "tags": ["人物", "賛成論", "代表的言説"],
+      "x": 180,
+      "y": 460,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 35,
+      "name": "男系維持を優先する政治判断",
+      "type": "concept",
+      "level": 2,
+      "summary": "与党・政権側が、現時点では男系男子継承を維持し、女性・女系の本格議論は機が熟していないとする政策スタンス。",
+      "description": "・2021年報告書と「継承の流れをゆるがせにしない」論理を根拠に、皇族数確保を優先する。\n・安定と伝統の両立を掲げるが、世論や歴史学の異論を十分吸収していない、との批判を招く。\n・2026年の法案設計（夫・子非皇族、養子子孫資格）にその優先順位が表れている、と読める。",
+      "references": [
+        "https://www.japantimes.co.jp/news/2026/02/28/japan/politics/takaichi-males-imperial-succession/",
+        "https://gendai.media/articles/-/166391"
+      ],
+      "tags": ["賛成論", "政治", "2026"],
+      "x": 140,
+      "y": 540,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 36,
+      "name": "近代ルール説",
+      "type": "concept",
+      "level": 1,
+      "summary": "厳格な男系男子限定は太古の不変ではなく、明治典範以降に強化・固定された近代のルールだとする批判的歴史観。",
+      "description": "・女性天皇の存在、継承原理の時代差、明治期の西洋君主制参照などを根拠に、「伝統」の内実を問い直す。\n・戦後典範がそれを法律として固定したため、現代の争点は「伝統破壊」ではなく「近代法の改正」だ、という構図を提示する。\n・維持派の万世一系論と最も深く contrasts する批判の柱。",
+      "references": [
+        "https://mainichi.jp/english/articles/20260702/p2a/00m/0na/033000c",
+        "https://news.infoseek.co.jp/article/20260615jcast20262515606/"
+      ],
+      "tags": ["批判論", "歴史", "学説"],
+      "x": 620,
+      "y": 320,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 37,
+      "name": "国民理解・世論との乖離",
+      "type": "concept",
+      "level": 2,
+      "summary": "女性天皇容認の世論が高い一方、国会は男系前提の皇族数策に終始し、国民感覚と制度過程がズレている、との批判。",
+      "description": "・複数の報道・調査で女性天皇支持が過半〜高水準とされる（調査ごとに数値は変動）。\n・憲法の「国民の総意」論と結びつき、手続の正当性への疑義となる。維持派は世論＝人気投票と警告する。\n・象徴天皇制の安定は、血統と世論のどちらにどれだけ依存するか、というメタ争点でもある。",
+      "references": [
+        "https://www.fnn.jp/articles/-/1058475",
+        "https://mainichi.jp/english/articles/20260701/p2g/00m/0na/045000c"
+      ],
+      "tags": ["批判論", "世論", "憲法"],
+      "x": 720,
+      "y": 320,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 38,
+      "name": "遠い血筋問題",
+      "type": "concept",
+      "level": 2,
+      "summary": "旧宮家は共通祖先が数百年前に遡る傍流であり、象徴天皇制下で国民が親しみ支持するか疑問、という批判。",
+      "description": "・2005年報告書が復帰を困難とした中心理由の一つ。血縁の法的男系と、社会的認知の近さは別である。\n・養子子孫が将来天皇になる可能性まで含めれば、「知らない家系の天皇」への抵抗が予想される。\n・男系の形式的連続を保っても、象徴としての実効性を失うリスクとしてthreatens側に位置づく。",
+      "references": [
+        "https://www.sanyonews.jp/article/1950002",
+        "https://mainichi.jp/english/articles/20260701/p2a/00m/0op/013000c"
+      ],
+      "tags": ["批判論", "旧宮家", "国民理解"],
+      "x": 620,
+      "y": 400,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 39,
+      "name": "統計的持続困難（側室なし）",
+      "type": "concept",
+      "level": 2,
+      "summary": "一夫一婦・少数皇族の条件下で男系男子のみに限ると、確率的に継承断絶リスクが高い、とする持続可能性批判。",
+      "description": "・男子出生は約50%であり、世代を重ねるほど「男子が続かない」リスクが累積する。宮家・側室というバッファが消えた現代で顕在化。\n・自然科学・確率の議論は決定論ではないが、「気合いで伝統を守れば足りる」論への定量的カウンターになる。\n・維持派は旧宮家プールで確率を上げると応じ、批判派は資格拡大の方が確実だと応じる。",
+      "references": [
+        "https://mainichi.jp/english/articles/20260702/p2a/00m/0na/033000c",
+        "https://ueaeprints.uea.ac.uk/id/eprint/101099/"
+      ],
+      "tags": ["批判論", "持続可能性", "統計"],
+      "x": 720,
+      "y": 400,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 40,
+      "name": "棚上げ批判（本質回避）",
+      "type": "concept",
+      "level": 2,
+      "summary": "皇族数確保に議論を限定し、女性・女系天皇という本質を先送りしている、という過程批判。",
+      "description": "・2021年フレームと2026年立法府過程が典型。合意可能な周辺から入る政治技術でもある。\n・しかし養子子孫資格など継承に直結する条項が混入すると、「棚上げ」と「密かな決着」の二重基準が批判される。\n・本グラフの中心テーマが国会で正面扱いされにくい理由を説明するノード。",
+      "references": [
+        "https://www.fnn.jp/articles/-/1058475",
+        "https://www.nippon.com/ja/in-depth/d00941/"
+      ],
+      "tags": ["批判論", "過程", "政治"],
+      "x": 620,
+      "y": 480,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 41,
+      "name": "批判的視座（河西・落合・仁藤ら）",
+      "type": "person",
+      "level": 3,
+      "summary": "近現代史・家族社会学・歴史学の立場から、男系固執や2026年過程を批判的に検討する識者群の代表ノード。",
+      "description": "・河西秀哉：過程の不合理・選択肢つぶしへの警戒。落合恵美子：双系的日本と男系固執のズレ。仁藤敦史：男系連続叙述の歴史学的相対化。\n・個々の学説は異なり、一枚岩ではない。共通するのは「自明の伝統」を疑う方法意識である。\n・維持派論客と対で読み、証拠と規範を分けて評価するためのハブ。",
+      "references": [
+        "https://mainichi.jp/articles/20260626/k00/00m/040/321000c",
+        "https://mainichi.jp/english/articles/20260702/p2a/00m/0na/033000c",
+        "https://www.sanyonews.jp/article/1950002"
+      ],
+      "tags": ["人物", "批判論", "学説"],
+      "x": 720,
+      "y": 480,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 42,
+      "name": "女性天皇容認（男系女子）",
+      "type": "application",
+      "level": 1,
+      "summary": "男系の女子（例：内親王）に継承資格を認める案。歴史先例と整合しやすく、女系までは踏み込まない折衷候補。",
+      "description": "・典範第1条の「男子」を改めれば足り、女系全面容認より政治的ハードルが低いとされる。\n・ただし女性天皇の子をどう扱うかで再び女系問題が噴出する。資格だけ認め子を排除すると論理的不整合が残る。\n・評価軸では、正統性（男系維持）と安定性・国民理解のバランスが取りやすい位置にある。",
+      "references": [
+        "https://www.nippon.com/ja/in-depth/d00941/",
+        "https://mainichi.jp/english/articles/20260702/p2a/00m/0na/033000c"
+      ],
+      "tags": ["オプション", "折衷", "女性天皇"],
+      "x": 300,
+      "y": 560,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 43,
+      "name": "女系容認",
+      "type": "application",
+      "level": 1,
+      "summary": "母方経由の皇統にも継承資格を認める案。継承プールを最大化し安定性は高いが、伝統・正統性論と最大衝突する。",
+      "description": "・2005年有識者会議が視野に入れた方向。長子優先など性別中立の継承とも接続しうる。\n・維持派は王朝交代・統合分裂リスクとして強く反対。国際的な男女平等規範とは親和的。\n・安定性軸では優位、正統性軸では最大のコスト。国民理解は世論次第で変動しうる。",
+      "references": [
+        "https://www.nippon.com/ja/in-depth/d00941/",
+        "https://dl.ndl.go.jp/view/download/digidepo_3531374_po_houkoku.pdf?contentNo=1"
+      ],
+      "tags": ["オプション", "女系", "安定性"],
+      "x": 500,
+      "y": 560,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 44,
+      "name": "評価軸：正統性",
+      "type": "concept",
+      "level": 1,
+      "summary": "何をもって天皇の地位を正当とみなすか。血統連続（男系）・歴史叙述・憲法・儀礼・国民の承認などが候補。",
+      "description": "・維持派は男系連続を最優先指標とする。批判派は憲法上の国民の総意や時代適合も正統性の一部とみる。\n・同じ「正統」でも指標が違えば政策評価が逆転する。グラフでは各オプションをこの軸で採点する用途。\n・考察サマリは、軸の選択自体が価値判断であると明示する。",
+      "references": [
+        "https://laws.e-gov.go.jp/law/321CONSTITUTION"
+      ],
+      "tags": ["評価軸", "考察"],
+      "x": 300,
+      "y": 680,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 45,
+      "name": "評価軸：安定的継承",
+      "type": "concept",
+      "level": 1,
+      "summary": "将来にわたり継承者が途切れにくい制度か。資格者プールの広さ、出生の偶然への依存度、バッファの有無で測る。",
+      "description": "・男系男子限定＋少数皇族は安定性で不利。女系・女子容認や広い宮家は有利。\n・旧宮家活用は形式的プールを増やすが、参入意思と国民受容が不確実で「紙の上の安定」に終わるリスクがある。\n・緊急の皇族数確保と、中長期の継承安定は一致しない場合がある。",
+      "references": [
+        "https://www.cas.go.jp/jp/seisaku/taii_tokurei/"
+      ],
+      "tags": ["評価軸", "考察", "持続可能性"],
+      "x": 400,
+      "y": 680,
+      "created": "2026-07-11T20:05:00.000Z"
+    },
+    {
+      "id": 46,
+      "name": "評価軸：国民理解",
+      "type": "concept",
+      "level": 1,
+      "summary": "象徴天皇制の基盤として、制度変更や継承者を国民が理解・支持できるか。世論・透明な過程・親近感が要素。",
+      "description": "・憲法第1条の「国民の総意」と接続する軸。密室的過程や遠い血筋は減点要因になりやすい。\n・一方、世論だけに従うと制度が短期変動する、という維持派の懸念もこの軸の内部対立である。\n・良い過程（説明責任・公開審議）は、どの実体ルールを選んでも理解を底上げしうる。",
+      "references": [
+        "https://laws.e-gov.go.jp/law/321CONSTITUTION",
+        "https://mainichi.jp/english/articles/20260701/p2a/00m/0op/013000c"
+      ],
+      "tags": ["評価軸", "考察", "世論"],
+      "x": 500,
+      "y": 680,
+      "created": "2026-07-11T20:05:00.000Z"
+    }
+  ],
+  "edges": [
+    {"id": 1, "sourceId": 3, "targetId": 1, "relation": "relates", "label": "定義の核", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 2, "sourceId": 4, "targetId": 1, "relation": "relates", "label": "対概念", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 3, "sourceId": 5, "targetId": 1, "relation": "relates", "label": "関連争点", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 4, "sourceId": 6, "targetId": 1, "relation": "implements", "label": "現行ルール", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 5, "sourceId": 3, "targetId": 4, "relation": "contrasts", "label": "父系vs母系経由", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 6, "sourceId": 5, "targetId": 4, "relation": "contrasts", "label": "混同注意", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 7, "sourceId": 5, "targetId": 3, "relation": "relates", "label": "多くは男系女子", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 8, "sourceId": 6, "targetId": 3, "relation": "derives", "label": "男系かつ男子", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 9, "sourceId": 7, "targetId": 30, "relation": "supports", "label": "叙述的根拠", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 10, "sourceId": 8, "targetId": 3, "relation": "relates", "label": "血統の範囲", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 11, "sourceId": 9, "targetId": 1, "relation": "relates", "label": "憲法的枠", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 12, "sourceId": 9, "targetId": 46, "relation": "supports", "label": "総意の根拠", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 13, "sourceId": 10, "targetId": 6, "relation": "implements", "label": "法文化", "confidence": 0.98, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 14, "sourceId": 10, "targetId": 1, "relation": "relates", "label": "制度の起点", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 15, "sourceId": 11, "targetId": 1, "relation": "enables", "label": "議論の契機", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 16, "sourceId": 11, "targetId": 45, "relation": "threatens", "label": "安定を脅かす", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 17, "sourceId": 12, "targetId": 11, "relation": "supports", "label": "減少の構造", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 18, "sourceId": 13, "targetId": 39, "relation": "enables", "label": "バッファ喪失", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 19, "sourceId": 14, "targetId": 11, "relation": "supports", "label": "プール縮小", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 20, "sourceId": 14, "targetId": 27, "relation": "enables", "label": "養子論の前提", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 21, "sourceId": 15, "targetId": 16, "relation": "supports", "label": "先送りを正当化", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 22, "sourceId": 16, "targetId": 40, "relation": "enables", "label": "本質回避の器", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 23, "sourceId": 16, "targetId": 1, "relation": "threatens", "label": "正面議論を遠ざける", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 24, "sourceId": 17, "targetId": 5, "relation": "supports", "label": "歴史先例", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 25, "sourceId": 17, "targetId": 42, "relation": "supports", "label": "折衷の根拠", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 26, "sourceId": 18, "targetId": 17, "relation": "relates", "label": "解釈枠", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 27, "sourceId": 18, "targetId": 30, "relation": "supports", "label": "女系否定の補助", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 28, "sourceId": 19, "targetId": 6, "relation": "derives", "label": "近代の固定", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 29, "sourceId": 19, "targetId": 36, "relation": "supports", "label": "近代ルール根拠", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 30, "sourceId": 20, "targetId": 36, "relation": "supports", "label": "歴史学的相対化", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 31, "sourceId": 21, "targetId": 36, "relation": "supports", "label": "家族観のズレ", "confidence": 0.75, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 32, "sourceId": 22, "targetId": 7, "relation": "relates", "label": "叙述の検証", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 33, "sourceId": 22, "targetId": 30, "relation": "contrasts", "label": "事実vs物語", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 34, "sourceId": 23, "targetId": 24, "relation": "contrasts", "label": "方針転換", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 35, "sourceId": 23, "targetId": 43, "relation": "supports", "label": "女系視野", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 36, "sourceId": 23, "targetId": 38, "relation": "supports", "label": "復帰否定の源流", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 37, "sourceId": 24, "targetId": 16, "relation": "implements", "label": "分離フレーム", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 38, "sourceId": 24, "targetId": 15, "relation": "supports", "label": "流れを固定", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 39, "sourceId": 24, "targetId": 26, "relation": "enables", "label": "第1案", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 40, "sourceId": 24, "targetId": 27, "relation": "enables", "label": "第2案", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 41, "sourceId": 25, "targetId": 24, "relation": "derives", "label": "報告書を了", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 42, "sourceId": 25, "targetId": 26, "relation": "supports", "label": "法制化へ", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 43, "sourceId": 25, "targetId": 27, "relation": "supports", "label": "法制化へ", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 44, "sourceId": 25, "targetId": 29, "relation": "enables", "label": "国会過程へ", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 45, "sourceId": 26, "targetId": 12, "relation": "contrasts", "label": "離脱ルール修正", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 46, "sourceId": 26, "targetId": 35, "relation": "supports", "label": "原則維持のまま", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 47, "sourceId": 27, "targetId": 33, "relation": "implements", "label": "実務手段", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 48, "sourceId": 27, "targetId": 35, "relation": "supports", "label": "男系維持策", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 49, "sourceId": 28, "targetId": 27, "relation": "derives", "label": "子孫の扱い", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 50, "sourceId": 28, "targetId": 25, "relation": "contrasts", "label": "総意との緊張", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 51, "sourceId": 28, "targetId": 40, "relation": "supports", "label": "滑り込み批判", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 52, "sourceId": 28, "targetId": 33, "relation": "enables", "label": "プール実効化", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 53, "sourceId": 29, "targetId": 1, "relation": "relates", "label": "現行政治過程", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 54, "sourceId": 30, "targetId": 1, "relation": "supports", "label": "維持の主根拠", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 55, "sourceId": 31, "targetId": 30, "relation": "supports", "label": "リスク論", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 56, "sourceId": 31, "targetId": 43, "relation": "threatens", "label": "女系への警戒", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 57, "sourceId": 32, "targetId": 37, "relation": "contrasts", "label": "世論の扱い", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 58, "sourceId": 32, "targetId": 30, "relation": "supports", "label": "規範的防衛", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 59, "sourceId": 33, "targetId": 6, "relation": "supports", "label": "限定を維持", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 60, "sourceId": 34, "targetId": 30, "relation": "supports", "label": "論客", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 61, "sourceId": 34, "targetId": 18, "relation": "supports", "label": "中継ぎ解釈", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 62, "sourceId": 34, "targetId": 32, "relation": "supports", "label": "人気投票批判", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 63, "sourceId": 35, "targetId": 1, "relation": "supports", "label": "維持の政治", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 64, "sourceId": 35, "targetId": 16, "relation": "implements", "label": "分離を採用", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 65, "sourceId": 36, "targetId": 1, "relation": "threatens", "label": "維持の自明性を崩す", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 66, "sourceId": 36, "targetId": 30, "relation": "contrasts", "label": "伝統の定義対立", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 67, "sourceId": 37, "targetId": 9, "relation": "relates", "label": "総意との緊張", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 68, "sourceId": 37, "targetId": 35, "relation": "contrasts", "label": "政治vs世論", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 69, "sourceId": 38, "targetId": 33, "relation": "threatens", "label": "受容リスク", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 70, "sourceId": 38, "targetId": 27, "relation": "threatens", "label": "国民理解", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 71, "sourceId": 39, "targetId": 6, "relation": "threatens", "label": "持続リスク", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 72, "sourceId": 39, "targetId": 45, "relation": "relates", "label": "安定性評価", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 73, "sourceId": 40, "targetId": 1, "relation": "threatens", "label": "本質を覆い隠す", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 74, "sourceId": 41, "targetId": 36, "relation": "supports", "label": "学知の束", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 75, "sourceId": 41, "targetId": 21, "relation": "supports", "label": "双系論", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 76, "sourceId": 41, "targetId": 40, "relation": "supports", "label": "過程批判", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 77, "sourceId": 42, "targetId": 5, "relation": "implements", "label": "資格拡大", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 78, "sourceId": 42, "targetId": 6, "relation": "contrasts", "label": "男子限定を緩和", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 79, "sourceId": 42, "targetId": 4, "relation": "relates", "label": "子の扱いで分岐", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 80, "sourceId": 43, "targetId": 4, "relation": "implements", "label": "女系を制度化", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 81, "sourceId": 43, "targetId": 30, "relation": "contrasts", "label": "最大の対立", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 82, "sourceId": 43, "targetId": 45, "relation": "supports", "label": "プール最大化", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 83, "sourceId": 44, "targetId": 30, "relation": "relates", "label": "維持派の主軸", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 84, "sourceId": 44, "targetId": 42, "relation": "relates", "label": "男系は維持", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 85, "sourceId": 44, "targetId": 43, "relation": "relates", "label": "コスト大", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 86, "sourceId": 45, "targetId": 42, "relation": "relates", "label": "中程度の改善", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 87, "sourceId": 45, "targetId": 33, "relation": "relates", "label": "プール拡大策", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 88, "sourceId": 46, "targetId": 37, "relation": "relates", "label": "乖離の測定", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 89, "sourceId": 46, "targetId": 38, "relation": "relates", "label": "遠い血筋", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 90, "sourceId": 46, "targetId": 42, "relation": "relates", "label": "世論と親和", "confidence": 0.8, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 91, "sourceId": 2, "targetId": 1, "relation": "relates", "label": "考察の焦点", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 92, "sourceId": 2, "targetId": 44, "relation": "relates", "label": "三点張力", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 93, "sourceId": 2, "targetId": 45, "relation": "relates", "label": "三点張力", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 94, "sourceId": 2, "targetId": 46, "relation": "relates", "label": "三点張力", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 95, "sourceId": 2, "targetId": 36, "relation": "relates", "label": "伝統定義の対立", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 96, "sourceId": 2, "targetId": 30, "relation": "relates", "label": "伝統定義の対立", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 97, "sourceId": 2, "targetId": 16, "relation": "relates", "label": "フレームの罠", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 98, "sourceId": 2, "targetId": 42, "relation": "relates", "label": "折衷候補", "confidence": 0.85, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 99, "sourceId": 30, "targetId": 36, "relation": "contrasts", "label": "賛否の軸", "confidence": 0.95, "created": "2026-07-11T20:05:00.000Z"},
+    {"id": 100, "sourceId": 33, "targetId": 38, "relation": "contrasts", "label": "旧宮家評価", "confidence": 0.9, "created": "2026-07-11T20:05:00.000Z"}
+  ],
+  "nextNodeId": 47,
+  "nextEdgeId": 101,
+  "savedAt": "2026-07-11T20:05:00.000Z"
+}

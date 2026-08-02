@@ -10,6 +10,8 @@
 
 > **注意:** DB 内の `board_id`（例: `aether_board_dev`）は論理板 ID で、旧フォルダ名 `aether_board/` とは無関係です。
 
+**念のための保管:** Phase B 時点のスナップショットは [aether_board__archived_202607/](../aether_board__archived_202607/)（Git 保存・参照専用）。
+
 ---
 
 以下の Python ファイルは **移行前のコピー** です。日常運用・更新は **`aether_db/`** または [aetherdb リポジトリ](https://github.com/ogaogamirai/aetherdb) を使ってください。
