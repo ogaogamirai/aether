@@ -611,6 +611,136 @@ function zoom(delta) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// スマートキーボードナビゲーション（矢印キー ↑↓←→ / Tab で隣接ノードへフォーカス＆移動）
+// ---------------------------------------------------------------------------
+function getActiveNotesPool() {
+  const sourceNotes = (typeof notes !== 'undefined' && notes && notes.length) ? notes : (window.notes || []);
+  return sourceNotes.filter(n => {
+    if (typeof isTimeVisible === 'function') return isTimeVisible(n.time);
+    return true;
+  });
+}
+
+function focusNoteByArrowKey(direction) {
+  const pool = getActiveNotesPool();
+  if (!pool.length) return;
+
+  // 現在フォーカスされているノードを取得（なければ先頭N1等のノード）
+  let current = pool.find(n => String(n.id) === String(window.focusedNoteId));
+  if (!current) current = pool[0];
+
+  const cx = Number(current.x) + 90;
+  const cy = Number(current.y) + 70;
+
+  let bestTarget = null;
+  let minScore = Infinity;
+
+  pool.forEach(target => {
+    if (String(target.id) === String(current.id)) return;
+    const tx = Number(target.x) + 90;
+    const ty = Number(target.y) + 70;
+    const dx = tx - cx;
+    const dy = ty - cy;
+    const dist = Math.hypot(dx, dy);
+
+    let validDir = false;
+    let primaryDiff = 0;
+    let secondaryDiff = 0;
+
+    if (direction === 'Right' && dx > 20) {
+      validDir = true;
+      primaryDiff = dx;
+      secondaryDiff = Math.abs(dy);
+    } else if (direction === 'Left' && dx < -20) {
+      validDir = true;
+      primaryDiff = -dx;
+      secondaryDiff = Math.abs(dy);
+    } else if (direction === 'Down' && dy > 20) {
+      validDir = true;
+      primaryDiff = dy;
+      secondaryDiff = Math.abs(dx);
+    } else if (direction === 'Up' && dy < -20) {
+      validDir = true;
+      primaryDiff = -dy;
+      secondaryDiff = Math.abs(dx);
+    }
+
+    if (validDir) {
+      // 主方向の近さと、垂直方向のずれの加重スコア（隣のノードが最優先される）
+      const score = primaryDiff + secondaryDiff * 2.2;
+      if (score < minScore) {
+        minScore = score;
+        bestTarget = target;
+      }
+    }
+  });
+
+  if (bestTarget) {
+    focusAndSelectNote(bestTarget);
+  }
+}
+
+function focusNextNoteInOrder(delta) {
+  const pool = getActiveNotesPool();
+  if (!pool.length) return;
+  let idx = pool.findIndex(n => String(n.id) === String(window.focusedNoteId));
+  if (idx < 0) idx = 0;
+  let nextIdx = (idx + delta + pool.length) % pool.length;
+  focusAndSelectNote(pool[nextIdx]);
+}
+
+function focusAndSelectNote(note) {
+  if (!note) return;
+  window.focusedNoteId = String(note.id);
+  
+  // ハイライト表示
+  document.querySelectorAll('#notes-container .sticky-note').forEach(el => el.classList.remove('focused'));
+  const targetEl = document.getElementById('note-' + note.id);
+  if (targetEl) targetEl.classList.add('focused');
+
+  // 画面中央へスムーズ移動
+  centerFocusedNote(note);
+
+  // 右パネル詳細表示
+  if (typeof showNodeDetails === 'function') {
+    showNodeDetails(note);
+  }
+  
+  showToast('フォーカス: ' + note.content, 'success');
+}
+
+// キーボードイベントリスナーの登録
+window.addEventListener('keydown', (e) => {
+  // 入力フォームや textarea にフォーカス中はショートカットをスキップ
+  const activeEl = document.activeElement;
+  if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+    return;
+  }
+
+  if (e.key === 'ArrowRight' || e.key === 'Right') {
+    e.preventDefault();
+    focusNoteByArrowKey('Right');
+  } else if (e.key === 'ArrowLeft' || e.key === 'Left') {
+    e.preventDefault();
+    focusNoteByArrowKey('Left');
+  } else if (e.key === 'ArrowDown' || e.key === 'Down') {
+    e.preventDefault();
+    focusNoteByArrowKey('Down');
+  } else if (e.key === 'ArrowUp' || e.key === 'Up') {
+    e.preventDefault();
+    focusNoteByArrowKey('Up');
+  } else if (e.key === 'Tab') {
+    e.preventDefault();
+    focusNextNoteInOrder(e.shiftKey ? -1 : 1);
+  } else if (e.key === 'f' || e.key === 'F') {
+    if (!e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      if (typeof fitToView === 'function') fitToView();
+    }
+  }
+});
+
 // フォーカス付箋をグラフ領域の中央へパン（世界座標基準・はみ出し可）
 // getBoundingClientRect 依存だと画面外ノードや高倍率が崩れるため、note.x/y を正とする
 function centerFocusedNote(note) {
