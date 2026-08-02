@@ -1,5 +1,5 @@
-// Aether Canvas Renderer v4.0.39 — arc edges use layout coords (match keyboard nav)
-window.__AETHER_RENDERER_BUILD__ = '4.0.39-arc-layout-nav';
+// Aether Canvas Renderer v4.0.40 — single arc edges, brighter unfocused opacity
+window.__AETHER_RENDERER_BUILD__ = '4.0.40-single-arc-edges';
 
 // Predefined beautiful SVG vector paths for icons (Approach A)
 const PRESET_ICONS = {
@@ -900,7 +900,7 @@ function drawRelation(rel) {
                   ((source.tags && source.tags.includes(window.activeTag)) &&
                    (target.tags && target.tags.includes(window.activeTag)));
   const isDimmed = !matches;
-  const relType = String(rel.type || 'default').toLowerCase();
+  let relType = String(rel.type || 'default').toLowerCase();
   const group = createEdgeGroup(source.id, target.id, 'aether-edge-' + relType);
 
   if (relType === 'conflict') {
@@ -941,25 +941,7 @@ function drawRelation(rel) {
   }
 
   if (relType === 'similarity' || relType === 'comparison') {
-    const geoOuter = computeEdgeGeometry(source, target, rel.from, rel.to, { magnitudeScale: 1.28 });
-    const geoInner = computeEdgeGeometry(source, target, rel.from, rel.to, { magnitudeScale: 0.52 });
-    const width = relationStrokeWidth(rel, 2.1);
-    appendArcPath(group, geoOuter, {
-      color: colorHex,
-      width: width + 0.5,
-      flowRel: rel,
-      extraClass: 'aether-edge-sim-outer'
-    });
-    const innerPath = appendArcPath(group, geoInner, {
-      color: colorHex,
-      width: Math.max(width - 0.6, 1.1),
-      dash: '7 5',
-      flowRel: rel,
-      extraClass: 'aether-edge-sim-inner'
-    });
-    appendEdgeLabel(group, geoOuter, rel.label, colorHex);
-    finalizeEdgeGroup(group, innerPath, colorHex, width, source.id, target.id, isDimmed);
-    return;
+    relType = 'default';
   }
 
   const geo = computeEdgeGeometry(source, target, rel.from, rel.to);

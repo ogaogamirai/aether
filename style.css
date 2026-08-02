@@ -1171,21 +1171,12 @@ body.aether-kb-focus #notes-container .sticky-note:not(.focused):not(.dimmed) {
 body.aether-kb-focus #svg-layer line:not(.edge-focused),
 body.aether-kb-focus #svg-layer path:not(.edge-focused),
 body.aether-kb-focus #svg-layer .aether-edge:not(.edge-focused) .aether-edge-path {
-  opacity: 0.28;
+  opacity: 0.58;
 }
 
 #svg-layer .aether-edge-path {
-  opacity: 0.44;
+  opacity: 0.5;
   transition: opacity 0.22s ease, stroke-width 0.22s ease, filter 0.22s ease;
-}
-
-#svg-layer .aether-edge-sim-inner {
-  opacity: 0.58;
-  stroke-dasharray: 7 5;
-}
-
-#svg-layer .aether-edge-sim-outer {
-  opacity: 0.46;
 }
 
 #svg-layer .aether-edge-label,
@@ -1198,10 +1189,6 @@ body.aether-kb-focus #svg-layer .aether-edge:not(.edge-focused) .aether-edge-pat
 #svg-layer .aether-edge.edge-focused .aether-edge-path {
   opacity: 1;
   filter: drop-shadow(0 0 7px var(--focus-glow));
-}
-
-#svg-layer .aether-edge.edge-focused .aether-edge-sim-inner {
-  opacity: 0.88;
 }
 
 #svg-layer .aether-edge.edge-focused .aether-edge-label,
