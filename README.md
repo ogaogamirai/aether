@@ -48,7 +48,7 @@ http://localhost:8080/?dsl=themes/test_svg_rgb.txt
 
 ## キーボード
 
-キャンバス左下の **ガイド** パネルにも同内容を表示。
+キャンバス右上の **ガイド** パネルにも同内容を表示。
 
 | キー | 動作 |
 |---|---|
@@ -66,19 +66,30 @@ http://localhost:8080/?dsl=themes/test_svg_rgb.txt
 - `aether_main.js` — 制御・構造化 IndexedDB・export・プレゼン
 - `aether_parser.js` — DSL パーサ
 - `aether_renderer.js` — キャンバス描画
-- `aether_dsl.txt` — LIVE 向け投影 DSL（Board 利用時は export 結果）
-- `aether_board/` — SQLite 蓄積・CLI（AI 正本）。詳細は `aether_board/README.md`
+- `aether_dsl.txt` — LIVE 向け投影 DSL（AetherDB 利用時は export 結果）
 - `themes/` — テーマ DSL / 配布スナップショット
 - `AETHER_WELCOME_GUIDE.md` — エージェント向け招待状・操作ガイド
 - `SKILL.md` — DSL 構文と作業プロトコル
 
+### AetherDB（SQLite 蓄積層・UI 外）
+
+**旧称 Aether Board / `aether_board/`。** 正称は **AetherDB**（ローカル `aether_db/`）。
+
+| 項目 | 場所 |
+|---|---|
+| CLI コード（GitHub 正本） | https://github.com/ogaogamirai/aetherdb |
+| ローカル運用（Drive） | `aether/aether_db/`（`aether.db` は Git 外） |
+| 旧フォルダ名の案内 | [aether_board/README.md](./aether_board/README.md)（リダイレクトのみ） |
+
 ## IndexedDB（v2）
 
 ```
-aether_db
+IndexedDB 内部名: aether_db
 ├── notes / drawings / relations / connections   # 構造化（差分更新）
 └── board_state.current_dsl                      # legacy 互換ミラー
 ```
+
+> ブラウザ IndexedDB の内部名も `aether_db` ですが、**AetherDB（SQLite 蓄積層）の `aether_db/` フォルダとは別物**です。
 
 - ドラッグ終了 → 座標のみ更新
 - DSL 適用 → オブジェクト差分同期
@@ -88,10 +99,10 @@ aether_db
 
 | 運用 | 正本 | 投影 |
 |---|---|---|
-| **Aether Board（推奨・蓄積）** | `aether_board/aether.db` | `aether_dsl.txt`（export） |
+| **AetherDB（推奨・蓄積）** | `aether_db/aether.db`（ローカル） | `aether_dsl.txt`（export） |
 | **簡易（DSL 直編集）** | `aether_dsl.txt` / `themes/*.txt` | 同左 |
 
 IndexedDB はブラウザ個人の作業キャッシュであり、共有媒体ではありません。  
-Board の正本ルール・CLI は [aether_board/README.md](./aether_board/README.md)。
+AetherDB の正本ルール・CLI は [aetherdb リポジトリ](https://github.com/ogaogamirai/aetherdb) およびローカル `aether_db/README.md` を参照してください。
 
 詳細な操作・構文は [AETHER_WELCOME_GUIDE.md](./AETHER_WELCOME_GUIDE.md) と [SKILL.md](./SKILL.md) を参照してください。

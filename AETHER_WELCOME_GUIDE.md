@@ -19,7 +19,7 @@
 * 📘 **本ガイド**: [AETHER_WELCOME_GUIDE.md](./AETHER_WELCOME_GUIDE.md)
 * 📂 **テーマ / スナップショット**: [themes/](./themes/)
 * 🔧 **開発メモ**: [DEVELOPMENT.md](./DEVELOPMENT.md)
-* 🗄️ **Aether Board（SQLite 蓄積・投影）**: [aether_board/README.md](./aether_board/README.md)
+* 🗄️ **AetherDB（SQLite 蓄積・投影；旧称 Aether Board / `aether_board/`）**: ローカル [aether_db/README.md](./aether_db/README.md) / GitHub https://github.com/ogaogamirai/aetherdb
 
 ### リモート
 
@@ -33,7 +33,7 @@
 
 | 層 | 役割 | 誰が触るか |
 |---|---|---|
-| **`aether_board/aether.db`** | **AI 蓄積の正本**（板・手紙） | エージェント（CLI / SQL） |
+| **`aether_db/aether.db`** | **AetherDB — AI 蓄積の正本**（板・手紙・知見；旧称 AetherBoard） | エージェント（CLI / SQL） |
 | **`aether_dsl.txt`** | **Aether 向け投影**（LIVE が読むフィルム） | export で更新 / 手編集は例外 |
 | **Aether キャンバス** | 可視化・閲覧・ナビ | 人間（見る・説明する） |
 | **IndexedDB** | ブラウザ個人の作業キャッシュ | 自動のみ（共有媒体ではない） |
@@ -44,8 +44,8 @@
 [簡易運用] ──編集─────────────────────▶ aether_dsl.txt ──LIVE──▶ キャンバス
 ```
 
-* **Board 運用（推奨・蓄積型）**: DB が正本。`python aether_board/aether_cli.py project <board>` で投影。  
-* **簡易運用**: DSL を直接編集してもよい（小規模・単発）。Board と併用するときは **明示 import** が必要。
+* **AetherDB 運用（推奨・蓄積型；旧 Board 運用）**: DB が正本。`python aether_db/aether_cli.py project <board>` で投影。  
+* **簡易運用**: DSL を直接編集してもよい（小規模・単発）。AetherDB と併用するときは **明示 import** が必要。
 
 ### ホワイトボード（LIVE）モードの原則
 
@@ -93,12 +93,12 @@
 
 ## エージェント向け最短手順（推奨）
 
-### A. Aether Board 運用（蓄積・複数板・手紙）
+### A. AetherDB 運用（蓄積・複数板・手紙；旧 Aether Board 運用）
 
-詳細は [aether_board/README.md](./aether_board/README.md)。
+詳細は [aether_db/README.md](./aether_db/README.md)。
 
 ```bash
-cd aether/aether_board
+cd aether/aether_db
 python aether_cli.py status
 python aether_cli.py project succession_navi   # active_board + aether_dsl.txt 投影
 python aether_cli.py msg send --from Nova --to Ellie --text "..." --board meta
@@ -253,7 +253,7 @@ A -> B
 | 項目 | 状態 |
 |---|---|
 | `aether_server.py` / ルート直下の旧チャット同期 | **非必須**。現行 UI はサーバーレス |
-| **`aether_board/`** | **現行の蓄積層**（UI 外）。旧サーバとは別物 |
+| **`aether_db/`** | **AetherDB — 現行の蓄積層**（UI 外）。CLI 正本: github.com/ogaogamirai/aetherdb |
 
 ---
 
@@ -261,10 +261,10 @@ A -> B
 
 Aether は、キャプテンの思考の変遷（時系列）と、主張の型・確信度・因果の流れを共有するホワイトボードです。
 
-* エージェント: **Board DB または DSL で表現する**  
+* エージェント: **AetherDB または DSL で表現する**  
 * キャプテン: **LIVE で見る・説明する**  
-* Board: [aether_board/README.md](./aether_board/README.md)  
-* セッション終了の仕分け（残す／残さない）: [aether_board/README.md](./aether_board/README.md#セッション終了チェックリスト)  
+* AetherDB: [aether_db/README.md](./aether_db/README.md) / https://github.com/ogaogamirai/aetherdb  
+* セッション終了の仕分け（残す／残さない）: [aether_db/README.md](./aether_db/README.md#セッション終了チェックリスト)  
 * DSL 構文: [SKILL.md](./SKILL.md)
 
 新しいアイデアや図的な整理を、Aether を通じて一緒に進めましょう。
