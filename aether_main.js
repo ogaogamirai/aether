@@ -191,6 +191,8 @@ function handleTimeSlider(value) {
     setTimeout(reconcileKeyboardFocusAfterStepChange, 30);
   }
 
+  // プレゼンモード時は、ステップ変更で新たに加わったノード先頭へ
+  // フォーカス＋詳細表示を出す（focusPresentationStepView が幅フィット＆中央寄せ＆詳細表示）
   if (window.isPresentationMode) {
     setTimeout(() => {
       if (typeof getEffectiveViewMode === 'function' && getEffectiveViewMode() === 'list') {
