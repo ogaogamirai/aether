@@ -173,6 +173,12 @@ body.light-theme .whiteboard-container.drop-active {
 .sticky-note.green { background: linear-gradient(145deg, rgba(167,243,208,0.96), rgba(209,250,229,0.88)); color: #065f46; }
 .sticky-note.pink { background: linear-gradient(145deg, rgba(251,207,232,0.96), rgba(252,231,243,0.88)); color: #9d174d; }
 .sticky-note.purple { background: linear-gradient(145deg, rgba(233,213,255,0.96), rgba(243,232,255,0.88)); color: #6b21a8; }
+.sticky-note.gray { background: linear-gradient(145deg, rgba(229,231,235,0.96), rgba(243,244,246,0.88)); color: #374151; }
+.sticky-note.orange { background: linear-gradient(145deg, rgba(254,215,170,0.96), rgba(254,231,200,0.88)); color: #9a3412; }
+
+/* 重要ノード（仮説・結果）の強調：太枠線 */
+.sticky-note.important { box-shadow: 0 0 0 3px var(--accent-blue, #3b82f6), 0 10px 25px -5px rgba(0,0,0,0.15); }
+.sticky-note.important-result { box-shadow: 0 0 0 3px var(--accent-emerald, #10b981), 0 10px 25px -5px rgba(0,0,0,0.15); }
 
 /* Dimmed elements (for tag filtering) */
 .dimmed {
