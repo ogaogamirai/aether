@@ -253,20 +253,33 @@ function updatePresentationStepName() {
 }
 
 // 現在ステップで「新たに表示される」付箋（先頭1枚）
+// ステップの「最初に見るべきノード」= 仮説ノード（role:claim かつ タイトルが「仮説：」始まり）を優先
+function pickStepEntryNote(list) {
+  if (!list.length) return null;
+  const hypothesis = list.find(function (n) {
+    return n.role === 'claim' && /^仮説/.test(n.content || n.title || '');
+  });
+  return hypothesis || list[0] || null;
+}
+
 function getFirstNoteForCurrentStep() {
   const sourceNotes = (typeof notes !== 'undefined' && notes) ? notes : [];
   if (!sourceNotes.length) return null;
 
   if (window.activeTime) {
-    const newcomers = sourceNotes.filter(n => n.time === window.activeTime);
-    if (newcomers.length) return newcomers[0];
+    const stepNotes = sourceNotes.filter(n => n.time === window.activeTime);
+    if (stepNotes.length) return pickStepEntryNote(stepNotes);
   }
 
   const visible = sourceNotes.filter(n => {
     if (typeof isTimeVisible === 'function') return isTimeVisible(n.time);
     return true;
   });
-  return visible[0] || sourceNotes[0] || null;
+  if (!visible.length) return sourceNotes[0] || null;
+  // 「すべて」のときは、表示順先頭（= 最初のステップ）の仮説ノードを優先
+  const firstStepTime = visible[0].time;
+  const firstStepNotes = visible.filter(n => n.time === firstStepTime);
+  return pickStepEntryNote(firstStepNotes) || visible[0] || null;
 }
 
 // 上部UI・下部コントローラーを除いた「見えるグラフ領域」の縦中央（ビューポート座標）
@@ -2225,7 +2238,7 @@ function focusMobileListCard(noteId, scrollIntoView) {
 
 function focusPresentationMobileStep() {
   var visible = getMobileVisibleNotes();
-  var target = visible[0] || getFirstNoteForCurrentStep();
+  var target = getFirstNoteForCurrentStep() || visible[0] || null;
   if (target) openMobileDetail(target.id);
 }
 
