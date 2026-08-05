@@ -2639,6 +2639,19 @@ if (typeof generateDSLFromCanvas === 'function') {
   generateDSLFromCanvas = generateDSLFromCanvasLiveGuard;
 }
 
+// エクスポートのファイル名に使うテーマ名を DSL から導出する（優先順）
+// 1) 明示宣言: # board: <テーマ名>  → 最優先
+// 2) AetherDB 生成ヘッダ: # ... Generated for Board: <board_id>
+// 3) 最初の sticky ノードタイトル（従来挙動）
+function deriveExportTitleFromDSL(dsl) {
+  if (!dsl) return null;
+  let m = dsl.match(/^#\s*board\s*:\s*(.+)$/mi);
+  if (m && m[1] && m[1].trim()) return m[1].trim().replace(/[\\\/: *?"<>|]/g, '_');
+  m = dsl.match(/^#.*\bBoard\s*:\s*(\w+)/mi);
+  if (m && m[1]) return m[1].replace(/[\\\/: *?"<>|]/g, '_');
+  return null;
+}
+
 function exportDSLToFile() {
   const dsl = document.getElementById('dsl-input').value;
   if (!dsl.trim()) {
@@ -2646,11 +2659,7 @@ function exportDSLToFile() {
     return;
   }
 
-  let title = 'AetherBoard';
-  const titleMatch = dsl.match(/sticky\s+\w+\s+"([^"]+)"/);
-  if (titleMatch && titleMatch[1]) {
-    title = titleMatch[1].replace(/[\\\/: *?"<>|]/g, '_');
-  }
+  let title = deriveExportTitleFromDSL(dsl) || 'AetherBoard';
 
   const now = new Date();
   const pad = (n) => String(n).padStart(2, '0');

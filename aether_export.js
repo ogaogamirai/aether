@@ -633,8 +633,7 @@ async function exportPortableViewer() {
     const blob = new Blob([htmlText], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const titleMatch = dsl.match(/sticky\s+\w+\s+"([^"]+)"/);
-    const title = titleMatch ? titleMatch[1].replace(/[\\\/: *?"<>|]/g, '_') : 'board';
+    const title = (typeof deriveExportTitleFromDSL === 'function' ? deriveExportTitleFromDSL(dsl) : null) || 'board';
     a.href = url;
     a.download = 'aether_' + title + '_snapshot.html';
     document.body.appendChild(a);
