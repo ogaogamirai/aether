@@ -802,22 +802,36 @@ function computeEdgeGeometry(source, target, fromId, toId, opts) {
   const tc = getNoteCenter(target);
   const sc = getNoteCenter(source);
   const start = getNoteAnchorPoint(source, tc.x, tc.y);
-  const end = getNoteAnchorPoint(target, sc.x, sc.y);
+  const rawEnd = getNoteAnchorPoint(target, sc.x, sc.y);
   const sx = start.x;
   const sy = start.y;
-  const tx = end.x;
-  const ty = end.y;
-  const dx = tx - sx;
-  const dy = ty - sy;
+  const rx = rawEnd.x;
+  const ry = rawEnd.y;
+  const dx = rx - sx;
+  const dy = ry - sy;
   const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-  const mx = (sx + tx) / 2;
-  const my = (sy + ty) / 2;
+  const mx = (sx + rx) / 2;
+  const my = (sy + ry) / 2;
   const nx = -dy / dist;
   const ny = dx / dist;
   const sign = typeof opts.sign === 'number' ? opts.sign : edgeRouteSign(fromId, toId);
   const magnitude = (opts.magnitudeScale || 1) * Math.min(140, Math.max(28, dist * 0.22));
   const cx = mx + nx * magnitude * sign;
   const cy = my + ny * magnitude * sign;
+
+  // 二次ベジェ曲線の終点 t=1.0 における接線ベクトル (tx_dir, ty_dir) を計算
+  // P'(1) = 2*(P2 - P1) = 2*(target - control)
+  const tdx = rx - cx;
+  const tdy = ry - cy;
+  const tdist = Math.sqrt(tdx * tdx + tdy * tdy) || 1;
+  const tux = tdx / tdist;
+  const tuy = tdy / tdist;
+
+  // 矢印マーカーの先端がノードカードの縁より手前で留まるよう 14px 手前へ引く
+  const stopGap = 14;
+  const tx = rx - tux * stopGap;
+  const ty = ry - tuy * stopGap;
+
   return {
     sx: sx, sy: sy, tx: tx, ty: ty, cx: cx, cy: cy,
     mx: mx, my: my, nx: nx, ny: ny, dist: dist, sign: sign, magnitude: magnitude,
