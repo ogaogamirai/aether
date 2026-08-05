@@ -778,7 +778,7 @@ function getNoteAnchorPoint(note, towardX, towardY) {
   if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) {
     return { x: cx, y: cy };
   }
-  const inset = 6;
+  const inset = 12;
   const hw = NOTE_HALF_W - inset;
   const hh = NOTE_HALF_H - inset;
   const scale = Math.min(
