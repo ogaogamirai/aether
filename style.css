@@ -2179,6 +2179,12 @@ body.light-theme .mobile-detail-sheet {
   background: #f8fafc;
 }
 
+/* hidden 属性を尊重: display:flex が UA の [hidden]{display:none} を上書きしないようにする */
+.mobile-detail-backdrop[hidden],
+.mobile-detail-sheet[hidden] {
+  display: none !important;
+}
+
 .mobile-detail-header {
   flex-shrink: 0;
   padding: 10px 14px 8px;
