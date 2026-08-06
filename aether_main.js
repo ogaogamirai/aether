@@ -1468,10 +1468,7 @@ function showNodeDetails(note) {
   scheduleCenterFocusedNote(note);
 }
 
-function showEdgeDetails(sourceId, targetId, rel) {
-  const detailsContainer = document.getElementById('details-view-container');
-  if (!detailsContainer) return;
-
+function buildEdgeDetailsHtml(sourceId, targetId, rel) {
   const sourceNote = (typeof notes !== 'undefined' ? notes : window.notes || []).find(n => String(n.id) === String(sourceId));
   const targetNote = (typeof notes !== 'undefined' ? notes : window.notes || []).find(n => String(n.id) === String(targetId));
 
@@ -1487,7 +1484,7 @@ function showEdgeDetails(sourceId, targetId, rel) {
 
   const descText = parseKaTeX(parseMarkdownTable(parseMarkdownImage(rawDesc)));
 
-  detailsContainer.innerHTML =
+  return (
     '<div class="details-card">' +
       '<div class="details-meta">' +
         '<span>エッジ: <strong>' + sourceId + ' ➔ ' + targetId + '</strong></span>' +
@@ -1502,9 +1499,56 @@ function showEdgeDetails(sourceId, targetId, rel) {
         '<div style="margin-top:4px;"><strong>To (結果):</strong> [' + targetId + '] ' + targetTitle + '</div>' +
       '</div>' +
       '<div class="details-desc" style="margin-top: 8px;">' + descText + '</div>' +
-    '</div>';
+    '</div>'
+  );
+}
 
-  switchTab('details');
+function showEdgeDetails(sourceId, targetId, rel) {
+  const detailsContainer = document.getElementById('details-view-container');
+  if (!detailsContainer) return;
+
+  detailsContainer.innerHTML = buildEdgeDetailsHtml(sourceId, targetId, rel);
+
+  if (typeof getEffectiveViewMode === 'function' && getEffectiveViewMode() === 'list') {
+    openMobileEdgeDetail(sourceId, targetId, rel);
+  } else if (typeof isMobileCanvasMode === 'function' && isMobileCanvasMode()) {
+    openMobileEdgeDetail(sourceId, targetId, rel, { drawer: true });
+  } else {
+    switchTab('details');
+  }
+}
+
+function openMobileEdgeDetail(sourceId, targetId, rel, options) {
+  options = options || {};
+  var drawerMode = !!options.drawer || isMobileCanvasMode();
+  var body = document.getElementById('mobile-detail-body');
+  var sheet = document.getElementById('mobile-detail-sheet');
+  var backdrop = document.getElementById('mobile-detail-backdrop');
+  var titleEl = document.getElementById('mobile-detail-title');
+  if (!body) return;
+
+  var relationObj = rel || ((typeof relations !== 'undefined' ? relations : window.relations || []).find(r => String(r.from) === String(sourceId) && String(r.to) === String(targetId)));
+  body.innerHTML = '<div class="mobile-detail-compact">' + buildEdgeDetailsHtml(sourceId, targetId, rel) + '</div>';
+  if (titleEl) titleEl.textContent = '🔗 ' + (relationObj && relationObj.label ? relationObj.label : '因果関係');
+
+  window.focusedNoteId = null;
+  window.mobileDetailOpen = true;
+  document.body.classList.add('mobile-detail-open');
+  document.body.classList.toggle('mobile-canvas-detail', drawerMode);
+  if (sheet) sheet.hidden = false;
+  if (backdrop) backdrop.hidden = drawerMode;
+
+  var footer = document.querySelector('.mobile-detail-footer');
+  if (footer) footer.style.display = 'none';
+
+  updateMobileDetailCloseLabel();
+  renderMobileNodeStrip();
+
+  if (!drawerMode) {
+    renderMobileBrowseList();
+    renderMobileOverviewPanel();
+    renderMobileBottomNav();
+  }
 }
 
 // IndexedDB: aether_storage.js
@@ -2215,6 +2259,9 @@ function openMobileDetail(noteId, options) {
   if (!drawerMode && getEffectiveViewMode() !== 'list') return;
   var note = findMobileNoteById(noteId);
   if (!note) return;
+
+  var edgeFooter = document.querySelector('.mobile-detail-footer');
+  if (edgeFooter) edgeFooter.style.display = '';
 
   ensureMobileNoteTimeVisible(note);
 

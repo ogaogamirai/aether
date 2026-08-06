@@ -150,6 +150,15 @@ body.light-theme .whiteboard-container.drop-active {
   pointer-events: stroke !important;
 }
 
+.connections-layer .aether-edge-hit {
+  pointer-events: stroke !important;
+}
+
+.connections-layer .aether-edge-label,
+.connections-layer .aether-edge-icon {
+  pointer-events: none;
+}
+
 /* Sticky Notes */
 .sticky-note {
   position: absolute;

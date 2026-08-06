@@ -120,7 +120,8 @@ function parseAetherDSL(text) {
           tags: [],
           time: '',
           weight: '',
-          flow: ''
+          flow: '',
+          desc: ''
         };
       }
       continue;
@@ -226,6 +227,7 @@ function parseAetherDSL(text) {
         else if (prop === 'time') currentRelation.time = val;
         else if (prop === 'weight') currentRelation.weight = val;
         else if (prop === 'flow') currentRelation.flow = val;
+        else if (prop === 'desc') currentRelation.desc = val;
       }
       continue;
     }
@@ -337,6 +339,9 @@ function serializeCanvasToDSL() {
     }
     if (rel.flow) {
       dsl += `  flow: "${rel.flow}"\n`;
+    }
+    if (rel.desc) {
+      dsl += `  desc: "${String(rel.desc).replace(/\\n/g, '\\n').replace(/"/g, '\\"')}"\n`;
     }
     dsl += `}\n\n`;
   });

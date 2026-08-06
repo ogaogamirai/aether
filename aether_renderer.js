@@ -889,9 +889,27 @@ function appendEdgeLabel(group, geo, text, color, labelClass) {
   return label;
 }
 
+function addEdgeHitPath(group, pathEl) {
+  if (!group || !pathEl || !pathEl.getAttribute) return;
+  var d = pathEl.getAttribute('d');
+  if (!d) return;
+  var hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  hit.setAttribute('class', 'aether-edge-hit');
+  hit.setAttribute('d', d);
+  hit.setAttribute('fill', 'none');
+  hit.setAttribute('stroke', 'transparent');
+  hit.setAttribute('stroke-width', '16');
+  hit.setAttribute('stroke-linecap', 'round');
+  hit.setAttribute('stroke-linejoin', 'round');
+  hit.setAttribute('pointer-events', 'stroke');
+  group.insertBefore(hit, group.firstChild);
+}
+
 function finalizeEdgeGroup(group, pathEl, colorHex, baseWidth, sourceId, targetId, isDimmed, rel) {
   if (isDimmed && group) group.classList.add('dimmed');
   applyEdgeFocusStyle(group, colorHex, baseWidth, sourceId, targetId);
+
+  addEdgeHitPath(group, pathEl);
   
   if (group) {
     group.style.cursor = 'pointer';
