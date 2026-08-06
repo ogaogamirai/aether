@@ -495,7 +495,14 @@ async function saveToDB(dslText) {
 }
 
 function buildDSLFromState() {
-  let dsl = '# Aether DSL Auto-Saved v3.0\n\n';
+  // エクスポート/ファイル名用に board 名を保持（現在の DSL の # board: を冒頭に維持）
+  const curInput = document.getElementById('dsl-input');
+  const curDsl = curInput ? curInput.value : '';
+  const boardMatch = curDsl.match(/^#\s*board\s*:\s*(.+)$/mi);
+  const boardHeader = (boardMatch && boardMatch[1] && boardMatch[1].trim())
+    ? '# board: ' + boardMatch[1].trim() + '\n'
+    : '';
+  let dsl = boardHeader + '# Aether DSL Auto-Saved v3.0\n\n';
   notes.forEach(note => {
     dsl += 'sticky ' + note.id + ' "' + note.content + '" {\n';
     dsl += '  pos: ' + Math.round(note.x) + ' ' + Math.round(note.y) + '\n';
