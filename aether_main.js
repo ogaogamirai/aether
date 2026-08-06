@@ -1468,6 +1468,45 @@ function showNodeDetails(note) {
   scheduleCenterFocusedNote(note);
 }
 
+function showEdgeDetails(sourceId, targetId, rel) {
+  const detailsContainer = document.getElementById('details-view-container');
+  if (!detailsContainer) return;
+
+  const sourceNote = (typeof notes !== 'undefined' ? notes : window.notes || []).find(n => String(n.id) === String(sourceId));
+  const targetNote = (typeof notes !== 'undefined' ? notes : window.notes || []).find(n => String(n.id) === String(targetId));
+
+  const sourceTitle = sourceNote ? sourceNote.content : sourceId;
+  const targetTitle = targetNote ? targetNote.content : targetId;
+
+  const relationObj = rel || ((typeof relations !== 'undefined' ? relations : window.relations || []).find(r => String(r.from) === String(sourceId) && String(r.to) === String(targetId)));
+
+  const label = relationObj && relationObj.label ? relationObj.label : '因果関係';
+  const weight = relationObj && relationObj.weight ? relationObj.weight : 2;
+  const confidence = relationObj && relationObj.confidence ? relationObj.confidence : 'high';
+  const rawDesc = (relationObj && relationObj.desc ? relationObj.desc : 'この因果関係の検証詳細は登録されていません。').replace(/\\n/g, '\n');
+
+  const descText = parseKaTeX(parseMarkdownTable(parseMarkdownImage(rawDesc)));
+
+  detailsContainer.innerHTML =
+    '<div class="details-card">' +
+      '<div class="details-meta">' +
+        '<span>エッジ: <strong>' + sourceId + ' ➔ ' + targetId + '</strong></span>' +
+        '<span>|</span><span>因果強度(weight): <strong>' + weight + '</strong></span>' +
+        '<span>|</span><span>確信度: <strong>' + confidence + '</strong></span>' +
+      '</div>' +
+      '<div class="details-title" style="font-size: 1rem; color: var(--accent-blue);">' +
+        '🔗 ' + label +
+      '</div>' +
+      '<div style="font-size: 0.8rem; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; margin: 4px 0;">' +
+        '<div><strong>From (原因):</strong> [' + sourceId + '] ' + sourceTitle + '</div>' +
+        '<div style="margin-top:4px;"><strong>To (結果):</strong> [' + targetId + '] ' + targetTitle + '</div>' +
+      '</div>' +
+      '<div class="details-desc" style="margin-top: 8px;">' + descText + '</div>' +
+    '</div>';
+
+  switchTab('details');
+}
+
 // IndexedDB: aether_storage.js
 
 function isTypingTarget(el) {

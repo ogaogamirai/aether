@@ -889,9 +889,20 @@ function appendEdgeLabel(group, geo, text, color, labelClass) {
   return label;
 }
 
-function finalizeEdgeGroup(group, pathEl, colorHex, baseWidth, sourceId, targetId, isDimmed) {
+function finalizeEdgeGroup(group, pathEl, colorHex, baseWidth, sourceId, targetId, isDimmed, rel) {
   if (isDimmed && group) group.classList.add('dimmed');
   applyEdgeFocusStyle(group, colorHex, baseWidth, sourceId, targetId);
+  
+  if (group) {
+    group.style.cursor = 'pointer';
+    group.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (typeof showEdgeDetails === 'function') {
+        showEdgeDetails(sourceId, targetId, rel);
+      }
+    });
+  }
+
   appendToSvg(group);
   return pathEl;
 }
@@ -953,7 +964,7 @@ function drawRelation(rel) {
     bolt.textContent = '⚡';
     group.appendChild(bolt);
     appendEdgeLabel(group, geo, rel.label, colorHex, 'aether-edge-label-conflict');
-    finalizeEdgeGroup(group, path, colorHex, width, source.id, target.id, isDimmed);
+    finalizeEdgeGroup(group, path, colorHex, width, source.id, target.id, isDimmed, rel);
     return;
   }
 
@@ -973,7 +984,7 @@ function drawRelation(rel) {
     flowRel: rel
   });
   appendEdgeLabel(group, geo, rel.label, colorHex);
-  finalizeEdgeGroup(group, path, colorHex, width, source.id, target.id, isDimmed);
+  finalizeEdgeGroup(group, path, colorHex, width, source.id, target.id, isDimmed, rel);
 }
 
 // タグフィルターバーを動的に再構成する
