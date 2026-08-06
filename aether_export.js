@@ -117,14 +117,6 @@ async function gzipUtf8ToBase64(str) {
   return { b64: btoa(binary), encoding: 'gzip' };
 }
 
-// 配布HTML内の script / style タグを早期終了させないためのエスケープ
-function escapeAsScriptPlain(text) {
-  return String(text || '').replace(/<\/script/gi, '<\\/script');
-}
-function escapeAsStyle(text) {
-  return String(text || '').replace(/<\/style/gi, '<\\/style');
-}
-
 // 配布用 JS: 文字列を保護し、コメント除去 + 冗長空白のみ圧縮（演算子/正規表現は触らない）
 function minifySnapshotJs(src) {
   const held = [];
@@ -135,7 +127,12 @@ function minifySnapshotJs(src) {
   let s = String(src || '');
 
   // 文字列を退避してからコメント除去（正規表現リテラルの / は触らない）
-  s = s.replace(/(["'`])(?:\\.|(?!\1)[\s\S])*\1/g, hold);
+  // テンプレートリテラル（複数行可）→ 1行文字列の順で退避。
+  // 1行文字列（シングル/ダブル）はまとめて退避し、他方の引用符を文字列内に含める
+  // （例: '<div class="x">'）。また改行を跨がないことで、行コメント内のアポストロフィ ' を
+  // 開き引用符と誤認して複数行に跨る退避をする事故を防ぐ（JS文字列はエスケープなしで改行を含めないため安全）。
+  s = s.replace(/`(?:\\.|(?!`)[\s\S])*`/g, hold);
+  s = s.replace(/(["'])(?:\\.|(?!\1)[^\r\n\1])*\1/g, hold);
   s = s.replace(/\/\*[\s\S]*?\*\//g, '');
   // // コメント: 行頭または空白の後のみ（URL の http:// は文字列内で既に退避済み）
   s = s.replace(/(^|[\s;{}(),=])\/\/[^\n]*/gm, '$1');
@@ -381,11 +378,11 @@ async function exportPortableViewer() {
     }
 
     const packed = await gzipUtf8ToBase64(bundleJs);
-    const escapedDsl = escapeAsScriptPlain(dsl);
-    const styleContent = escapeAsStyle(cssMin);
+    const packedCss = await gzipUtf8ToBase64(cssMin);
+    const packedDsl = await gzipUtf8ToBase64(dsl);
 
-    // ランタイムは極小。JS bundle を Base64 デコード（gzip なら展開）して eval（1回のみ）
-    // DSL・CSS は HTML 内にそのまま埋め込み（Base64 税を回避）
+    // ランタイムは極小。JS bundle / CSS / DSL は gzip -> Base64 で埋め込み、
+    // ブラウザ側（__aetherDecodePayload）で展開してから適用（Base64 税 + gzip で最小化）
     const runtimeJs = [
       'window.__AETHER_SNAPSHOT__ = true;',
       'function __aetherB64ToUtf8(b64) {',
@@ -398,24 +395,29 @@ async function exportPortableViewer() {
       '  var el = document.getElementById(id);',
       '  return el ? String(el.textContent || "").replace(/\\s+/g, "") : "";',
       '}',
+      'async function __aetherDecodePayload(id) {',
+      '  var el = document.getElementById(id);',
+      '  var b64 = el ? String(el.textContent || "").replace(/\\s+/g, "") : "";',
+      '  var enc = el ? (el.getAttribute("data-encoding") || "plain") : "plain";',
+      '  if (!b64) return "";',
+      '  if (enc === "gzip") {',
+      '    if (typeof DecompressionStream === "undefined") throw new Error("gzip payload requires DecompressionStream");',
+      '    var bytes = Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); });',
+      '    var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));',
+      '    return await new Response(stream).text();',
+      '  }',
+      '  return __aetherB64ToUtf8(b64);',
+      '}',
       'async function __aetherBootSnapshot() {',
       '  try {',
-      '    var b64 = __aetherReadPayload("aether-src-bundle");',
-      '    var encoding = document.getElementById("aether-src-bundle").getAttribute("data-encoding") || "plain";',
-      '    var code;',
-      '    if (encoding === "gzip") {',
-      '      if (typeof DecompressionStream === "undefined") throw new Error("gzip payload requires DecompressionStream");',
-      '      var bytes = Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); });',
-      '      var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));',
-      '      code = await new Response(stream).text();',
-      '    } else {',
-      '      code = __aetherB64ToUtf8(b64);',
-      '    }',
+      '    var code = await __aetherDecodePayload("aether-src-bundle");',
       '    (0, eval)(code);',
+      '    var cssCode = await __aetherDecodePayload("aether-src-css");',
+      '    var styleEl = document.getElementById("aether-embedded-css");',
+      '    if (styleEl && cssCode) styleEl.textContent = cssCode;',
       '    if (typeof setupCanvasInteractions === "function") setupCanvasInteractions();',
       '    if (typeof refreshCanvasRefs === "function") refreshCanvasRefs();',
-      '    var dslEl = document.getElementById("aether-src-dsl");',
-      '    var initialDSL = dslEl ? String(dslEl.textContent || "") : "";',
+      '    var initialDSL = await __aetherDecodePayload("aether-src-dsl");',
       '    var input = document.getElementById("dsl-input");',
       '    if (input) input.value = initialDSL;',
       '    if (typeof applyDSL !== "function") throw new Error("applyDSL missing after bundle eval");',
@@ -452,7 +454,7 @@ async function exportPortableViewer() {
       '  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Plus+Jakarta+Sans:wght@300;400;600&display=swap" rel="stylesheet">',
       '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">',
       '  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"><\/script>',
-      '  <style id="aether-embedded-css">' + styleContent + '</style>',
+      '  <style id="aether-embedded-css"></style>',
       '</head>',
       '<body class="light-theme">',
       '  <div id="view-mode-bar" class="view-mode-bar" role="toolbar" aria-label="スマホ表示切替">',
@@ -611,9 +613,10 @@ async function exportPortableViewer() {
       '    </div>',
       '  </div>',
       '',
-      '  <!-- payloads: JS bundle as Base64/gzip; DSL as plain text; CSS embedded directly -->',
+      '  <!-- payloads: JS bundle / CSS / DSL as gzip->Base64 (decoded at boot) -->',
       '  <script type="text/plain" id="aether-src-bundle" data-encoding="' + packed.encoding + '">' + packed.b64 + '<\/script>',
-      '  <script type="text/plain" id="aether-src-dsl">' + escapedDsl + '<\/script>',
+      '  <script type="text/plain" id="aether-src-css" data-encoding="' + packedCss.encoding + '">' + packedCss.b64 + '<\/script>',
+      '  <script type="text/plain" id="aether-src-dsl" data-encoding="' + packedDsl.encoding + '">' + packedDsl.b64 + '<\/script>',
       '',
       '  <script>',
       '    // notes 等は再代入共有。view/presentation は window のみ（free var 禁止）',
