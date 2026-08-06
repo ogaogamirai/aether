@@ -144,6 +144,12 @@ body.light-theme .whiteboard-container.drop-active {
   pointer-events: none;
 }
 
+.connections-layer .aether-edge,
+.connections-layer path,
+.connections-layer line {
+  pointer-events: stroke !important;
+}
+
 /* Sticky Notes */
 .sticky-note {
   position: absolute;
