@@ -14,6 +14,15 @@
     html, body { margin: 0; height: 100%; overflow: hidden; background: #0d0e12; font-family: system-ui, sans-serif; }
     #aether-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
 
+    #label-layer {
+      position: fixed; inset: 0; width: 100vw; height: 100vh;
+      pointer-events: none; z-index: 5;
+    }
+    #label-layer text {
+      font-size: 13px; fill: #e8e8f0;
+      paint-order: stroke; stroke: rgba(13,14,18,0.9); stroke-width: 3px;
+    }
+
     #toolbar {
       position: fixed; top: 12px; left: 12px; z-index: 10;
       display: flex; flex-direction: column; gap: 8px;
@@ -54,10 +63,60 @@
       background: var(--accent); color: #0d0e12; border: none;
       border-radius: 6px; padding: 6px 14px; font-size: 12px; cursor: pointer;
     }
+
+    #search-bar {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 10; width: 260px;
+      background: var(--bar-bg); border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    #search-input {
+      width: 100%; padding: 10px 14px;
+      background: transparent; color: var(--bar-fg);
+      border: 1px solid #3a3e4c; border-radius: 10px;
+      font-size: 13px; outline: none;
+    }
+    #search-input:focus { border-color: var(--accent); }
+    #search-results {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      max-height: 200px; overflow-y: auto;
+      background: var(--bar-bg);
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    #search-results .item {
+      padding: 8px 14px; font-size: 12px; cursor: pointer;
+      color: var(--bar-fg);
+      border-bottom: 1px solid #2a2d38;
+    }
+    #search-results .item:last-child { border-bottom: none; }
+    #search-results .item:hover { background: #2a2d38; }
+
+    #detail-card {
+      position: fixed; top: 12px; right: 12px; z-index: 20;
+      width: 300px; max-height: 70vh; overflow-y: auto;
+      background: var(--bar-bg); color: var(--bar-fg);
+      border-radius: 10px; padding: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    #detail-card.hidden { display: none; }
+    #detail-card h2 { margin: 0 0 8px; font-size: 15px; word-break: break-word; }
+    #detail-card .meta { font-size: 12px; color: #a0a4b4; margin-bottom: 4px; }
+    #detail-card .meta b { color: var(--accent); }
+    #detail-card .desc {
+      margin-top: 8px; font-size: 12px; line-height: 1.6;
+      white-space: pre-wrap; word-break: break-word; color: #c8cad4;
+    }
+    #detail-close {
+      position: absolute; top: 8px; right: 8px;
+      background: none; border: none; color: var(--bar-fg);
+      font-size: 16px; cursor: pointer; padding: 4px 8px;
+    }
   </style>
 </head>
 <body>
   <canvas id="aether-canvas"></canvas>
+  <svg id="label-layer"></svg>
 
   <div id="toolbar">
     <h1>Aether3D <small>Phase 1</small></h1>
@@ -67,9 +126,17 @@
       <button data-mode="tree-tb">ツリー縦</button>
       <button data-mode="timeline">タイムライン</button>
     </div>
-    <div class="row">
-      <button id="reset-view">視点リセット</button>
+    <div class="row" id="view-buttons">
+      <button data-view="2d" class="active">2D</button>
+      <button data-view="3d">3D</button>
+      <button data-view="side">側面</button>
+      <button id="reset-view">リセット</button>
     </div>
+  </div>
+
+  <div id="search-bar">
+    <input id="search-input" type="text" placeholder="ノードを検索…">
+    <div id="search-results"></div>
   </div>
 
   <button id="dsl-toggle">DSL</button>
@@ -78,6 +145,15 @@
     <div class="actions">
       <button id="load-dsl">読み込み</button>
     </div>
+  </div>
+
+  <div id="detail-card" class="hidden">
+    <button id="detail-close">×</button>
+    <h2 id="detail-title"></h2>
+    <div class="meta" id="detail-role"></div>
+    <div class="meta" id="detail-time"></div>
+    <div class="meta" id="detail-tags"></div>
+    <div class="desc" id="detail-desc"></div>
   </div>
 
   <script src="vendor/ogl.min.js"></script>
@@ -146,8 +222,9 @@
       return 'square';
     }
 
+    let nodeMeshes = [];
+
     function renderBoard() {
-      console.log('[Aether3D] renderBoard called, mode =', Aether3DState.getLayoutMode());
       Aether3DState.loadDSL(dslInput.value);
       const notes = Aether3DState.getNotes();
       const relations = Aether3DState.getRelations();
@@ -157,6 +234,7 @@
       const positions = Aether3DLayout.computeLayout(notes, relations, connections, mode);
 
       while (scene.children.length) scene.removeChild(scene.children[0]);
+      nodeMeshes = [];
 
       const edges = [];
       relations.forEach(r => edges.push([r.from, r.to]));
@@ -171,10 +249,147 @@
         const p = positions[n.id] || [0, 0];
         const color = Aether3DCore.colorToHex(n.color);
         const mesh = Aether3DCore.buildNode(gl, shapeFor(n), color, p[0], p[1], 60);
-        mesh.userData = { note: n };
+        mesh.userData = { note: n, isNode: true };
+        nodeMeshes.push(mesh);
         scene.addChild(mesh);
       });
+
+      const labelLayer = document.getElementById('label-layer');
+      labelLayer.innerHTML = '';
+      nodeMeshes.forEach(mesh => {
+        const note = mesh.userData.note;
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.textContent = note.content || note.id;
+        text.setAttribute('text-anchor', 'middle');
+        text.dataset.nodeId = note.id;
+        labelLayer.appendChild(text);
+      });
     }
+
+    function showDetailCard(note) {
+      document.getElementById('detail-title').textContent = note.content || '';
+      document.getElementById('detail-role').innerHTML = note.role ? '<b>役割:</b> ' + note.role : '';
+      document.getElementById('detail-time').innerHTML = note.time ? '<b>時間:</b> ' + note.time : '';
+      document.getElementById('detail-tags').innerHTML =
+        note.tags && note.tags.length ? '<b>タグ:</b> ' + note.tags.join(' ') : '';
+      document.getElementById('detail-desc').textContent = note.desc || '';
+      document.getElementById('detail-card').classList.remove('hidden');
+    }
+
+    function hideDetailCard() {
+      document.getElementById('detail-card').classList.add('hidden');
+    }
+
+    function worldToScreen(camera, x, y, z) {
+      const view = new OGL.Mat4();
+      view.inverse(camera.worldMatrix);
+      const viewProj = new OGL.Mat4();
+      viewProj.multiply(camera.projectionMatrix, view);
+      const p = new OGL.Vec3(x, y, z);
+      p.applyMatrix4(viewProj);
+      const sx = (p.x + 1) / 2 * canvas.clientWidth;
+      const sy = (1 - p.y) / 2 * canvas.clientHeight;
+      return { x: sx, y: sy };
+    }
+
+    let pointerDownPos = null;
+
+    canvas.addEventListener('pointerdown', (e) => {
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+    });
+
+    canvas.addEventListener('pointerup', (e) => {
+      if (!pointerDownPos) return;
+      const dx = e.clientX - pointerDownPos.x;
+      const dy = e.clientY - pointerDownPos.y;
+      pointerDownPos = null;
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) return;
+
+      let best = null;
+      let bestDist = 60;
+      nodeMeshes.forEach(mesh => {
+        const p = mesh.position;
+        const s = worldToScreen(camera, p.x, p.y, p.z);
+        const d = Math.hypot(s.x - e.clientX, s.y - e.clientY);
+        if (d < bestDist) { bestDist = d; best = mesh; }
+      });
+      if (best && best.userData.note) {
+        showDetailCard(best.userData.note);
+      } else {
+        hideDetailCard();
+      }
+    });
+
+    document.getElementById('detail-close').addEventListener('click', hideDetailCard);
+
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+    searchResults.style.display = 'none';
+
+    function focusOnNode(nodeId) {
+      const mesh = nodeMeshes.find(m => m.userData.note.id === nodeId);
+      if (!mesh) return;
+      const p = mesh.position;
+      camera.position.set(p.x, p.y, 600);
+      controls.target.set(p.x, p.y, 0);
+      controls.forcePosition();
+      showDetailCard(mesh.userData.note);
+    }
+
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim().toLowerCase();
+      const results = document.getElementById('search-results');
+      results.innerHTML = '';
+      if (!q) { results.style.display = 'none'; return; }
+
+      const notes = Aether3DState.getNotes();
+      const hits = notes.filter(n =>
+        (n.content || '').toLowerCase().includes(q) ||
+        (n.desc || '').toLowerCase().includes(q) ||
+        (n.tags || []).some(t => t.toLowerCase().includes(q))
+      ).slice(0, 10);
+
+      if (hits.length === 0) { results.style.display = 'none'; return; }
+
+      hits.forEach(n => {
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.textContent = n.content || n.id;
+        item.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          focusOnNode(n.id);
+          searchInput.value = '';
+          results.style.display = 'none';
+        });
+        results.appendChild(item);
+      });
+      results.style.display = 'block';
+    });
+
+    searchInput.addEventListener('blur', () => {
+      setTimeout(() => { searchResults.style.display = 'none'; }, 150);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      } else if (e.key === '/') {
+        e.preventDefault();
+        searchInput.focus();
+      } else if (e.key === 'r') {
+        camera.position.set(0, 0, 900);
+        controls.target.set(0, 0, 0);
+        controls.forcePosition();
+      } else if (e.key === '1') {
+        setView('2d');
+      } else if (e.key === '2') {
+        setView('3d');
+      } else if (e.key === '3') {
+        setView('side');
+      }
+    });
 
     function setActiveMode(mode) {
       document.querySelectorAll('#layout-buttons [data-mode]').forEach(b => {
@@ -196,6 +411,26 @@
       controls.forcePosition();
     });
 
+    function setView(mode) {
+      const t = controls.target;
+      const tx = t.x, ty = t.y;
+      if (mode === '2d') {
+        camera.position.set(tx, ty, 900);
+      } else if (mode === '3d') {
+        camera.position.set(tx + 500, ty + 400, 700);
+      } else if (mode === 'side') {
+        camera.position.set(tx + 900, ty, 300);
+      }
+      controls.forcePosition();
+      document.querySelectorAll('#view-buttons [data-view]').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === mode);
+      });
+    }
+
+    document.querySelectorAll('#view-buttons [data-view]').forEach(btn => {
+      btn.addEventListener('click', () => setView(btn.dataset.view));
+    });
+
     document.getElementById('load-dsl').addEventListener('click', renderBoard);
 
     document.getElementById('dsl-toggle').addEventListener('click', () => {
@@ -213,6 +448,19 @@
         }
       });
       renderer.render({ scene, camera });
+
+      const labelLayer = document.getElementById('label-layer');
+      const labels = labelLayer.children;
+      let li = 0;
+      nodeMeshes.forEach(mesh => {
+        if (li >= labels.length) return;
+        const p = mesh.position;
+        const s = worldToScreen(camera, p.x, p.y, p.z);
+        const t = labels[li];
+        t.setAttribute('x', s.x);
+        t.setAttribute('y', s.y + 80);
+        li++;
+      });
     }
     loop();
 
