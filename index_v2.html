@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aether3D v2 — Phase 1 Prototype</title>
+  <style>
+    :root {
+      --bar-bg: rgba(20, 22, 28, 0.92);
+      --bar-fg: #e8e8f0;
+      --accent: #5ac8d9;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #0d0e12; font-family: system-ui, sans-serif; }
+    #aether-canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+
+    #toolbar {
+      position: fixed; top: 12px; left: 12px; z-index: 10;
+      display: flex; flex-direction: column; gap: 8px;
+      background: var(--bar-bg); color: var(--bar-fg);
+      padding: 12px 14px; border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    #toolbar h1 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+    #toolbar h1 small { color: var(--accent); font-weight: 400; }
+    #toolbar .row { display: flex; gap: 6px; flex-wrap: wrap; }
+    #toolbar button {
+      background: #2a2d38; color: var(--bar-fg); border: 1px solid #3a3e4c;
+      border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer;
+    }
+    #toolbar button:hover { background: #3a3e4c; }
+    #toolbar button.active { background: var(--accent); color: #0d0e12; border-color: var(--accent); }
+
+    #dsl-toggle {
+      position: fixed; bottom: 12px; left: 12px; z-index: 10;
+      background: var(--bar-bg); color: var(--bar-fg);
+      border: 1px solid #3a3e4c; border-radius: 6px; padding: 6px 10px;
+      font-size: 12px; cursor: pointer;
+    }
+    #dsl-panel {
+      position: fixed; bottom: 48px; left: 12px; right: 12px; z-index: 9;
+      background: var(--bar-bg); border-radius: 10px; padding: 10px;
+      display: none; flex-direction: column; gap: 8px;
+      max-height: 40vh;
+    }
+    #dsl-panel.open { display: flex; }
+    #dsl-input {
+      width: 100%; min-height: 140px; resize: vertical;
+      background: #14161c; color: #d8dae4; border: 1px solid #3a3e4c;
+      border-radius: 6px; padding: 8px; font-family: monospace; font-size: 12px;
+    }
+    #dsl-panel .actions { display: flex; gap: 8px; }
+    #dsl-panel button {
+      background: var(--accent); color: #0d0e12; border: none;
+      border-radius: 6px; padding: 6px 14px; font-size: 12px; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="aether-canvas"></canvas>
+
+  <div id="toolbar">
+    <h1>Aether3D <small>Phase 1</small></h1>
+    <div class="row" id="layout-buttons">
+      <button data-mode="spring" class="active">星団</button>
+      <button data-mode="tree-lr">ツリー横</button>
+      <button data-mode="tree-tb">ツリー縦</button>
+      <button data-mode="timeline">タイムライン</button>
+    </div>
+    <div class="row">
+      <button id="reset-view">視点リセット</button>
+    </div>
+  </div>
+
+  <button id="dsl-toggle">DSL</button>
+  <div id="dsl-panel">
+    <textarea id="dsl-input" spellcheck="false"></textarea>
+    <div class="actions">
+      <button id="load-dsl">読み込み</button>
+    </div>
+  </div>
+
+  <script src="vendor/ogl.min.js"></script>
+  <script src="aether_parser.js"></script>
+  <script src="aether3d_state.js"></script>
+  <script src="aether3d_layout.js"></script>
+  <script src="aether3d_core.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const OGL = window.OGL;
+    const canvas = document.getElementById('aether-canvas');
+
+    const { renderer, gl, camera, scene } = Aether3DCore.createRenderer(
+      canvas, window.innerWidth, window.innerHeight);
+    const controls = new OGL.Orbit(camera, { element: canvas });
+
+    const dslInput = document.getElementById('dsl-input');
+    dslInput.value = [
+      '# board: layout_smoke_20260813',
+      'sticky SMOKE_TITLE "置き場テスト" {',
+      '  pos: 480 80',
+      '  color: "blue"',
+      '  role: "claim"',
+      '  time: "1_確認"',
+      '}',
+      'sticky SMOKE_CLI "CLI" {',
+      '  pos: 160 320',
+      '  color: "green"',
+      '  role: "evidence"',
+      '  time: "1_確認"',
+      '}',
+      'sticky SMOKE_UI "UI / LIVE" {',
+      '  pos: 480 320',
+      '  color: "green"',
+      '  role: "evidence"',
+      '  time: "1_確認"',
+      '}',
+      'sticky SMOKE_DB "SQLite" {',
+      '  pos: 800 320',
+      '  color: "green"',
+      '  role: "evidence"',
+      '  time: "1_確認"',
+      '}',
+      'sticky SMOKE_AUTO1 "自動配置A" {',
+      '  color: "orange"',
+      '  role: "claim"',
+      '  time: "2_検討"',
+      '}',
+      'sticky SMOKE_AUTO2 "自動配置B" {',
+      '  color: "purple"',
+      '  role: "claim"',
+      '  time: "3_決定"',
+      '}',
+      'relation SMOKE_CLI -> SMOKE_TITLE { type: "evidence" label: "書く" }',
+      'relation SMOKE_DB -> SMOKE_TITLE { type: "evidence" label: "正本" }',
+      'relation SMOKE_TITLE -> SMOKE_UI { type: "default" label: "投影" }',
+      'relation SMOKE_TITLE -> SMOKE_AUTO1 { type: "default" label: "展開" }',
+      'relation SMOKE_AUTO1 -> SMOKE_AUTO2 { type: "default" label: "次" }',
+      '',
+    ].join('\n');
+
+    function shapeFor(note) {
+      if (note.role === 'claim') return 'hexagon';
+      if (note.role === 'evidence') return 'circle';
+      return 'square';
+    }
+
+    function renderBoard() {
+      console.log('[Aether3D] renderBoard called, mode =', Aether3DState.getLayoutMode());
+      Aether3DState.loadDSL(dslInput.value);
+      const notes = Aether3DState.getNotes();
+      const relations = Aether3DState.getRelations();
+      const connections = Aether3DState.getConnections();
+      const mode = Aether3DState.getLayoutMode();
+
+      const positions = Aether3DLayout.computeLayout(notes, relations, connections, mode);
+
+      while (scene.children.length) scene.removeChild(scene.children[0]);
+
+      const edges = [];
+      relations.forEach(r => edges.push([r.from, r.to]));
+      connections.forEach(c => edges.push([c.source, c.target]));
+      edges.forEach(([a, b]) => {
+        const pa = positions[a], pb = positions[b];
+        if (!pa || !pb) return;
+        scene.addChild(Aether3DCore.buildEdge(gl, '#7a7f8f', pa[0], pa[1], pb[0], pb[1]));
+      });
+
+      notes.forEach(n => {
+        const p = positions[n.id] || [0, 0];
+        const color = Aether3DCore.colorToHex(n.color);
+        const mesh = Aether3DCore.buildNode(gl, shapeFor(n), color, p[0], p[1], 60);
+        mesh.userData = { note: n };
+        scene.addChild(mesh);
+      });
+    }
+
+    function setActiveMode(mode) {
+      document.querySelectorAll('#layout-buttons [data-mode]').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === mode);
+      });
+    }
+
+    document.querySelectorAll('#layout-buttons [data-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        Aether3DState.setLayoutMode(btn.dataset.mode);
+        setActiveMode(btn.dataset.mode);
+        renderBoard();
+      });
+    });
+
+    document.getElementById('reset-view').addEventListener('click', () => {
+      camera.position.set(0, 0, 900);
+      controls.target.set(0, 0, 0);
+      controls.forcePosition();
+    });
+
+    document.getElementById('load-dsl').addEventListener('click', renderBoard);
+
+    document.getElementById('dsl-toggle').addEventListener('click', () => {
+      document.getElementById('dsl-panel').classList.toggle('open');
+    });
+
+    renderBoard();
+
+    function loop() {
+      requestAnimationFrame(loop);
+      controls.update();
+      scene.children.forEach(child => {
+        if (child.userData && child.userData.isNode) {
+          child.quaternion.copy(camera.quaternion);
+        }
+      });
+      renderer.render({ scene, camera });
+    }
+    loop();
+
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.perspective({ aspect: window.innerWidth / window.innerHeight });
+    });
+  })();
+  </script>
+</body>
+</html>
