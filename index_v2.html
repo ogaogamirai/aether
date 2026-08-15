@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Aether3D v2 — Phase 1 Prototype</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <style>
     :root {
       --bar-bg: rgba(20, 22, 28, 0.92);
@@ -157,6 +158,8 @@
   </div>
 
   <script src="vendor/ogl.min.js"></script>
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
   <script src="aether_parser.js"></script>
   <script src="aether3d_state.js"></script>
   <script src="aether3d_layout.js"></script>
@@ -207,6 +210,13 @@
       '  color: "purple"',
       '  role: "claim"',
       '  time: "3_決定"',
+      '}',
+      'sticky SMOKE_MATH "数式テスト" {',
+      '  pos: 480 620',
+      '  color: "pink"',
+      '  role: "claim"',
+      '  time: "1_確認"',
+      '  desc: "オイラーの公式: $e^{i\\pi} + 1 = 0$\\n\\nフーリエ級数: $$f(x) = a_0 + \\sum_{n=1}^{\\infty} (a_n \\cos nx + b_n \\sin nx)$$"',
       '}',
       'relation SMOKE_CLI -> SMOKE_TITLE { type: "evidence" label: "書く" }',
       'relation SMOKE_DB -> SMOKE_TITLE { type: "evidence" label: "正本" }',
@@ -272,7 +282,17 @@
       document.getElementById('detail-time').innerHTML = note.time ? '<b>時間:</b> ' + note.time : '';
       document.getElementById('detail-tags').innerHTML =
         note.tags && note.tags.length ? '<b>タグ:</b> ' + note.tags.join(' ') : '';
-      document.getElementById('detail-desc').textContent = note.desc || '';
+      const descEl = document.getElementById('detail-desc');
+      descEl.textContent = note.desc || '';
+      if (window.renderMathInElement) {
+        renderMathInElement(descEl, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+          ],
+          throwOnError: false,
+        });
+      }
       document.getElementById('detail-card').classList.remove('hidden');
     }
 
@@ -416,10 +436,16 @@
       const tx = t.x, ty = t.y;
       if (mode === '2d') {
         camera.position.set(tx, ty, 900);
-      } else if (mode === '3d') {
-        camera.position.set(tx + 500, ty + 400, 700);
-      } else if (mode === 'side') {
-        camera.position.set(tx + 900, ty, 300);
+        controls.mouseButtons.ORBIT = 5;  // 回転を無効化（存在しないボタン）
+        controls.mouseButtons.PAN = 0;    // 左ドラッグ = パン
+      } else {
+        camera.position.set(
+          mode === '3d' ? tx + 500 : tx + 900,
+          mode === '3d' ? ty + 400 : ty,
+          mode === '3d' ? 700 : 300
+        );
+        controls.mouseButtons.ORBIT = 0;  // 左ドラッグ = 回転
+        controls.mouseButtons.PAN = 2;    // 右ドラッグ = パン
       }
       controls.forcePosition();
       document.querySelectorAll('#view-buttons [data-view]').forEach(b => {
@@ -438,6 +464,7 @@
     });
 
     renderBoard();
+    setView('2d');
 
     function loop() {
       requestAnimationFrame(loop);
