@@ -266,6 +266,21 @@
       '  type: "default"',
       '  label: "次"',
       '}',
+      'drawing DRW1 "注記矢印" {',
+      '  type: "arc-up"',
+      '  from: "SMOKE_CLI"',
+      '  to: "SMOKE_TITLE"',
+      '  color: "orange"',
+      '}',
+      'callout CALL1 "補足説明" {',
+      '  anchor: "SMOKE_DB"',
+      '  offset: 130 -40',
+      '  color: "cyan"',
+      '}',
+      'path PATH1 "検証経路" {',
+      '  nodes: "SMOKE_MATH SMOKE_AUTO2 SMOKE_UI"',
+      '  color: "purple"',
+      '}',
       '',
     ].join('\n');
 
@@ -329,6 +344,7 @@
         labelLayer.appendChild(line);
         edgeLines.push({ line, pa, pb });
       });
+      nodeLabels = [];
       nodeMeshes.forEach(mesh => {
         const note = mesh.userData.note;
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -336,6 +352,52 @@
         text.setAttribute('text-anchor', 'middle');
         text.dataset.nodeId = note.id;
         labelLayer.appendChild(text);
+        nodeLabels.push({ text, mesh });
+      });
+
+      const drawings = Aether3DState.getDrawings();
+      drawingSvg = [];
+      drawings.forEach(dw => {
+        if (dw.type === 'callout') {
+          const anchorPos = positions[dw.anchor];
+          if (!anchorPos) return;
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.textContent = dw.title || '';
+          text.setAttribute('fill', '#ffffff');
+          text.setAttribute('text-anchor', 'middle');
+          text.setAttribute('font-size', '14');
+          text.setAttribute('stroke', '#0d0e12');
+          text.setAttribute('stroke-width', '3');
+          text.setAttribute('paint-order', 'stroke');
+          labelLayer.appendChild(text);
+          drawingSvg.push({ kind: 'callout', el: text, anchor: anchorPos, offset: dw.offset });
+        } else if (dw.type === 'path') {
+          const pts = (dw.targets || []).map(t => positions[t]).filter(Boolean);
+          if (pts.length < 2) return;
+          const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+          poly.setAttribute('fill', 'none');
+          poly.setAttribute('stroke', dw.color ? Aether3DCore.colorToHex(dw.color) : '#b0a0ff');
+          poly.setAttribute('stroke-width', '2');
+          poly.setAttribute('stroke-dasharray', '6,4');
+          labelLayer.appendChild(poly);
+          drawingSvg.push({ kind: 'path', el: poly, pts });
+        } else {
+          const fromPos = positions[dw.from], toPos = positions[dw.to];
+          if (!fromPos || !toPos) return;
+          const dx = toPos[0] - fromPos[0], dy = toPos[1] - fromPos[1];
+          const len = Math.hypot(dx, dy) || 1;
+          const offX = (-dy / len) * 36, offY = (dx / len) * 36;
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('stroke', dw.color ? Aether3DCore.colorToHex(dw.color) : '#c0c0d0');
+          line.setAttribute('stroke-width', '3');
+          line.setAttribute('stroke-dasharray', '6,4');
+          line.setAttribute('x1', fromPos[0] + offX);
+          line.setAttribute('y1', fromPos[1] + offY);
+          line.setAttribute('x2', toPos[0] + offX);
+          line.setAttribute('y2', toPos[1] + offY);
+          labelLayer.appendChild(line);
+          drawingSvg.push({ kind: 'drawing', el: line, from: [fromPos[0] + offX, fromPos[1] + offY], to: [toPos[0] + offX, toPos[1] + offY] });
+        }
       });
     }
 
@@ -530,6 +592,8 @@
     let flowMesh = null;
     let flowTime = 0;
     let edgeLines = [];
+    let drawingSvg = [];
+    let nodeLabels = [];
 
     document.getElementById('surface-toggle').addEventListener('click', () => {
       const panel = document.getElementById('surface-panel');
@@ -562,6 +626,24 @@
     bindSurfaceSlider('surf-bend', 'surf-bend-val', 'bend', 4);
 
     renderBoard();
+
+    const allNotes = Aether3DState.getNotes();
+    const allPos = Aether3DLayout.computeLayout(
+      allNotes,
+      Aether3DState.getRelations(),
+      Aether3DState.getConnections(),
+      Aether3DState.getLayoutMode());
+    let cx = 0, cy = 0, cnt = 0;
+    allNotes.forEach(n => {
+      const p = allPos[n.id];
+      if (p) { cx += p[0]; cy += p[1]; cnt++; }
+    });
+    if (cnt > 0) { cx /= cnt; cy /= cnt; }
+    controls.target.set(cx, cy, 0);
+    controls.forcePosition();
+    camera.position.set(cx, cy, 900);
+    controls.forcePosition();
+
     setView('2d');
 
     function loop() {
@@ -585,17 +667,32 @@
         line.setAttribute('y2', sb.y);
       });
 
-      const labelLayer = document.getElementById('label-layer');
-      const labels = labelLayer.children;
-      let li = 0;
-      nodeMeshes.forEach(mesh => {
-        if (li >= labels.length) return;
+      drawingSvg.forEach(d => {
+        if (d.kind === 'callout') {
+          const s = worldToScreen(camera, d.anchor[0] + (d.offset[0] || 0), d.anchor[1] + (d.offset[1] || 0), 0);
+          d.el.setAttribute('x', s.x);
+          d.el.setAttribute('y', s.y);
+        } else if (d.kind === 'path') {
+          const pts = d.pts.map(p => {
+            const s = worldToScreen(camera, p[0], p[1], 0);
+            return s.x + ',' + s.y;
+          }).join(' ');
+          d.el.setAttribute('points', pts);
+        } else if (d.kind === 'drawing') {
+          const sa = worldToScreen(camera, d.from[0], d.from[1], 0);
+          const sb = worldToScreen(camera, d.to[0], d.to[1], 0);
+          d.el.setAttribute('x1', sa.x);
+          d.el.setAttribute('y1', sa.y);
+          d.el.setAttribute('x2', sb.x);
+          d.el.setAttribute('y2', sb.y);
+        }
+      });
+
+      nodeLabels.forEach(({ text, mesh }) => {
         const p = mesh.position;
         const s = worldToScreen(camera, p.x, p.y, p.z);
-        const t = labels[li];
-        t.setAttribute('x', s.x);
-        t.setAttribute('y', s.y + 80);
-        li++;
+        text.setAttribute('x', s.x);
+        text.setAttribute('y', s.y + 80);
       });
     }
     loop();
