@@ -130,10 +130,81 @@
     return new OGL.Mesh(gl, { geometry, program, mode: gl.LINES });
   }
 
+  const SURFACE_VERTEX = [
+    'precision highp float;',
+    'attribute vec3 position;',
+    'uniform mat4 modelViewMatrix;',
+    'uniform mat4 projectionMatrix;',
+    'uniform mat3 normalMatrix;',
+    'uniform float uAmp;',
+    'uniform float uFreq;',
+    'uniform float uPhase;',
+    'uniform float uBend;',
+    'varying vec3 vNormal;',
+    'varying vec3 vWorld;',
+    'void main() {',
+    '  vec3 p = position;',
+    '  float h = uAmp * sin(p.x * uFreq + uPhase) * cos(p.y * uFreq);',
+    '  p.z += h;',
+    '  p.z += uBend * (p.x * p.x + p.y * p.y);',
+    '  float eps = 0.01;',
+    '  float hx = uAmp * (sin((p.x + eps) * uFreq + uPhase) * cos(p.y * uFreq) - h) / eps;',
+    '  float hy = uAmp * (sin(p.x * uFreq + uPhase) * cos((p.y + eps) * uFreq) - h) / eps;',
+    '  float bx = 2.0 * uBend * p.x;',
+    '  float by = 2.0 * uBend * p.y;',
+    '  vNormal = normalize(normalMatrix * vec3(-hx - bx, -hy - by, 1.0));',
+    '  vWorld = p;',
+    '  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);',
+    '}',
+  ].join('\n');
+
+  const SURFACE_FRAGMENT = [
+    'precision highp float;',
+    'varying vec3 vNormal;',
+    'varying vec3 vWorld;',
+    'uniform vec3 uColor;',
+    'void main() {',
+    '  float light = 0.45 + 0.55 * abs(normalize(vNormal).z);',
+    '  gl_FragColor = vec4(uColor * light, 1.0);',
+    '}',
+  ].join('\n');
+
+  function buildSurface(gl, opts) {
+    const width = opts.width || 400;
+    const height = opts.height || 400;
+    const segments = opts.segments || 64;
+    const geometry = new OGL.Plane(gl, { width, height, widthSegments: segments, heightSegments: segments });
+    const program = new OGL.Program(gl, {
+      vertex: SURFACE_VERTEX,
+      fragment: SURFACE_FRAGMENT,
+      cullFace: false,
+      uniforms: {
+        uColor: { value: new OGL.Color(opts.color || '#5ac8d9') },
+        uAmp: { value: opts.amp || 60 },
+        uFreq: { value: opts.freq || 0.03 },
+        uPhase: { value: 0 },
+        uBend: { value: 0 },
+      },
+    });
+    const mesh = new OGL.Mesh(gl, { geometry, program });
+    mesh.userData = { isSurface: true, opts };
+    return mesh;
+  }
+
+  function updateSurface(mesh, params) {
+    const u = mesh.program.uniforms;
+    if (params.amp !== undefined) u.uAmp.value = params.amp;
+    if (params.freq !== undefined) u.uFreq.value = params.freq;
+    if (params.phase !== undefined) u.uPhase.value = params.phase;
+    if (params.bend !== undefined) u.uBend.value = params.bend;
+  }
+
   global.Aether3DCore = {
     colorToHex,
     createRenderer,
     buildNode,
     buildEdge,
+    buildSurface,
+    updateSurface,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

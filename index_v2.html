@@ -101,6 +101,25 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
     #detail-card.hidden { display: none; }
+
+    #surface-panel {
+      position: fixed; bottom: 12px; right: 12px; z-index: 15;
+      background: var(--bar-bg); color: var(--bar-fg);
+      border-radius: 10px; padding: 12px 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      display: none; flex-direction: column; gap: 8px; width: 240px;
+    }
+    #surface-panel.open { display: flex; }
+    #surface-panel h3 { margin: 0; font-size: 13px; }
+    #surface-panel label { font-size: 12px; display: flex; justify-content: space-between; }
+    #surface-panel input[type=range] { width: 130px; }
+    #surface-panel .val { color: var(--accent); }
+    #surface-toggle {
+      position: fixed; bottom: 12px; right: 12px; z-index: 16;
+      background: var(--bar-bg); color: var(--bar-fg);
+      border: 1px solid #3a3e4c; border-radius: 6px; padding: 6px 10px;
+      font-size: 12px; cursor: pointer;
+    }
     #detail-card h2 { margin: 0 0 8px; font-size: 15px; word-break: break-word; }
     #detail-card .meta { font-size: 12px; color: #a0a4b4; margin-bottom: 4px; }
     #detail-card .meta b { color: var(--accent); }
@@ -155,6 +174,15 @@
     <div class="meta" id="detail-time"></div>
     <div class="meta" id="detail-tags"></div>
     <div class="desc" id="detail-desc"></div>
+  </div>
+
+  <button id="surface-toggle">曲面</button>
+  <div id="surface-panel">
+    <h3>数学曲面</h3>
+    <label>振幅 <input type="range" id="surf-amp" min="0" max="150" value="60"><span class="val" id="surf-amp-val">60</span></label>
+    <label>周波数 <input type="range" id="surf-freq" min="0" max="0.1" step="0.005" value="0.03"><span class="val" id="surf-freq-val">0.030</span></label>
+    <label>位相 <input type="range" id="surf-phase" min="0" max="6.28" step="0.1" value="0"><span class="val" id="surf-phase-val">0.0</span></label>
+    <label>湾曲 <input type="range" id="surf-bend" min="0" max="0.005" step="0.0005" value="0"><span class="val" id="surf-bend-val">0.0000</span></label>
   </div>
 
   <script src="vendor/ogl.min.js"></script>
@@ -462,6 +490,38 @@
     document.getElementById('dsl-toggle').addEventListener('click', () => {
       document.getElementById('dsl-panel').classList.toggle('open');
     });
+
+    let surfaceMesh = null;
+
+    document.getElementById('surface-toggle').addEventListener('click', () => {
+      const panel = document.getElementById('surface-panel');
+      if (panel.classList.contains('open')) {
+        panel.classList.remove('open');
+        if (surfaceMesh) { scene.removeChild(surfaceMesh); surfaceMesh = null; }
+      } else {
+        panel.classList.add('open');
+        if (!surfaceMesh) {
+          surfaceMesh = Aether3DCore.buildSurface(gl, { width: 500, height: 500, segments: 64 });
+          surfaceMesh.position.set(0, 0, 0);
+          scene.addChild(surfaceMesh);
+        }
+      }
+    });
+
+    function bindSurfaceSlider(id, valId, key, decimals) {
+      const el = document.getElementById(id);
+      const val = document.getElementById(valId);
+      el.addEventListener('input', () => {
+        const v = parseFloat(el.value);
+        val.textContent = decimals ? v.toFixed(decimals) : String(Math.round(v));
+        if (surfaceMesh) Aether3DCore.updateSurface(surfaceMesh, { [key]: v });
+      });
+    }
+
+    bindSurfaceSlider('surf-amp', 'surf-amp-val', 'amp', 0);
+    bindSurfaceSlider('surf-freq', 'surf-freq-val', 'freq', 3);
+    bindSurfaceSlider('surf-phase', 'surf-phase-val', 'phase', 1);
+    bindSurfaceSlider('surf-bend', 'surf-bend-val', 'bend', 4);
 
     renderBoard();
     setView('2d');
