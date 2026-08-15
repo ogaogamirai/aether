@@ -120,6 +120,12 @@
       border: 1px solid #3a3e4c; border-radius: 6px; padding: 6px 10px;
       font-size: 12px; cursor: pointer;
     }
+    #particle-toggle {
+      position: fixed; bottom: 12px; right: 96px; z-index: 16;
+      background: var(--bar-bg); color: var(--bar-fg);
+      border: 1px solid #3a3e4c; border-radius: 6px; padding: 6px 10px;
+      font-size: 12px; cursor: pointer;
+    }
     #detail-card h2 { margin: 0 0 8px; font-size: 15px; word-break: break-word; }
     #detail-card .meta { font-size: 12px; color: #a0a4b4; margin-bottom: 4px; }
     #detail-card .meta b { color: var(--accent); }
@@ -177,6 +183,7 @@
   </div>
 
   <button id="surface-toggle">曲面</button>
+  <button id="particle-toggle">粒子:ON</button>
   <div id="surface-panel">
     <h3>数学曲面</h3>
     <label>振幅 <input type="range" id="surf-amp" min="0" max="150" value="60"><span class="val" id="surf-amp-val">60</span></label>
@@ -425,15 +432,17 @@
       document.getElementById('detail-card').classList.add('hidden');
     }
 
+    const _view = new OGL.Mat4();
+    const _viewProj = new OGL.Mat4();
+    const _p = new OGL.Vec3();
+
     function worldToScreen(camera, x, y, z) {
-      const view = new OGL.Mat4();
-      view.inverse(camera.worldMatrix);
-      const viewProj = new OGL.Mat4();
-      viewProj.multiply(camera.projectionMatrix, view);
-      const p = new OGL.Vec3(x, y, z);
-      p.applyMatrix4(viewProj);
-      const sx = (p.x + 1) / 2 * canvas.clientWidth;
-      const sy = (1 - p.y) / 2 * canvas.clientHeight;
+      _view.inverse(camera.worldMatrix);
+      _viewProj.multiply(camera.projectionMatrix, _view);
+      _p.set(x, y, z);
+      _p.applyMatrix4(_viewProj);
+      const sx = (_p.x + 1) / 2 * canvas.clientWidth;
+      const sy = (1 - _p.y) / 2 * canvas.clientHeight;
       return { x: sx, y: sy };
     }
 
@@ -546,7 +555,13 @@
       btn.addEventListener('click', () => {
         Aether3DState.setLayoutMode(btn.dataset.mode);
         setActiveMode(btn.dataset.mode);
-        renderBoard();
+    document.getElementById('particle-toggle').addEventListener('click', () => {
+      particlesEnabled = !particlesEnabled;
+      document.getElementById('particle-toggle').textContent = particlesEnabled ? '粒子:ON' : '粒子:OFF';
+      needsRender = true;
+    });
+
+    renderBoard();
       });
     });
 
@@ -646,18 +661,12 @@
 
     setView('2d');
 
-    function loop() {
-      requestAnimationFrame(loop);
-      controls.update();
-      flowTime += 0.016;
-      if (flowMesh) Aether3DCore.updateFlow(flowMesh, flowTime);
-      scene.children.forEach(child => {
-        if (child.userData && child.userData.isNode) {
-          child.quaternion.copy(camera.quaternion);
-        }
-      });
-      renderer.render({ scene, camera });
+    let needsRender = true;
+    let particlesEnabled = true;
+    let lastCam = { x: null, y: null, z: null };
+    let lastTgt = { x: null, y: null };
 
+    function updateSvgOverlays() {
       edgeLines.forEach(({ line, pa, pb }) => {
         const sa = worldToScreen(camera, pa[0], pa[1], 0);
         const sb = worldToScreen(camera, pb[0], pb[1], 0);
@@ -694,6 +703,35 @@
         text.setAttribute('x', s.x);
         text.setAttribute('y', s.y + 80);
       });
+    }
+
+    function loop() {
+      requestAnimationFrame(loop);
+      controls.update();
+
+      const cam = camera.position;
+      const tgt = controls.target;
+      if (cam.x !== lastCam.x || cam.y !== lastCam.y || cam.z !== lastCam.z ||
+          tgt.x !== lastTgt.x || tgt.y !== lastTgt.y) {
+        lastCam = { x: cam.x, y: cam.y, z: cam.z };
+        lastTgt = { x: tgt.x, y: tgt.y };
+        needsRender = true;
+      }
+
+      if (needsRender || particlesEnabled) {
+        if (particlesEnabled) {
+          flowTime += 0.016;
+          if (flowMesh) Aether3DCore.updateFlow(flowMesh, flowTime);
+        }
+        scene.children.forEach(child => {
+          if (child.userData && child.userData.isNode) {
+            child.quaternion.copy(camera.quaternion);
+          }
+        });
+        renderer.render({ scene, camera });
+        updateSvgOverlays();
+        needsRender = false;
+      }
     }
     loop();
 
