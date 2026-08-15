@@ -124,10 +124,51 @@
     return mesh;
   }
 
+  const EDGE_VERTEX = [
+    'precision highp float;',
+    'attribute vec3 position;',
+    'uniform mat4 modelViewMatrix;',
+    'uniform mat4 projectionMatrix;',
+    'void main() {',
+    '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+    '}',
+  ].join('\n');
+
+  const EDGE_FRAGMENT = [
+    'precision highp float;',
+    'uniform vec3 uColor;',
+    'void main() {',
+    '  gl_FragColor = vec4(uColor, 1.0);',
+    '}',
+  ].join('\n');
+
   function buildEdge(gl, hexColor, ax, ay, bx, by) {
-    const geometry = lineGeometry(gl, ax, ay, bx, by);
-    const program = makeProgram(gl, hexColor);
-    return new OGL.Mesh(gl, { geometry, program, mode: gl.LINES });
+    const thickness = 5;
+    const dx = bx - ax, dy = by - ay;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = (-dy / len) * thickness, ny = (dx / len) * thickness;
+    const pos = [
+      ax + nx, ay + ny, 0,
+      bx + nx, by + ny, 0,
+      bx - nx, by - ny, 0,
+      ax - nx, ay - ny, 0,
+    ];
+    const nor = [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1];
+    const idx = [0, 1, 2, 0, 2, 3];
+    const geometry = new OGL.Geometry(gl, {
+      position: { size: 3, data: new Float32Array(pos) },
+      normal: { size: 3, data: new Float32Array(nor) },
+      index: { data: new Uint16Array(idx) },
+    });
+    const program = new OGL.Program(gl, {
+      vertex: EDGE_VERTEX,
+      fragment: EDGE_FRAGMENT,
+      cullFace: false,
+      uniforms: {
+        uColor: { value: new OGL.Color(hexColor) },
+      },
+    });
+    return new OGL.Mesh(gl, { geometry, program });
   }
 
   const SURFACE_VERTEX = [
@@ -199,6 +240,76 @@
     if (params.bend !== undefined) u.uBend.value = params.bend;
   }
 
+  const PARTICLE_VERTEX = [
+    'precision highp float;',
+    'attribute vec3 position;',
+    'attribute vec3 aStart;',
+    'attribute vec3 aEnd;',
+    'uniform float uTime;',
+    'uniform float uSpeed;',
+    'uniform mat4 modelViewMatrix;',
+    'uniform mat4 projectionMatrix;',
+    'varying float vAlpha;',
+    'void main() {',
+    '  float progress = fract(position.x + uTime * uSpeed);',
+    '  vec3 p = mix(aStart, aEnd, progress);',
+    '  vAlpha = sin(progress * 3.14159);',
+    '  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);',
+    '  gl_PointSize = 8.0;',
+    '}',
+  ].join('\n');
+
+  const PARTICLE_FRAGMENT = [
+    'precision highp float;',
+    'varying float vAlpha;',
+    'uniform vec3 uColor;',
+    'void main() {',
+    '  vec2 uv = gl_PointCoord - 0.5;',
+    '  float d = length(uv);',
+    '  if (d > 0.5) discard;',
+    '  float alpha = (1.0 - d * 2.0) * vAlpha;',
+    '  gl_FragColor = vec4(uColor, alpha);',
+    '}',
+  ].join('\n');
+
+  // edges: [ [ax,ay], [bx,by] ] の配列
+  function buildFlowParticles(gl, edges, opts) {
+    const perEdge = (opts && opts.perEdge) || 20;
+    const positions = [];
+    const starts = [];
+    const ends = [];
+    edges.forEach(([a, b]) => {
+      for (let i = 0; i < perEdge; i++) {
+        positions.push(i / perEdge, 0, 0);
+        starts.push(a[0], a[1], 0);
+        ends.push(b[0], b[1], 0);
+      }
+    });
+    const geometry = new OGL.Geometry(gl, {
+      position: { size: 3, data: new Float32Array(positions) },
+      aStart: { size: 3, data: new Float32Array(starts) },
+      aEnd: { size: 3, data: new Float32Array(ends) },
+    });
+    const program = new OGL.Program(gl, {
+      vertex: PARTICLE_VERTEX,
+      fragment: PARTICLE_FRAGMENT,
+      transparent: true,
+      depthTest: false,
+      uniforms: {
+        uColor: { value: new OGL.Color((opts && opts.color) || '#ffcc55') },
+        uTime: { value: 0 },
+        uSpeed: { value: (opts && opts.speed) || 0.12 },
+      },
+    });
+    const mesh = new OGL.Mesh(gl, { geometry, program, mode: gl.POINTS });
+    mesh.userData = { isFlow: true };
+    return mesh;
+  }
+
+  function updateFlow(mesh, time) {
+    mesh.program.uniforms.uTime.value = time;
+  }
+
   global.Aether3DCore = {
     colorToHex,
     createRenderer,
@@ -206,5 +317,7 @@
     buildEdge,
     buildSurface,
     updateSurface,
+    buildFlowParticles,
+    updateFlow,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

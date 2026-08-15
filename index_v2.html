@@ -246,11 +246,26 @@
       '  time: "1_確認"',
       '  desc: "オイラーの公式: $e^{i\\pi} + 1 = 0$\\n\\nフーリエ級数: $$f(x) = a_0 + \\sum_{n=1}^{\\infty} (a_n \\cos nx + b_n \\sin nx)$$"',
       '}',
-      'relation SMOKE_CLI -> SMOKE_TITLE { type: "evidence" label: "書く" }',
-      'relation SMOKE_DB -> SMOKE_TITLE { type: "evidence" label: "正本" }',
-      'relation SMOKE_TITLE -> SMOKE_UI { type: "default" label: "投影" }',
-      'relation SMOKE_TITLE -> SMOKE_AUTO1 { type: "default" label: "展開" }',
-      'relation SMOKE_AUTO1 -> SMOKE_AUTO2 { type: "default" label: "次" }',
+      'relation SMOKE_CLI -> SMOKE_TITLE {',
+      '  type: "evidence"',
+      '  label: "書く"',
+      '}',
+      'relation SMOKE_DB -> SMOKE_TITLE {',
+      '  type: "evidence"',
+      '  label: "正本"',
+      '}',
+      'relation SMOKE_TITLE -> SMOKE_UI {',
+      '  type: "default"',
+      '  label: "投影"',
+      '}',
+      'relation SMOKE_TITLE -> SMOKE_AUTO1 {',
+      '  type: "default"',
+      '  label: "展開"',
+      '}',
+      'relation SMOKE_AUTO1 -> SMOKE_AUTO2 {',
+      '  type: "default"',
+      '  label: "次"',
+      '}',
       '',
     ].join('\n');
 
@@ -277,10 +292,11 @@
       const edges = [];
       relations.forEach(r => edges.push([r.from, r.to]));
       connections.forEach(c => edges.push([c.source, c.target]));
+      const edgePoints = [];
       edges.forEach(([a, b]) => {
         const pa = positions[a], pb = positions[b];
         if (!pa || !pb) return;
-        scene.addChild(Aether3DCore.buildEdge(gl, '#7a7f8f', pa[0], pa[1], pb[0], pb[1]));
+        edgePoints.push([pa, pb]);
       });
 
       notes.forEach(n => {
@@ -292,8 +308,27 @@
         scene.addChild(mesh);
       });
 
+      edgePoints.forEach(([pa, pb]) => {
+        scene.addChild(Aether3DCore.buildEdge(gl, '#9aa0b0', pa[0], pa[1], pb[0], pb[1]));
+      });
+
+      flowMesh = Aether3DCore.buildFlowParticles(gl, edgePoints, { perEdge: 15, color: '#ffcc55' });
+      scene.addChild(flowMesh);
+
       const labelLayer = document.getElementById('label-layer');
       labelLayer.innerHTML = '';
+      edgeLines = [];
+      edgePoints.forEach(([pa, pb]) => {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('stroke', '#9aa0b0');
+        line.setAttribute('stroke-width', '3');
+        line.setAttribute('x1', 0);
+        line.setAttribute('y1', 0);
+        line.setAttribute('x2', 0);
+        line.setAttribute('y2', 0);
+        labelLayer.appendChild(line);
+        edgeLines.push({ line, pa, pb });
+      });
       nodeMeshes.forEach(mesh => {
         const note = mesh.userData.note;
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -492,6 +527,9 @@
     });
 
     let surfaceMesh = null;
+    let flowMesh = null;
+    let flowTime = 0;
+    let edgeLines = [];
 
     document.getElementById('surface-toggle').addEventListener('click', () => {
       const panel = document.getElementById('surface-panel');
@@ -529,12 +567,23 @@
     function loop() {
       requestAnimationFrame(loop);
       controls.update();
+      flowTime += 0.016;
+      if (flowMesh) Aether3DCore.updateFlow(flowMesh, flowTime);
       scene.children.forEach(child => {
         if (child.userData && child.userData.isNode) {
           child.quaternion.copy(camera.quaternion);
         }
       });
       renderer.render({ scene, camera });
+
+      edgeLines.forEach(({ line, pa, pb }) => {
+        const sa = worldToScreen(camera, pa[0], pa[1], 0);
+        const sb = worldToScreen(camera, pb[0], pb[1], 0);
+        line.setAttribute('x1', sa.x);
+        line.setAttribute('y1', sa.y);
+        line.setAttribute('x2', sb.x);
+        line.setAttribute('y2', sb.y);
+      });
 
       const labelLayer = document.getElementById('label-layer');
       const labels = labelLayer.children;
