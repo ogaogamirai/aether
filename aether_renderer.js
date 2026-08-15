@@ -583,20 +583,37 @@ function drawCircleArea(dw) {
   let minY = Infinity, maxY = -Infinity;
 
   targets.forEach(n => {
+    const el = document.getElementById('note-' + n.id);
+    const w = el && el.offsetWidth ? el.offsetWidth : NOTE_W;
+    const h = el && el.offsetHeight ? el.offsetHeight : NOTE_H;
     if (n.x < minX) minX = n.x;
-    if (n.x + NOTE_W > maxX) maxX = n.x + NOTE_W;
+    if (n.x + w > maxX) maxX = n.x + w;
     if (n.y < minY) minY = n.y;
-    if (n.y + NOTE_H > maxY) maxY = n.y + NOTE_H;
+    if (n.y + h > maxY) maxY = n.y + h;
   });
 
-  const cx = (minX + maxX) / 2;
-  const cy = (minY + maxY) / 2;
-  const width = (maxX - minX) + 80;
-  const height = (maxY - minY) + 80;
+  const padX = 64;
+  const padBottom = 64;
+  const titleTop = 36;
+  const lineHeight = 22;
+  const gapAfterTitle = 56;
+  const innerW = Math.max(120, (maxX - minX) + padX * 2 - 48);
+  const maxChars = Math.max(8, Math.floor(innerW / 14));
+  const raw = '✦ ' + String(dw.title || '');
+  const lines = [];
+  const chars = Array.from(raw);
+  for (let i = 0; i < chars.length; i += maxChars) {
+    lines.push(chars.slice(i, i + maxChars).join(''));
+  }
+  const padTop = titleTop + lines.length * lineHeight + gapAfterTitle;
+  const width = (maxX - minX) + padX * 2;
+  const height = (maxY - minY) + padTop + padBottom;
+  const rx = minX - padX;
+  const ry = minY - padTop;
 
   const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-  rect.setAttribute('x', cx - width/2);
-  rect.setAttribute('y', cy - height/2);
+  rect.setAttribute('x', rx);
+  rect.setAttribute('y', ry);
   rect.setAttribute('width', width);
   rect.setAttribute('height', height);
   rect.setAttribute('rx', '80');
@@ -614,13 +631,19 @@ function drawCircleArea(dw) {
   rect.setAttribute('filter', 'url(#glow)');
 
   const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-  text.setAttribute('x', cx - width/2 + 25);
-  text.setAttribute('y', cy - height/2 + 35);
+  text.setAttribute('x', rx + 24);
+  text.setAttribute('y', ry + titleTop);
   text.setAttribute('fill', dw.color === 'yellow' ? 'rgba(234, 179, 8, 0.8)' : colorHex.replace('0.20', '0.8').replace('0.15', '0.7'));
   text.setAttribute('font-size', '14px');
   text.setAttribute('font-weight', '600');
   text.setAttribute('font-family', 'var(--font-display)');
-  text.textContent = `✦ ${dw.title}`;
+  lines.forEach(function (line, i) {
+    const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+    tspan.setAttribute('x', rx + 24);
+    tspan.setAttribute('dy', i === 0 ? '0' : '22');
+    tspan.textContent = line;
+    text.appendChild(tspan);
+  });
 
   // タグフィルターによる半透明化
   if (window.activeTag !== null) {
