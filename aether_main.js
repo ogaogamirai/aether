@@ -1375,7 +1375,8 @@ function parseMarkdownTable(text) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (line.startsWith('|') && line.endsWith('|')) {
-      if (line.match(/^\|[\s-|-]*\|$/)) continue;
+      // テーブルのヘッダー区切り行（例: | :--- | :---: | 或いは |---|）を確実にスキップ
+      if (/^\|[\s\-:|]+\|$/.test(line)) continue;
       const cells = line.split('|').slice(1, -1).map(c => c.trim());
       if (!inTable) {
         inTable = true;

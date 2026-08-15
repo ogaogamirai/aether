@@ -6,7 +6,7 @@ description: Aether UI と AetherDB（SQLite 正本；旧称 aether_board/Aether
 # Aether Interaction Skill (v4.0.6 Serverless + LIVE + AetherDB)
 
 Aether **UI** はブラウザ完結（Python 非依存）。  
-**蓄積・複数板・手紙・知見**は **AetherDB**（正本 `aether/aether_db/`）を使う。
+**蓄積・複数板・手紙・知見**は **AetherDB**（正本 `G:\マイドライブ\aether\aether.db`、CLI `G:\マイドライブ\Tools\aether`）を使う。
 
 エージェントは **UI を操作せず**、AetherDB CLI または DSL ファイルで表現する。
 
@@ -17,7 +17,8 @@ Aether **UI** はブラウザ完結（Python 非依存）。
 | 層 | 役割 | 依存 |
 |---|---|---|
 | UI (`index.html` 等) | 描画・閲覧・ナビ | ブラウザのみ |
-| **`aether_db/aether.db`** | **AetherDB — AI 蓄積の正本**（旧称 AetherBoard） | SQLite + CLI |
+| **`G:\マイドライブ\aether\aether.db`** | **AetherDB — AI 蓄積の正本**（Git 外） | SQLite |
+| **`G:\マイドライブ\Tools\aether`** | CLI | Python |
 | **`aether_dsl.txt`** | **LIVE 向け投影** | export / 手編集 |
 | LIVE フォルダ監視 | 投影ファイル → キャンバス（片方向・約1秒） | Chrome/Edge + https/localhost |
 | IndexedDB | ブラウザ個人キャッシュ | 共有媒体ではない |
@@ -29,7 +30,7 @@ Aether **UI** はブラウザ完結（Python 非依存）。
 - **簡易運用**: DSL 直編集可。DB と揃えるときは **明示 import**
 - **IndexedDB** = 共有に使わない
 - **LIVE 中** = 監視ファイル → キャンバスのみ。キャンバスは **閲覧のみ**
-- 詳細: [aether_db/README.md](./aether_db/README.md)
+- 詳細: [LAYOUT.md](G:/マイドライブ/Tools/aether/LAYOUT.md) ／ CLI README `G:\マイドライブ\Tools\aether\README.md`
 
 ### LIVE モード（ホワイトボード運用の標準）
 

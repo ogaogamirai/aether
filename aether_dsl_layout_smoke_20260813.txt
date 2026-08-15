@@ -1,0 +1,60 @@
+# board: layout_smoke_20260813
+# JT smoke test 2026-08-13 — Tools/aether + Tools/aetherdb + Drive-root DB
+
+sticky SMOKE_TITLE "置き場テスト（J.T. 2026-08-13）" {
+  pos: 480 80
+  color: "blue"
+  role: "claim"
+  confidence: "high"
+  time: "1_確認"
+  tone: "stable"
+  desc: "この付箋が見えれば、LIVE は Tools\\aether の aether_dsl.txt を見ています。\n\nUI: Tools\\aether\nCLI: Tools\\aetherdb\nDB: G:\\マイドライブ\\aether\\aether.db"
+}
+
+sticky SMOKE_CLI "CLI" {
+  pos: 160 320
+  color: "green"
+  role: "evidence"
+  confidence: "high"
+  time: "1_確認"
+  desc: "G:\\マイドライブ\\Tools\\aetherdb"
+}
+
+sticky SMOKE_UI "UI / LIVE" {
+  pos: 480 320
+  color: "green"
+  role: "evidence"
+  confidence: "high"
+  time: "1_確認"
+  desc: "G:\\マイドライブ\\Tools\\aether\\aether_dsl.txt"
+}
+
+sticky SMOKE_DB "SQLite" {
+  pos: 800 320
+  color: "green"
+  role: "evidence"
+  confidence: "high"
+  time: "1_確認"
+  desc: "G:\\マイドライブ\\aether\\aether.db"
+}
+
+relation SMOKE_CLI -> SMOKE_TITLE {
+  type: "evidence"
+  label: "書く"
+  weight: 3
+  flow: "forward"
+}
+
+relation SMOKE_DB -> SMOKE_TITLE {
+  type: "evidence"
+  label: "正本"
+  weight: 3
+  flow: "forward"
+}
+
+relation SMOKE_TITLE -> SMOKE_UI {
+  type: "default"
+  label: "投影"
+  weight: 3
+  flow: "forward"
+}

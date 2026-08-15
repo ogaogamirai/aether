@@ -9,6 +9,9 @@ __pycache__/
 .env
 .venv/
 venv/
-.DS_Store
-Thumbs.db
+# ローカル投影のごみ・一時板
+aether_dsl.txt.bak
+aether_dsl.txt.dvc_bak
+post/
+scratch/
 

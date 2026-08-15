@@ -77,8 +77,8 @@ http://localhost:8080/?dsl=themes/test_svg_rgb.txt
 
 | 項目 | 場所 |
 |---|---|
-| CLI コード（GitHub 正本） | https://github.com/ogaogamirai/aetherdb |
-| ローカル運用（Drive） | `aether/aether_db/`（`aether.db` は Git 外） |
+| CLI コード（GitHub 正本） | `G:\マイドライブ\Tools\aetherdb` ／ https://github.com/ogaogamirai/aetherdb |
+| SQLite 正本（Git 外） | `G:\マイドライブ\aether\aether.db` |
 | 旧フォルダ名の案内 | [aether_board/README.md](./aether_board/README.md)（リダイレクトのみ） |
 
 ## IndexedDB（v2）
