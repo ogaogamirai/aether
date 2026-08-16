@@ -77,12 +77,19 @@ function renderCanvas() {
     console.error('[Aether] notesContainer missing');
     return;
   }
-  notesContainer.innerHTML = '';
-  
-  // Render Notes
+
+  // Render Notes (差分更新: 既存要素を再利用し、変化のみ反映)
   notes.forEach(note => {
     // 時間フィルターによる表示・非表示の適用
     if (!isTimeVisible(note.time)) return;
+
+    // 既存要素を再利用（位置・内容が同じなら触らない）
+    const existingEl = document.getElementById('note-' + note.id);
+    if (existingEl) {
+      existingEl.style.left = `${note.x}px`;
+      existingEl.style.top = `${note.y}px`;
+      return;
+    }
 
     const el = document.createElement('div');
     el.className = `sticky-note ${note.color}`;
@@ -238,10 +245,18 @@ function renderCanvas() {
     notesContainer.appendChild(el);
   });
 
+  // 差分更新: 表示されなくなった要素を削除（全消去しない）
+  notesContainer.querySelectorAll('.sticky-note').forEach(el => {
+    if (!el.id.startsWith('note-')) return;
+    const nid = el.id.slice(5);
+    const stillVisible = notes.some(n => n.id === nid && isTimeVisible(n.time));
+    if (!stillVisible) el.remove();
+  });
+
   drawAllShapes();
 }
 
-// Draw all elements on SVG layer
+// Draw all elements on SVG layer (差分更新: 既存要素を再利用)
 function drawAllShapes() {
   const svgLayer = resolveSvgLayer();
   if (!svgLayer) {
@@ -250,9 +265,14 @@ function drawAllShapes() {
   }
   // Preserve marker/filter defs while clearing drawn shapes
   const defs = svgLayer.querySelector('defs');
-  svgLayer.innerHTML = '';
-  if (defs) appendToSvg(defs);
-  
+  // 全消去せず、前回の描画要素をマップ（差分更新のため）
+  const existingEdges = {};
+  svgLayer.querySelectorAll('g.aether-edge').forEach(g => {
+    const key = (g.getAttribute('data-from') || '') + '__' + (g.getAttribute('data-to') || '');
+    existingEdges[key] = g;
+  });
+  const activeEdgeKeys = new Set();
+
   // 1. Draw area backdrops
   drawings.forEach(dw => {
     if (!isTimeVisible(dw.time)) return; // 時間フィルター適用
@@ -269,7 +289,14 @@ function drawAllShapes() {
     if (sourceNote && targetNote) {
       // 接続ノードのいずれかが未来のフェーズにある場合は接続線を描画しない
       if (!isTimeVisible(sourceNote.time) || !isTimeVisible(targetNote.time)) return;
-      drawLineBetween(sourceNote, targetNote, themeColor('--connection-line', 'rgba(255,255,255,0.15)'), '2', '4 4');
+      const key = String(conn.source) + '__' + String(conn.target);
+      activeEdgeKeys.add(key);
+      const existing = existingEdges[key];
+      if (existing) {
+        updateEdgeGroup(existing, sourceNote, targetNote, 'aether-edge-legacy');
+      } else {
+        drawLineBetween(sourceNote, targetNote, themeColor('--connection-line', 'rgba(255,255,255,0.15)'), '2', '4 4');
+      }
     }
   });
 
@@ -280,8 +307,15 @@ function drawAllShapes() {
     const target = notes.find(n => n.id === rel.to);
     if (source && target) {
       if (!isTimeVisible(source.time) || !isTimeVisible(target.time)) return;
+      const key = String(rel.from) + '__' + String(rel.to);
+      activeEdgeKeys.add(key);
+      const existing = existingEdges[key];
+      if (existing) {
+        updateEdgeGroup(existing, source, target, 'aether-edge-relation');
+      } else {
+        drawRelation(rel);
+      }
     }
-    drawRelation(rel);
   });
 
   // 4. Draw advanced drawings (curves/arrows)
@@ -305,6 +339,11 @@ function drawAllShapes() {
     } else if (dw.type === 'path') {
       drawGuidePath(dw);
     }
+  });
+
+  // 差分更新: 表示されなくなったエッジ要素を削除
+  Object.keys(existingEdges).forEach(key => {
+    if (!activeEdgeKeys.has(key)) existingEdges[key].remove();
   });
 }
 
@@ -504,6 +543,16 @@ function drawLineBetween(source, target, strokeColor, strokeWidth, dashArray) {
     }
   }
   finalizeEdgeGroup(group, path, strokeColor, strokeWidth, source.id, target.id, false);
+}
+
+// 差分更新: 既存エッジの座標（path の d）だけを更新
+function updateEdgeGroup(group, source, target) {
+  const geo = computeEdgeGeometry(source, target, source.id, target.id);
+  const path = group.querySelector('path');
+  if (path) {
+    path.setAttribute('d', geo.d);
+  }
+  return group;
 }
 
 function drawCurveArrow(dw) {
