@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aether3D v3 — 3d-force-graph</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; }
+    body { background: #0d0e12; }
+    #graph-container { position: fixed; inset: 0; }
+    #toolbar {
+      position: fixed; top: 12px; left: 12px; z-index: 10;
+      display: flex; flex-direction: column; gap: 8px;
+      background: rgba(255,255,255,0.92); color: #334155;
+      padding: 12px 14px; border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    }
+    #toolbar h1 { margin: 0 0 4px; font-size: 16px; }
+    #toolbar .row { display: flex; gap: 6px; flex-wrap: wrap; }
+    #toolbar button {
+      background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0;
+      border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer;
+    }
+    #toolbar button:hover { background: #e2e8f0; }
+    #toolbar button.active { background: #5b9bd5; color: #fff; }
+    #detail-card {
+      position: fixed; top: 12px; right: 12px; z-index: 20;
+      width: 300px; max-height: 70vh; overflow-y: auto;
+      background: rgba(255,255,255,0.95); color: #334155;
+      border-radius: 10px; padding: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      display: none;
+    }
+    #detail-card.open { display: block; }
+    #detail-card h2 { margin: 0 0 8px; font-size: 15px; word-break: break-word; }
+    #detail-card .meta { font-size: 12px; color: #64748b; margin-bottom: 4px; }
+    #detail-card .desc { margin-top: 8px; font-size: 13px; line-height: 1.7; word-break: break-word; }
+    #detail-card .desc h1, #detail-card .desc h2, #detail-card .desc h3 { margin: 10px 0 4px; font-size: 15px; }
+    #detail-card .desc p { margin: 6px 0; }
+    #detail-card .desc ul, #detail-card .desc ol { margin: 6px 0; padding-left: 20px; }
+    #detail-card .desc li { margin: 3px 0; }
+    #detail-card .desc code { background: #f1f5f9; padding: 1px 4px; border-radius: 4px; font-size: 12px; }
+    #detail-card .desc pre { background: #f8fafc; padding: 8px; border-radius: 6px; overflow-x: auto; }
+    #detail-close { position: absolute; top: 8px; right: 8px; background: none; border: none; font-size: 16px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="graph-container"></div>
+
+  <div id="toolbar">
+    <h1>Aether3D <small>v3 (3d-force-graph)</small></h1>
+    <div class="row">
+      <button data-dim="2">2D</button>
+      <button data-dim="3" class="active">3D</button>
+    </div>
+    <div class="row">
+      <button data-layout="force" class="active">力指向</button>
+      <button data-layout="tree">ツリー</button>
+    </div>
+  </div>
+
+  <div id="detail-card">
+    <button id="detail-close">×</button>
+    <h2 id="detail-title"></h2>
+    <div class="meta" id="detail-role"></div>
+    <div class="meta" id="detail-tags"></div>
+    <div class="desc" id="detail-desc"></div>
+  </div>
+
+  <script src="vendor/3d-force-graph.min.js"></script>
+  <script src="vendor/marked.min.js"></script>
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="aether_parser.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    const ForceGraph3D = window.ForceGraph3D.default;
+    window.THREE = window.ForceGraph3D.three;
+
+    const Graph = ForceGraph3D()(document.getElementById('graph-container'), { controlType: 'orbit' })
+      .width(window.innerWidth)
+      .height(window.innerHeight);
+
+    const data = { nodes: [], links: [] };
+
+    function shapeFor(note) {
+      if (note.role === 'claim') return 'hexagon';
+      if (note.role === 'evidence') return 'circle';
+      return 'rounded';
+    }
+
+    // DSL から 3d-force-graph のデータを構築
+    function loadDSL(text) {
+      const parsed = parseAetherDSL(text);
+
+      // pos 座標の中央を計算（大きい座標を原点基準に）
+      let cx = 0, cy = 0, cnt = 0;
+      parsed.notes.forEach(n => {
+        if (typeof n.layoutX === 'number') { cx += n.layoutX; cy += n.layoutY; cnt++; }
+      });
+      if (cnt > 0) { cx /= cnt; cy /= cnt; }
+
+      data.nodes = parsed.notes.map(n => {
+        const node = {
+          id: n.id,
+          label: n.content || n.id,
+          color: n.color || 'blue',
+          role: n.role || '',
+          desc: (n.desc || '').replace(/\\n/g, '\n').replace(/\\"/g, '"'),
+          tags: n.tags || [],
+        };
+        // 固定座標（pos あり）は中央オフセットして固定
+        if (typeof n.layoutX === 'number') {
+          const ox = n.layoutX - cx, oy = n.layoutY - cy;
+          node.x = ox;
+          node.y = oy;
+          node.fx = ox;
+          node.fy = oy;
+        }
+        return node;
+      });
+      data.links = [];
+      (parsed.relations || []).forEach(r => {
+        if (data.nodes.some(n => n.id === r.from) && data.nodes.some(n => n.id === r.to)) {
+          data.links.push({ source: r.from, target: r.to, label: r.label || '' });
+        }
+      });
+      (parsed.connections || []).forEach(c => {
+        if (data.nodes.some(n => n.id === c.source) && data.nodes.some(n => n.id === c.target)) {
+          data.links.push({ source: c.source, target: c.target });
+        }
+      });
+    }
+
+    // 平面パネルノード + ラベルを作る
+    function buildNodeObject(node) {
+      const THREE = window.THREE;
+      const group = new THREE.Group();
+      const w = 46, h = 34;
+
+      const colorMap = {
+        yellow: '#ffd166', blue: '#5b9bd5', red: '#e8736a', green: '#7cb984',
+        purple: '#b07cc9', orange: '#f0a868', pink: '#e78cb8', cyan: '#6fc5d9',
+        gray: '#a8b0bc', grey: '#a8b0bc', white: '#ffffff', black: '#4a5568',
+      };
+      const hex = colorMap[node.color] || '#5b9bd5';
+
+      // 平面パネル
+      const panel = new THREE.Mesh(
+        new THREE.PlaneGeometry(w, h),
+        new THREE.MeshBasicMaterial({ color: hex, side: THREE.DoubleSide })
+      );
+      group.add(panel);
+
+      // 常時ラベル（スプライト）
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.font = '20px system-ui, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.lineWidth = 4;
+      const label = node.label || node.id;
+      const shortLabel = label.length > 12 ? label.slice(0, 12) + '…' : label;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeText(shortLabel, 128, 32);
+      ctx.fillText(shortLabel, 128, 32);
+      const spriteMat = new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(canvas),
+        depthTest: false,
+      });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(w, 10, 1);
+      group.add(sprite);
+
+      return group;
+    }
+
+    function render() {
+      Graph
+        .graphData(data)
+        .backgroundColor('#0d0e12')
+        .nodeThreeObject(buildNodeObject)
+        .linkCurvature(0.2)
+        .linkColor(() => '#94a3b8')
+        .onNodeClick(showDetail);
+    }
+
+    function showDetail(node) {
+      document.getElementById('detail-card').classList.add('open');
+      document.getElementById('detail-title').textContent = node.label || '';
+      document.getElementById('detail-role').textContent = node.role ? '役割: ' + node.role : '';
+      document.getElementById('detail-tags').textContent =
+        node.tags && node.tags.length ? 'タグ: ' + node.tags.join(' ') : '';
+      const descEl = document.getElementById('detail-desc');
+      if (window.marked && node.desc) {
+        descEl.innerHTML = window.marked.parse(node.desc || '');
+      } else {
+        descEl.textContent = node.desc || '';
+      }
+      if (window.renderMathInElement) {
+        renderMathInElement(descEl, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+          ],
+          throwOnError: false,
+        });
+      }
+    }
+
+    document.getElementById('detail-close').addEventListener('click', () => {
+      document.getElementById('detail-card').classList.remove('open');
+    });
+
+    // 2D / 3D 切替
+    document.querySelectorAll('[data-dim]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dim = parseInt(btn.dataset.dim, 10);
+        if (dim === 2) {
+          Graph.numDimensions(2);
+          data.nodes.forEach(n => { n.z = 0; if (n.fz) n.fz = 0; });
+          Graph.graphData(data);
+          Graph.cameraPosition({ x: 0, y: 0, z: 800 });
+          const ctrl = Graph.controls();
+          if (ctrl) {
+            ctrl.noRotate = true; ctrl.noZoom = false; ctrl.noPan = false;
+            if (window.THREE && window.THREE.MOUSE) {
+              ctrl.mouseButtons.LEFT = window.THREE.MOUSE.PAN;
+              ctrl.mouseButtons.RIGHT = window.THREE.MOUSE.PAN;
+            }
+          }
+        } else {
+          Graph.numDimensions(3);
+          Graph.graphData(data);
+          Graph.cameraPosition({ x: 250, y: 250, z: 400 });
+          const ctrl = Graph.controls();
+          if (ctrl) {
+            ctrl.noRotate = false; ctrl.noZoom = false; ctrl.noPan = false;
+            if (window.THREE && window.THREE.MOUSE) {
+              ctrl.mouseButtons.LEFT = window.THREE.MOUSE.ROTATE;
+              ctrl.mouseButtons.RIGHT = window.THREE.MOUSE.PAN;
+            }
+          }
+        }
+        document.querySelectorAll('[data-dim]').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    // レイアウト切替（力指向 / ツリー）
+    document.querySelectorAll('[data-layout]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const layout = btn.dataset.layout;
+        document.querySelectorAll('[data-layout]').forEach(b => b.classList.toggle('active', b === btn));
+        if (layout === 'tree') {
+          applyTreeLayout();
+        } else {
+          clearFixed();
+        }
+        render();
+      });
+    });
+
+    function applyTreeLayout() {
+      // 簡単なツリー配置（BFS でレベルを割り当て）
+      const nodes = data.nodes;
+      const links = data.links;
+      const children = {};
+      const indegree = {};
+      nodes.forEach(n => { children[n.id] = []; indegree[n.id] = 0; });
+      links.forEach(l => {
+        const s = typeof l.source === 'object' ? l.source.id : l.source;
+        const t = typeof l.target === 'object' ? l.target.id : l.target;
+        if (children[s]) { children[s].push(t); indegree[t]++; }
+      });
+      const queue = [];
+      const level = {};
+      nodes.forEach(n => { if (indegree[n.id] === 0) { level[n.id] = 0; queue.push(n.id); } });
+      if (queue.length === 0) { nodes.forEach(n => { level[n.id] = 0; queue.push(n.id); }); }
+      const order = [];
+      while (queue.length) {
+        const id = queue.shift();
+        order.push(id);
+        (children[id] || []).forEach(c => {
+          if (level[c] === undefined) { level[c] = level[id] + 1; queue.push(c); }
+        });
+      }
+      nodes.forEach(n => { if (level[n.id] === undefined) level[n.id] = 0; });
+      const byLevel = {};
+      nodes.forEach(n => {
+        const lv = level[n.id];
+        if (!byLevel[lv]) byLevel[lv] = [];
+        byLevel[lv].push(n.id);
+      });
+      Object.keys(byLevel).forEach(lv => {
+        byLevel[lv].forEach((id, i) => {
+          const node = nodes.find(n => n.id === id);
+          node.x = Number(lv) * 120;
+          node.y = (i - (byLevel[lv].length - 1) / 2) * 120;
+          node.fx = node.x;
+          node.fy = node.y;
+          node.fz = 0;
+        });
+      });
+    }
+
+    function clearFixed() {
+      data.nodes.forEach(n => {
+        if (n.__fixed) return;
+        delete n.fx;
+        delete n.fy;
+        delete n.fz;
+      });
+    }
+
+    // 初期表示（実データを読み込む）
+    const dslText = '';
+    function bootstrap(text) {
+      loadDSL(text);
+      render();
+    }
+
+    fetch('aether_dsl.txt')
+      .then(r => { if (!r.ok) throw new Error('nf'); return r.text(); })
+      .then(bootstrap)
+      .catch(() => {
+        bootstrap([
+          'sticky A "ノードA" { pos: 100 100 color: "blue" }',
+          'sticky B "ノードB" { pos: 300 100 color: "green" }',
+          'sticky C "ノードC" { pos: 200 300 color: "orange" }',
+          'relation A -> B { type: "default" }',
+          'relation B -> C { type: "default" }',
+        ].join('\n'));
+      });
+  })();
+  </script>
+</body>
+</html>
