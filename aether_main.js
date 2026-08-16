@@ -639,11 +639,24 @@ function updateTransform() {
   refs.transformLayer.style.transform = `translate(${window.panX}px, ${window.panY}px) scale(${window.scale})`;
   const indicator = document.getElementById('scale-indicator');
   if (indicator) indicator.textContent = `${Math.round(window.scale * 100)}%`;
+  simplifyEdgesDuringZoom();
+}
+
+// ズーム中のエッジ簡略化（ちらつき軽減）: ズーム中は opacity を下げ、停止後に復元
+let _zoomEdgeTimer = null;
+function simplifyEdgesDuringZoom() {
+  const layer = document.querySelector('.connections-layer');
+  if (layer) layer.style.opacity = '0.35';
+  if (_zoomEdgeTimer) clearTimeout(_zoomEdgeTimer);
+  _zoomEdgeTimer = setTimeout(() => {
+    if (layer) layer.style.opacity = '';
+  }, 150);
 }
 
 function zoom(delta) {
   window.scale = Math.max(0.15, Math.min(2.0, window.scale + delta));
   updateTransform();
+  simplifyEdgesDuringZoom();
   if (window.focusedNoteId) {
     const n = (typeof notes !== 'undefined' ? notes : window.notes || []).find(function (x) {
       return x.id === window.focusedNoteId;

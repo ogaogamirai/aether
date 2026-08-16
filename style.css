@@ -142,6 +142,8 @@ body.light-theme .whiteboard-container.drop-active {
   width: 10000px;
   height: 10000px;
   pointer-events: none;
+  contain: layout paint;
+  will-change: transform;
 }
 
 .connections-layer .aether-edge,
