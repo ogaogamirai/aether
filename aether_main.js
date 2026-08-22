@@ -1365,6 +1365,12 @@ function parseKaTeX(text) {
   return text;
 }
 
+function isMarkdownTableSeparator(line) {
+  if (!line.startsWith('|') || !line.endsWith('|')) return false;
+  const cells = line.slice(1, -1).split('|').map(c => c.trim());
+  return cells.length > 0 && cells.every(cell => /^:?-{3,}:?$/.test(cell));
+}
+
 function parseMarkdownTable(text) {
   if (!text) return '';
   const lines = text.split('\n');
@@ -1375,7 +1381,7 @@ function parseMarkdownTable(text) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (line.startsWith('|') && line.endsWith('|')) {
-      if (line.match(/^\|[\s-|-]*\|$/)) continue;
+      if (isMarkdownTableSeparator(line)) continue;
       const cells = line.split('|').slice(1, -1).map(c => c.trim());
       if (!inTable) {
         inTable = true;
